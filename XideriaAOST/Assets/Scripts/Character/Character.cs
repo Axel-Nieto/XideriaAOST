@@ -4,8 +4,9 @@ using UnityEngine;
 public class Character : MonoBehaviour
 {
     [SerializeField] private Vector2Int startGridPosition;
+    [SerializeField] private CharacterStatsData baseStats;
+    public HelmetData EquippedHelmet { get; private set; }
     public CharacterStats Stats { get; private set; }
-
     public CharacterMovement Movement { get; private set; }
 
     public Vector2Int GridPosition { get; private set; }
@@ -15,17 +16,22 @@ public class Character : MonoBehaviour
     [SerializeField] private bool isPlayer;
     public bool IsPlayer => isPlayer;
 
+    public SkillBase BasicSkill { get; private set; }
+
     private void Awake()
     {
         Stats = new CharacterStats(
-            attack: 5,
-            defense: 2,
-            maxHP: 20,
-            maxEnergy: 7,
-            energyRegen: 3
+            attack: baseStats.attack,
+            defense: baseStats.defense,
+            maxHP: baseStats.maxHP,
+            maxEnergy: baseStats.maxEnergy,
+            energyRegen: baseStats.energyRegen
         );
 
         Movement = GetComponent<CharacterMovement>();
+
+        EquippedHelmet = HelmetFactory.CreateDefaultHelmet();
+
         InitializePosition();
     }
 
@@ -87,6 +93,11 @@ public class Character : MonoBehaviour
         }
     }
 
+    public SkillBase GetBasicSkill()
+    {
+        return EquippedHelmet.BasicSkill;
+    }
+
     private void Die()
     {
         _grid.UnregisterCharacter(GridPosition);
@@ -95,10 +106,22 @@ public class Character : MonoBehaviour
 
     public IEnumerator ExecuteAction(IAction action)
     {
+        if (action == null)
+            yield break;
+
         if (!action.CanExecute(this))
             yield break;
 
         yield return action.Execute(this);
+    }
+
+    public void EquipHelmet(HelmetData newHelmet)
+    {
+        if (newHelmet == null) return;
+
+        EquippedHelmet = newHelmet;
+
+        Debug.Log($"{name} equipó {newHelmet.Name}");
     }
 
     public void FinishTurn()

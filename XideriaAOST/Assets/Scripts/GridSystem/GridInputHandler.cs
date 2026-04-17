@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.VectorGraphics;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class GridInputHandler : MonoBehaviour
 {
@@ -24,6 +25,7 @@ public class GridInputHandler : MonoBehaviour
     private bool isMoving = false;
     private bool isCharacterSelected = false;
     private bool isPlayerTurn = false;
+    private ActionMode currentMode = ActionMode.Move;
 
     private void Start()
     {
@@ -46,28 +48,80 @@ public class GridInputHandler : MonoBehaviour
     {
         if (!isPlayerTurn) return;
 
-        if (Keyboard.current.spaceKey.wasPressedThisFrame)
+        if (Keyboard.current.spaceKey.wasPressedThisFrame && !isMoving)
         {
-            if (selectedCharacter != null && selectedCharacter.IsPlayer)
+            if (isPlayerTurn)
             {
-                selectedCharacter.FinishTurn();
+                playerCharacter.FinishTurn();
+            }
+            return;
+        }
+
+        if (isCharacterSelected)
+        {
+            if (Keyboard.current.digit1Key.wasPressedThisFrame)
+            {
+                currentMode = ActionMode.BasicAttack;
+                currentPath.Clear();
+                ClearTiles();
+            }
+        }
+
+        if (Keyboard.current.eKey.wasPressedThisFrame && isCharacterSelected && !isMoving)
+        {
+            var helmet = GetAdjacentHelmet();
+
+            if (helmet != null)
+            {
+                selectedCharacter.EquipHelmet(helmet.GetHelmet());
+                Destroy(helmet.gameObject);
             }
         }
 
         if (Mouse.current.rightButton.wasPressedThisFrame)
         {
-            selectedCharacter = null;
-            isCharacterSelected = false;
+            if (!isCharacterSelected)
+                return;
 
-            ClearTiles();
-            ClearRangeTiles();
+            if (currentMode == ActionMode.BasicAttack)
+            {
+                currentMode = ActionMode.Move;
+                ClearTiles();
+                return;
+            }
 
-            return;
+            if (currentMode == ActionMode.Move)
+            {
+                selectedCharacter = null;
+                isCharacterSelected = false;
+                currentMode = ActionMode.None;
+
+                ClearTiles();
+                ClearRangeTiles();
+                return;
+            }
         }
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
             HandleClick();
+        }
+
+        //QUITAR REINICIO Y EXIT CUANDO TENGAMOS TIEMPO
+
+        if (Keyboard.current.rKey.wasPressedThisFrame)
+        {
+            UnityEngine.SceneManagement.Scene currentScene = SceneManager.GetActiveScene();
+            SceneManager.LoadScene(currentScene.buildIndex);
+        }
+
+        if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+    Application.Quit();
+#endif
         }
 
         if (!isCharacterSelected || selectedCharacter == null)
@@ -80,11 +134,22 @@ public class GridInputHandler : MonoBehaviour
         if (isMoving)
             return;
 
-        UpdateMovementRange();
-        DrawRangeTiles();
+        if (currentMode == ActionMode.Move)
+        {
+            UpdateMovementRange();
+            DrawRangeTiles();
 
-        UpdatePathPreview();
-        DrawPathTiles();
+            UpdatePathPreview();
+            DrawPathTiles();
+        }
+        else if (currentMode == ActionMode.BasicAttack)
+        {
+            UpdateBasicAttackRange();
+            DrawRangeTiles();
+
+            currentPath.Clear();
+            ClearTiles();
+        }
     }
 
     private void OnTurnStarted(Character character)
@@ -93,6 +158,7 @@ public class GridInputHandler : MonoBehaviour
 
         selectedCharacter = null;
         isCharacterSelected = false;
+        currentMode = ActionMode.Move;
 
         ClearTiles();
         ClearRangeTiles();
@@ -110,6 +176,35 @@ public class GridInputHandler : MonoBehaviour
         );
     }
 
+    private void UpdateBasicAttackRange()
+    {
+        reachableCells.Clear();
+
+        if (selectedCharacter == null)
+            return;
+
+        var skill = selectedCharacter.GetBasicSkill();
+        var origin = selectedCharacter.GridPosition;
+
+        for (int x = -skill.MaxRange; x <= skill.MaxRange; x++)
+        {
+            for (int y = -skill.MaxRange; y <= skill.MaxRange; y++)
+            {
+                int distance = Mathf.Abs(x) + Mathf.Abs(y);
+
+                if (distance < skill.MinRange || distance > skill.MaxRange)
+                    continue;
+
+                Vector2Int pos = origin + new Vector2Int(x, y);
+
+                if (gridSystem.IsValidCell(pos))
+                {
+                    reachableCells.Add(pos);
+                }
+            }
+        }
+    }
+
     private void HandleClick()
     {
         if (isMoving) return;
@@ -124,8 +219,12 @@ public class GridInputHandler : MonoBehaviour
 
                 if (character != null && character.IsPlayer && isPlayerTurn)
                 {
+                    ClearTiles();
+                    ClearRangeTiles();
+
                     selectedCharacter = character;
                     isCharacterSelected = true;
+                    currentMode = ActionMode.Move;
                     return;
                 }
             }
@@ -140,25 +239,119 @@ public class GridInputHandler : MonoBehaviour
         Vector2Int targetPos = gridSystem.WorldToGrid(hitGrid.point);
 
         if (!reachableCells.Contains(targetPos))
+        {
+            CancelSelection();
             return;
+        }
 
-        var path = _pathfinding.FindPath(
-            selectedCharacter.GridPosition,
-            targetPos
-        );
+        if (currentMode == ActionMode.Move)
+        {
+            var path = _pathfinding.FindPath(
+                selectedCharacter.GridPosition,
+                targetPos
+            );
 
-        if (path == null || path.Count <= 1)
+            if (path == null || path.Count <= 1)
+                return;
+
+            path.RemoveAt(0);
+
+            int energy = selectedCharacter.Stats.CurrentEnergy;
+
+            if (path.Count > energy)
+                path = path.GetRange(0, energy);
+
+            IAction action = new MoveAction(path);
+            StartCoroutine(ExecuteSelectedAction(action));
             return;
+        }
 
-        path.RemoveAt(0);
+        if (currentMode == ActionMode.BasicAttack)
+        {
+            var skill = selectedCharacter.GetBasicSkill();
 
-        int energy = selectedCharacter.Stats.CurrentEnergy;
+            Character target = gridSystem.GetCharacterAt(targetPos);
 
-        if (path.Count > energy)
-            path = path.GetRange(0, energy);
+            if (target == null || target.IsPlayer)
+            {
+                CancelSelection();
+                return;
+            }
 
-        var action = new MoveAction(path);
-        StartCoroutine(selectedCharacter.ExecuteAction(action));
+            StartCoroutine(ExecuteSkill(skill, target));
+        }
+    }
+
+    private IEnumerator ExecuteSkill(SkillBase skill, Character target)
+    {
+        isMoving = true;
+
+        if (!skill.CanUse(selectedCharacter, target))
+        {
+            isMoving = false;
+            yield break;
+        }
+
+        yield return skill.Execute(selectedCharacter, target);
+
+        isMoving = false;
+
+        currentMode = ActionMode.Move;
+    }
+
+    private IEnumerator ExecuteSelectedAction(IAction action)
+    {
+        isMoving = true;
+
+        yield return selectedCharacter.ExecuteAction(action);
+
+        isMoving = false;
+
+        if (currentMode == ActionMode.BasicAttack)
+        {
+            currentMode = ActionMode.Move;
+        }
+    }
+
+    private void CancelSelection()
+    {
+        selectedCharacter = null;
+        isCharacterSelected = false;
+        currentMode = ActionMode.None;
+
+        ClearTiles();
+        ClearRangeTiles();
+    }
+
+    private HelmetPickup GetAdjacentHelmet()
+    {
+        if (selectedCharacter == null)
+            return null;
+
+        Vector2Int origin = selectedCharacter.GridPosition;
+
+        Vector2Int[] directions =
+        {
+        Vector2Int.up,
+        Vector2Int.down,
+        Vector2Int.left,
+        Vector2Int.right
+    };
+
+        HelmetPickup[] allHelmets = FindObjectsOfType<HelmetPickup>();
+
+        foreach (var dir in directions)
+        {
+            Vector2Int adjacentPos = origin + dir;
+
+            foreach (var helmet in allHelmets)
+            {
+                if (helmet.GridPosition == adjacentPos)
+                    return helmet;
+            }
+        }
+
+        return null;
     }
 
     private void UpdatePathPreview()
@@ -253,5 +446,12 @@ public class GridInputHandler : MonoBehaviour
                 Gizmos.DrawLine(worldPos + Vector3.up * 0.2f, nextWorld + Vector3.up * 0.2f);
             }
         }
+    }
+
+    private enum ActionMode
+    {
+        None,
+        Move,
+        BasicAttack
     }
 }
