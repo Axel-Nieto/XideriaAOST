@@ -48,7 +48,10 @@ public class GridInputHandler : MonoBehaviour
 
         if (Keyboard.current.spaceKey.wasPressedThisFrame)
         {
-            playerCharacter.FinishTurn();
+            if (selectedCharacter != null && selectedCharacter.IsPlayer)
+            {
+                selectedCharacter.FinishTurn();
+            }
         }
 
         if (Mouse.current.rightButton.wasPressedThisFrame)
@@ -86,7 +89,7 @@ public class GridInputHandler : MonoBehaviour
 
     private void OnTurnStarted(Character character)
     {
-        isPlayerTurn = character == playerCharacter;
+        isPlayerTurn = character.IsPlayer;
 
         selectedCharacter = null;
         isCharacterSelected = false;
@@ -119,7 +122,7 @@ public class GridInputHandler : MonoBehaviour
             {
                 var character = hitChar.collider.GetComponentInParent<Character>();
 
-                if (character != null && character == playerCharacter)
+                if (character != null && character.IsPlayer && isPlayerTurn)
                 {
                     selectedCharacter = character;
                     isCharacterSelected = true;
