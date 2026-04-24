@@ -57,7 +57,7 @@ public class AStarPathfinding
                 if (!_grid.IsWalkable(neighborPos))
                     continue;
 
-                if (_grid.IsOccupied(neighborPos) && neighborPos != end)
+                if (_grid.IsBlockedForMovement(neighborPos) && neighborPos != end)
                     continue;
 
                 int newCost = current.GCost + GetCellCost(neighborPos);

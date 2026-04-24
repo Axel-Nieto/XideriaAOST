@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 public static class HelmetFactory
 {
     public static HelmetData CreateDefaultHelmet()
@@ -5,8 +7,11 @@ public static class HelmetFactory
         return new HelmetData
         {
             Name = "Casco Básico",
-            Description = "Sin efectos.",
-            BasicSkill = new BasicAttackSkill()
+            Description = "Un casco simple.",
+            ActiveSkills = new List<SkillBase>
+            {
+                new BasicAttackSkill()
+            }
         };
     }
 
@@ -15,8 +20,14 @@ public static class HelmetFactory
         return new HelmetData
         {
             Name = "Casco de Fuego",
-            Description = "Ataque básico aplica fuego.",
-            BasicSkill = new FireBasicAttackSkill()
+            Description = "Dominio del fuego.",
+            ActiveSkills = new List<SkillBase>
+            {
+                new FireBasicAttackSkill(),
+                new FireballSkill(),
+                new FlameDashSkill(),
+                new FireExplosionSkill()
+            }
         };
     }
 }

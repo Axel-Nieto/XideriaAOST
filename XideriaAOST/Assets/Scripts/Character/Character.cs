@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Character : MonoBehaviour
@@ -14,6 +15,7 @@ public class Character : MonoBehaviour
     private GridSystem _grid;
     [SerializeField] private float visualYOffset = 0.5f;
     [SerializeField] private bool isPlayer;
+    [SerializeField] private List<SkillBase> characterSkills = new();
     public bool IsPlayer => isPlayer;
 
     public SkillBase BasicSkill { get; private set; }
@@ -83,9 +85,18 @@ public class Character : MonoBehaviour
         GridPosition = newPosition;
     }
 
-    public void TakeDamage(int amount)
+    public void TakeDamage(int amount, DamageType damageType)
     {
+        var floatingText = GetComponent<FloatingDamageSpawner>();
+
+        if (amount <= 0)
+        {
+            floatingText?.ShowMiss();
+            return;
+        }
+
         Stats.TakeDamage(amount);
+        floatingText?.ShowDamage(amount, damageType);
 
         if (!Stats.IsAlive)
         {
@@ -93,9 +104,24 @@ public class Character : MonoBehaviour
         }
     }
 
-    public SkillBase GetBasicSkill()
+    public SkillBase GetSkill(int index)
     {
-        return EquippedHelmet.BasicSkill;
+        if (EquippedHelmet == null) return null;
+
+        var skills = EquippedHelmet.ActiveSkills;
+
+        if (skills == null || index < 0 || index >= skills.Count)
+            return null;
+
+        return skills[index];
+    }
+
+    public List<SkillBase> GetActiveSkills()
+    {
+        if (IsPlayer && EquippedHelmet != null)
+            return EquippedHelmet.ActiveSkills;
+
+        return new List<SkillBase>();
     }
 
     private void Die()

@@ -6,12 +6,14 @@ public class AttackAction : IAction
     private readonly Character _target;
     private readonly int _energyCost;
     private readonly int _range;
+    private readonly DamageType _damageType;
 
-    public AttackAction(Character target, int energyCost, int range)
+    public AttackAction(Character target, int energyCost, int range, DamageType damageType = DamageType.Physical)
     {
         _target = target;
         _energyCost = energyCost;
         _range = range;
+        _damageType = damageType;
     }
 
     public bool CanExecute(Character actor)
@@ -20,7 +22,7 @@ public class AttackAction : IAction
         if (_target == null || _target.Stats == null) return false;
         if (!actor.Stats.HasEnergy(_energyCost)) return false;
         if (_target == actor) return false;
-        if (!actor.IsPlayer && _target.IsPlayer == false) return false;
+        if (_target.IsPlayer == actor.IsPlayer) return false;
 
         int distance = Mathf.Abs(actor.GridPosition.x - _target.GridPosition.x) +
                        Mathf.Abs(actor.GridPosition.y - _target.GridPosition.y);
@@ -33,7 +35,8 @@ public class AttackAction : IAction
         actor.Stats.ConsumeEnergy(_energyCost);
 
         int damage = Mathf.Max(1, actor.Stats.Attack - _target.Stats.Defense);
-        _target.TakeDamage(damage);
+
+        _target.TakeDamage(damage, _damageType);
 
         yield return null;
     }

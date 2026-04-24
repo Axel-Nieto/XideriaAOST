@@ -50,6 +50,23 @@ public class GridSystem : MonoBehaviour
         return _characters.ContainsKey(pos);
     }
 
+    public bool IsBlockedForMovement(Vector2Int pos)
+    {
+        if (!IsValidCell(pos))
+            return true;
+
+        if (!IsWalkable(pos))
+            return true;
+
+        if (IsOccupied(pos))
+            return true;
+
+        if (HasHelmetAt(pos))
+            return true;
+
+        return false;
+    }
+
     public void SetOccupied(Vector2Int pos, bool occupied)
     {
         if (!IsValidCell(pos)) return;
@@ -63,6 +80,19 @@ public class GridSystem : MonoBehaviour
         {
             _characters.Remove(pos);
         }
+    }
+
+    public bool HasHelmetAt(Vector2Int pos)
+    {
+        HelmetPickup[] helmets = FindObjectsOfType<HelmetPickup>();
+
+        foreach (var helmet in helmets)
+        {
+            if (helmet.GridPosition == pos)
+                return true;
+        }
+
+        return false;
     }
 
     public void RegisterCharacter(Vector2Int pos, Character character)
