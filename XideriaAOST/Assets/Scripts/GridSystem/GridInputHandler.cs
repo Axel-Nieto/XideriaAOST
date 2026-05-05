@@ -329,6 +329,15 @@ public class GridInputHandler : MonoBehaviour
 
     private IEnumerator ExecuteSkill(SkillBase skill, Vector2Int targetCell)
     {
+        if (isMoving)
+            yield break;
+
+        if (skill == null || selectedCharacter == null)
+            yield break;
+
+        if (!skill.CanUse(selectedCharacter, targetCell, gridSystem))
+            yield break;
+
         isMoving = true;
 
         yield return skill.Execute(selectedCharacter, targetCell, gridSystem);
@@ -341,6 +350,8 @@ public class GridInputHandler : MonoBehaviour
 
     private void SelectSkill(int index)
     {
+        if (isMoving) return;
+
         var skill = selectedCharacter.GetSkill(index);
 
         if (skill == null)
@@ -360,6 +371,7 @@ public class GridInputHandler : MonoBehaviour
 
         ClearTiles();
         ClearRangeTiles();
+        ClearAoeTiles();
     }
 
     private IEnumerator ExecuteSelectedAction(IAction action)
