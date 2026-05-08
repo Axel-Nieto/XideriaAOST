@@ -5,17 +5,20 @@ using UnityEngine;
 public class FireExplosionSkill : SkillBase
 {
     private readonly int damage;
+
     private readonly int aoeRadius;
+    public override int AreaRadius => aoeRadius;
 
     public FireExplosionSkill()
         : base(
             name: "Explosión de Fuego",
-            description: "Libera una explosión de fuego alrededor del personaje.",
+            description: "Libera una explosión de fuego alrededor del personaje. Aplica quemadura",
             energyCost: 6,
             cooldown: 3,
             minRange: 0,
             maxRange: 0,
-            targetType: SkillTargetType.Self)
+            targetType: SkillTargetType.Self,
+            damageType: DamageType.Fire)
     {
         damage = 7;
         aoeRadius = 2;
@@ -26,12 +29,16 @@ public class FireExplosionSkill : SkillBase
         if (user == null || grid == null)
             return false;
 
+        if (user.IsSkillOnCooldown(this))
+            return false;
+
         return user.Stats.HasEnergy(EnergyCost);
     }
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
         user.Stats.ConsumeEnergy(EnergyCost);
+        user.StartCooldown(this);
 
         Vector2Int center = user.GridPosition;
 
@@ -45,6 +52,7 @@ public class FireExplosionSkill : SkillBase
             int finalDamage = Mathf.Max(1, damage + user.Stats.Attack - target.Stats.Defense);
 
             target.TakeDamage(finalDamage, DamageType.Fire);
+            target.ApplyStatusEffect(new BurnEffect(2, 4));
         }
 
         yield return null;

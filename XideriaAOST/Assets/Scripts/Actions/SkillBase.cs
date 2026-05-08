@@ -11,6 +11,8 @@ public abstract class SkillBase
     public int MinRange { get; }
     public int MaxRange { get; }
     public SkillTargetType TargetType { get; }
+    public DamageType DamageType { get; }
+    public virtual int AreaRadius => 0;
 
     protected SkillBase(
     string name,
@@ -19,7 +21,8 @@ public abstract class SkillBase
     int cooldown,
     int minRange,
     int maxRange,
-    SkillTargetType targetType)
+    SkillTargetType targetType,
+    DamageType damageType)
     {
         Name = name;
         Description = description;
@@ -28,6 +31,7 @@ public abstract class SkillBase
         MinRange = minRange;
         MaxRange = maxRange;
         TargetType = targetType;
+        DamageType = damageType;
     }
 
     public bool IsInRange(Vector2Int origin, Vector2Int target)

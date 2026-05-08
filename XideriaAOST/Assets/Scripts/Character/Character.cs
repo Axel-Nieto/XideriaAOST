@@ -13,9 +13,13 @@ public class Character : MonoBehaviour
     public Vector2Int GridPosition { get; private set; }
     public bool IsTurnFinished { get; private set; }
     private GridSystem _grid;
-    [SerializeField] private float visualYOffset = 0.5f;
+    [SerializeField] private Vector3 visualSpawnOffset = new Vector3(0f, 0.5f, 0f);
+    public Vector3 VisualOffset => visualSpawnOffset;
     [SerializeField] private bool isPlayer;
     [SerializeField] private List<SkillBase> characterSkills = new();
+    private Dictionary<string, int> skillCooldowns = new();
+    private List<StatusEffect> statusEffects = new();
+
     public bool IsPlayer => isPlayer;
 
     public SkillBase BasicSkill { get; private set; }
@@ -55,16 +59,19 @@ public class Character : MonoBehaviour
         GridPosition = startGridPosition;
 
         transform.position = _grid.GridToWorld(startGridPosition)
-                             + Vector3.up * visualYOffset;
+                     + visualSpawnOffset;
 
         _grid.RegisterCharacter(startGridPosition, this);
     }
 
     private void HandleTurnStarted(Character character)
     {
-        if (character != this) return;
+        if (character != this)
+            return;
 
-        // agregar buffs/debuffs acá después
+        ReduceCooldowns();
+
+        ProcessStatusEffects();
     }
 
     public void Initialize(CharacterStats stats, CharacterMovement movement, GridSystem grid, Vector2Int startPos)
@@ -74,7 +81,7 @@ public class Character : MonoBehaviour
         Movement = movement;
         GridPosition = startPos;
 
-        transform.position = _grid.GridToWorld(startPos);
+        transform.position = _grid.GridToWorld(startPos) + visualSpawnOffset;
 
         _grid.RegisterCharacter(startPos, this);
     }
@@ -104,16 +111,24 @@ public class Character : MonoBehaviour
         }
     }
 
-    public SkillBase GetSkill(int index)
+    public void Heal(int amount)
     {
-        if (EquippedHelmet == null) return null;
+        if (amount <= 0)
+            return;
 
-        var skills = EquippedHelmet.ActiveSkills;
+        Stats.Heal(amount);
 
-        if (skills == null || index < 0 || index >= skills.Count)
-            return null;
+        var floatingText = GetComponent<FloatingDamageSpawner>();
 
-        return skills[index];
+        floatingText?.ShowHeal(amount);
+    }
+
+    public void AddSkill(SkillBase skill)
+    {
+        if (skill == null)
+            return;
+
+        characterSkills.Add(skill);
     }
 
     public List<SkillBase> GetActiveSkills()
@@ -121,7 +136,22 @@ public class Character : MonoBehaviour
         if (IsPlayer && EquippedHelmet != null)
             return EquippedHelmet.ActiveSkills;
 
-        return new List<SkillBase>();
+        return characterSkills;
+    }
+
+    public SkillBase GetSkill(int index)
+    {
+        var skills = GetActiveSkills();
+
+        if (skills == null || index < 0 || index >= skills.Count)
+            return null;
+
+        return skills[index];
+    }
+
+    public List<StatusEffect> GetStatusEffects()
+    {
+        return statusEffects;
     }
 
     private void Die()
@@ -160,5 +190,85 @@ public class Character : MonoBehaviour
         IsTurnFinished = false;
 
         Stats.RegenEnergy();
+    }
+
+    public bool IsSkillOnCooldown(SkillBase skill)
+    {
+        if (skill == null)
+            return false;
+
+        return skillCooldowns.TryGetValue(skill.Name, out int value) && value > 0;
+    }
+
+    public int GetSkillCooldown(SkillBase skill)
+    {
+        if (skill == null)
+            return 0;
+
+        if (skillCooldowns.TryGetValue(skill.Name, out int value))
+            return value;
+
+        return 0;
+    }
+
+    public void StartCooldown(SkillBase skill)
+    {
+        if (skill == null)
+            return;
+
+        if (skill.Cooldown <= 0)
+            return;
+
+        skillCooldowns[skill.Name] = skill.Cooldown;
+    }
+
+    private void ReduceCooldowns()
+    {
+        List<string> keys = new(skillCooldowns.Keys);
+
+        foreach (var key in keys)
+        {
+            skillCooldowns[key]--;
+
+            if (skillCooldowns[key] <= 0)
+                skillCooldowns.Remove(key);
+        }
+    }
+
+    public void ApplyStatusEffect(StatusEffect effect)
+    {
+        if (effect == null)
+            return;
+
+        statusEffects.Add(effect);
+
+        effect.OnApply(this);
+    }
+
+    private void ProcessStatusEffects()
+    {
+        for (int i = statusEffects.Count - 1; i >= 0; i--)
+        {
+            var effect = statusEffects[i];
+
+            effect.OnTurnStart(this);
+
+            if (effect.IsFinished)
+            {
+                effect.OnExpire(this);
+                statusEffects.RemoveAt(i);
+            }
+        }
+    }
+
+    public bool HasStatusEffect<T>() where T : StatusEffect
+    {
+        foreach (var effect in statusEffects)
+        {
+            if (effect is T)
+                return true;
+        }
+
+        return false;
     }
 }

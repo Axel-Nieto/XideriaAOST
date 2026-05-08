@@ -6,6 +6,7 @@ public class FireballSkill : SkillBase
 {
     private readonly int damage;
     private readonly int aoeRadius;
+    public override int AreaRadius => aoeRadius;
 
     public FireballSkill()
         : base(
@@ -15,7 +16,8 @@ public class FireballSkill : SkillBase
             cooldown: 2,
             minRange: 2,
             maxRange: 4,
-            targetType: SkillTargetType.TargetCell)
+            targetType: SkillTargetType.TargetCell,
+            damageType: DamageType.Fire)
     {
         damage = 6;
         aoeRadius =3;
@@ -35,12 +37,16 @@ public class FireballSkill : SkillBase
         if (!IsInRange(user.GridPosition, targetCell))
             return false;
 
+        if (user.IsSkillOnCooldown(this))
+            return false;
+
         return true;
     }
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
         user.Stats.ConsumeEnergy(EnergyCost);
+        user.StartCooldown(this);
 
         foreach (var pos in GetAreaCells(targetCell, aoeRadius))
         {

@@ -7,11 +7,21 @@ public class FloatingDamageText : MonoBehaviour
     [SerializeField] private TextMeshPro text;
     [SerializeField] private float duration = 1f;
     [SerializeField] private float moveSpeed = 1f;
+    private Camera mainCamera;
 
     private void Awake()
     {
         if (text == null)
             text = GetComponent<TextMeshPro>();
+        mainCamera = Camera.main;
+    }
+
+    private void LateUpdate()
+    {
+        if (mainCamera == null)
+            return;
+
+        transform.forward = mainCamera.transform.forward;
     }
 
     public void Show(string value, Color color)

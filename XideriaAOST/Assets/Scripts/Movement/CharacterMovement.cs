@@ -26,13 +26,20 @@ public class CharacterMovement : MonoBehaviour
 
         _character.SetGridPosition(startPos);
 
-        transform.position = _grid.GridToWorld(startPos);
+        transform.position = _grid.GridToWorld(startPos) + _character.VisualOffset;
 
         _grid.RegisterCharacter(startPos, _character);
     }
 
     public IEnumerator MoveAlongRoutine(List<Vector2Int> path)
     {
+        if (_character.HasStatusEffect<RootEffect>())
+        {
+            Debug.Log($"{_character.name} está inmovilizado.");
+            yield break;
+        }
+
+
         yield return FollowPath(path);
     }
 
@@ -48,7 +55,7 @@ public class CharacterMovement : MonoBehaviour
         {
             _grid.UnregisterCharacter(_character.GridPosition);
 
-            Vector3 targetPos = _grid.GridToWorld(step);
+            Vector3 targetPos = _grid.GridToWorld(step) + _character.VisualOffset;
             Vector3 targetFlat = new Vector3(targetPos.x, transform.position.y, targetPos.z);
 
             while (Vector3.Distance(transform.position, targetFlat) > 0.05f)

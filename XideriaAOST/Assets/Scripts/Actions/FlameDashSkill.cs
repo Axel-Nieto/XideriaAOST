@@ -6,6 +6,7 @@ public class FlameDashSkill : SkillBase
 {
     private readonly int damage = 4;
     private readonly int aoeRadius = 1;
+    public override int AreaRadius => aoeRadius;
 
     public FlameDashSkill()
         : base(
@@ -15,7 +16,8 @@ public class FlameDashSkill : SkillBase
             cooldown: 2,
             minRange: 2,
             maxRange: 5,
-            targetType: SkillTargetType.TargetCell)
+            targetType: SkillTargetType.TargetCell,
+            damageType: DamageType.Fire)
     {
     }
 
@@ -38,6 +40,9 @@ public class FlameDashSkill : SkillBase
         if (direction == Vector2Int.zero)
             return false;
 
+        if (user.IsSkillOnCooldown(this))
+            return false;
+
         return BuildDashPath(user.GridPosition, direction, grid).Count > 0;
     }
 
@@ -54,6 +59,7 @@ public class FlameDashSkill : SkillBase
             yield break;
 
         user.Stats.ConsumeEnergy(EnergyCost);
+        user.StartCooldown(this);
 
         yield return user.Movement.MoveAlongRoutine(path);
 

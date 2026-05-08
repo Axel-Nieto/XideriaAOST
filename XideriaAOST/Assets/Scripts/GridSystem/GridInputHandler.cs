@@ -50,6 +50,9 @@ public class GridInputHandler : MonoBehaviour
 
     private void Update()
     {
+        if (GameSession.IsGameOver)
+            return;
+
         if (!isPlayerTurn) return;
 
         if (Keyboard.current.spaceKey.wasPressedThisFrame && !isMoving)
@@ -63,20 +66,20 @@ public class GridInputHandler : MonoBehaviour
 
         if (isCharacterSelected)
         {
-            if (Keyboard.current.digit1Key.wasPressedThisFrame)
+            if (Keyboard.current.qKey.wasPressedThisFrame)
                 SelectSkill(0);
 
-            if (Keyboard.current.digit2Key.wasPressedThisFrame)
+            if (Keyboard.current.wKey.wasPressedThisFrame)
                 SelectSkill(1);
 
-            if (Keyboard.current.digit3Key.wasPressedThisFrame)
+            if (Keyboard.current.eKey.wasPressedThisFrame)
                 SelectSkill(2);
 
-            if (Keyboard.current.digit4Key.wasPressedThisFrame)
+            if (Keyboard.current.rKey.wasPressedThisFrame)
                 SelectSkill(3);
         }
 
-        if (Keyboard.current.eKey.wasPressedThisFrame && isCharacterSelected && !isMoving)
+        if (Keyboard.current.fKey.wasPressedThisFrame && isCharacterSelected && !isMoving)
         {
             var helmet = GetAdjacentHelmet();
 
@@ -122,7 +125,7 @@ public class GridInputHandler : MonoBehaviour
 
         //QUITAR REINICIO Y EXIT CUANDO TENGAMOS TIEMPO
 
-        if (Keyboard.current.rKey.wasPressedThisFrame)
+        if (Keyboard.current.pKey.wasPressedThisFrame)
         {
             UnityEngine.SceneManagement.Scene currentScene = SceneManager.GetActiveScene();
             SceneManager.LoadScene(currentScene.buildIndex);
@@ -171,17 +174,7 @@ public class GridInputHandler : MonoBehaviour
 
     private void OnTurnStarted(Character character)
     {
-        isPlayerTurn = character.IsPlayer;
-
-        selectedCharacter = null;
-        isCharacterSelected = false;
-        currentMode = ActionMode.Move;
-
-        ClearTiles();
-        ClearRangeTiles();
-        ClearAoeTiles();
-
-        characterInfoHUD.Show(character);
+        StartCoroutine(RefreshHudNextFrame(character));
     }
 
     private void UpdateMovementRange()
@@ -358,6 +351,7 @@ public class GridInputHandler : MonoBehaviour
             return;
 
         selectedSkillIndex = index;
+        characterInfoHUD.SetSelectedSkill(index);
 
         Debug.Log($"Skill seleccionada: {skill.Name}");
 
@@ -395,6 +389,9 @@ public class GridInputHandler : MonoBehaviour
         selectedCharacter = null;
         isCharacterSelected = false;
         currentMode = ActionMode.None;
+        selectedSkillIndex = -1;
+
+        characterInfoHUD.SetSelectedSkill(-1);
 
         ClearTiles();
         ClearRangeTiles();
@@ -430,6 +427,25 @@ public class GridInputHandler : MonoBehaviour
         }
 
         return null;
+    }
+
+    private IEnumerator RefreshHudNextFrame(Character character)
+    {
+        isPlayerTurn = character.IsPlayer;
+
+        selectedCharacter = null;
+        isCharacterSelected = false;
+        currentMode = ActionMode.Move;
+        selectedSkillIndex = -1;
+
+        ClearTiles();
+        ClearRangeTiles();
+        ClearAoeTiles();
+
+        yield return null;
+
+        characterInfoHUD.Show(character);
+        characterInfoHUD.SetSelectedSkill(-1);
     }
 
     private bool IsHelmetAt(Vector2Int pos)

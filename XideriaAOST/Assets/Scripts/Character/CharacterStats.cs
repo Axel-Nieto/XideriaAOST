@@ -42,5 +42,13 @@ public class CharacterStats
         CurrentHP = Mathf.Max(0, CurrentHP - amount);
     }
 
+    public void Heal(int amount)
+    {
+        CurrentHP += amount;
+
+        if (CurrentHP > MaxHP)
+            CurrentHP = MaxHP;
+    }
+
     public bool IsAlive => CurrentHP > 0;
 }
