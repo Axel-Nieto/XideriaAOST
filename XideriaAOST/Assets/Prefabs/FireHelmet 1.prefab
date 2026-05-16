@@ -129,6 +129,7 @@ MonoBehaviour:
   helmetType: 1
   startGridPosition: {x: 3, y: 3}
   visualOffset: {x: -0.5, y: 0.9, z: -0.5}
+  helmetVisualPrefab: {fileID: 919132149155446097, guid: db5f57bd00ee551498cfdf7b958330a2, type: 3}
 --- !u!1001 &1239967832534267156
 PrefabInstance:
   m_ObjectHideFlags: 0

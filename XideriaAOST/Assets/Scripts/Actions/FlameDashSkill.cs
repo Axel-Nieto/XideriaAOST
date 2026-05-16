@@ -15,7 +15,7 @@ public class FlameDashSkill : SkillBase
             energyCost: 4,
             cooldown: 2,
             minRange: 2,
-            maxRange: 5,
+            maxRange: 8,
             targetType: SkillTargetType.TargetCell,
             damageType: DamageType.Fire)
     {

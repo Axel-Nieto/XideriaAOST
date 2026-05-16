@@ -93,6 +93,7 @@ public class LarvaAI : MonoBehaviour, IEnemyAI
         List<Vector2Int> movement = new();
 
         int energySpent = 0;
+        int movementCost = character.GetMovementCostPerCell();
 
         foreach (var step in path)
         {
@@ -100,7 +101,7 @@ public class LarvaAI : MonoBehaviour, IEnemyAI
             if (grid.IsBlockedForMovement(step))
                 break;
 
-            int energyAfterMove = character.Stats.CurrentEnergy - (energySpent + 1);
+            int energyAfterMove = character.Stats.CurrentEnergy - ((energySpent + 1) * movementCost);
 
             // no caminar si después no queda energía para ninguna skill
             if (!CanUseAnySkillFromPosition(step, player, energyAfterMove))
@@ -124,7 +125,7 @@ public class LarvaAI : MonoBehaviour, IEnemyAI
 
         yield return character.Movement.MoveAlongRoutine(movement);
 
-        character.Stats.ConsumeEnergy(movement.Count);
+        character.Stats.ConsumeEnergy(movement.Count * movementCost);
     }
 
     private bool CanUseAnySkillFromPosition(

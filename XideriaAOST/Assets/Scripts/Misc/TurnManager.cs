@@ -48,8 +48,6 @@ public class TurnManager : MonoBehaviour
 
             GameEvents.OnTurnEnded?.Invoke(current);
 
-            current.ResetTurn();
-
             currentIndex = (currentIndex + 1) % turnOrder.Count;
         }
     }

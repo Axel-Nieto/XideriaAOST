@@ -5,6 +5,7 @@ public class HelmetPickup : MonoBehaviour
     [SerializeField] private HelmetType helmetType;
     [SerializeField] private Vector2Int startGridPosition;
     [SerializeField] private Vector3 visualOffset;
+    [SerializeField] private GameObject helmetVisualPrefab;
 
     private GridSystem _grid;
     private HelmetData _helmetData;
@@ -15,6 +16,7 @@ public class HelmetPickup : MonoBehaviour
     {
         _grid = FindObjectOfType<GridSystem>();
         _helmetData = CreateHelmet(helmetType);
+        _helmetData.HelmetVisualPrefab = helmetVisualPrefab;
 
         GridPosition = startGridPosition;
 

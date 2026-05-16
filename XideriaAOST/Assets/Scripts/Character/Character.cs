@@ -19,6 +19,12 @@ public class Character : MonoBehaviour
     [SerializeField] private List<SkillBase> characterSkills = new();
     private Dictionary<string, int> skillCooldowns = new();
     private List<StatusEffect> statusEffects = new();
+    private List<PassiveEffect> passiveEffects = new();
+    private List<PassiveEffect> basePassives = new();
+    private List<PassiveEffect> helmetPassives = new();
+
+    [SerializeField] private Transform helmetSocket;
+    private GameObject currentHelmetVisual;
 
     public bool IsPlayer => isPlayer;
 
@@ -69,6 +75,8 @@ public class Character : MonoBehaviour
         if (character != this)
             return;
 
+        StartTurn();
+
         ReduceCooldowns();
 
         ProcessStatusEffects();
@@ -94,6 +102,15 @@ public class Character : MonoBehaviour
 
     public void TakeDamage(int amount, DamageType damageType)
     {
+        foreach (var passive in GetPassiveEffects())
+        {
+            amount = passive.ModifyIncomingDamage(
+                this,
+                amount,
+                damageType
+            );
+        }
+
         var floatingText = GetComponent<FloatingDamageSpawner>();
 
         if (amount <= 0)
@@ -103,12 +120,21 @@ public class Character : MonoBehaviour
         }
 
         Stats.TakeDamage(amount);
+
         floatingText?.ShowDamage(amount, damageType);
 
         if (!Stats.IsAlive)
         {
             Die();
         }
+    }
+
+    public int GetMovementCostPerCell()
+    {
+        if (HasStatusEffect<SlowEffect>())
+            return 2;
+
+        return 1;
     }
 
     public void Heal(int amount)
@@ -160,6 +186,24 @@ public class Character : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    public void AddPassive(PassiveEffect passive)
+    {
+        if (passive == null)
+            return;
+
+        passiveEffects.Add(passive);
+    }
+
+    public List<PassiveEffect> GetPassiveEffects()
+    {
+        List<PassiveEffect> all = new();
+
+        all.AddRange(basePassives);
+        all.AddRange(helmetPassives);
+
+        return all;
+    }
+
     public IEnumerator ExecuteAction(IAction action)
     {
         if (action == null)
@@ -177,7 +221,36 @@ public class Character : MonoBehaviour
 
         EquippedHelmet = newHelmet;
 
+        if (currentHelmetVisual != null)
+            Destroy(currentHelmetVisual);
+
+        helmetPassives.Clear();
+
+        if (newHelmet.PassiveEffects != null)
+        {
+            helmetPassives.AddRange(newHelmet.PassiveEffects);
+        }
+
+        if (newHelmet.HelmetVisualPrefab != null && helmetSocket != null)
+        {
+            currentHelmetVisual = Instantiate(
+                newHelmet.HelmetVisualPrefab,
+                helmetSocket
+            );
+
+            currentHelmetVisual.transform.localPosition = Vector3.zero;
+            currentHelmetVisual.transform.localRotation = Quaternion.identity;
+            currentHelmetVisual.transform.localScale = Vector3.one;
+        }
+
         Debug.Log($"{name} equipó {newHelmet.Name}");
+    }
+
+    public void StartTurn()
+    {
+        IsTurnFinished = false;
+
+        Stats.RegenEnergy();
     }
 
     public void FinishTurn()
@@ -188,8 +261,6 @@ public class Character : MonoBehaviour
     public void ResetTurn()
     {
         IsTurnFinished = false;
-
-        Stats.RegenEnergy();
     }
 
     public bool IsSkillOnCooldown(SkillBase skill)
@@ -239,6 +310,15 @@ public class Character : MonoBehaviour
     {
         if (effect == null)
             return;
+
+        if (effect is SlowEffect)
+        {
+            foreach (var currentEffect in statusEffects)
+            {
+                if (currentEffect is SlowEffect)
+                    return;
+            }
+        }
 
         statusEffects.Add(effect);
 

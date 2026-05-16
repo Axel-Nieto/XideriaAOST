@@ -5,18 +5,18 @@ using UnityEngine;
 public class WaterWaveSkill : SkillBase
 {
     private readonly int damage = 4;
-    private readonly int lineLength = 4;
+    private readonly int slowDuration = 3;
 
     public override int AreaRadius => 0;
 
     public WaterWaveSkill()
         : base(
             name: "Marea",
-            description: "Lanza una ola en línea recta que golpea a los enemigos.",
+            description: "Te reposicionas en línea recta y lanzas una ola que daña y ralentiza.",
             energyCost: 5,
             cooldown: 2,
             minRange: 1,
-            maxRange: 4,
+            maxRange: 6,
             targetType: SkillTargetType.TargetCell,
             damageType: DamageType.Water)
     {
@@ -30,17 +30,40 @@ public class WaterWaveSkill : SkillBase
         if (!IsInRange(user.GridPosition, targetCell)) return false;
         if (user.IsSkillOnCooldown(this)) return false;
 
-        return GetDirection(user.GridPosition, targetCell) != Vector2Int.zero;
+        Vector2Int direction = GetDirection(user.GridPosition, targetCell);
+
+        if (direction == Vector2Int.zero)
+            return false;
+
+        List<Vector2Int> movementPath = BuildMovementPath(user.GridPosition, direction, grid);
+
+        return movementPath.Count > 0;
     }
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
+        Vector2Int originalPosition = user.GridPosition;
+
+        Vector2Int direction = GetDirection(originalPosition, targetCell);
+
+        if (direction == Vector2Int.zero)
+            yield break;
+
+        List<Vector2Int> movementPath = BuildMovementPath(
+            originalPosition,
+            direction,
+            grid
+        );
+
+        if (movementPath.Count == 0)
+            yield break;
+
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
-        Vector2Int direction = GetDirection(user.GridPosition, targetCell);
+        yield return user.Movement.MoveAlongRoutine(movementPath);
 
-        foreach (var pos in GetLineCells(user.GridPosition, direction))
+        foreach (var pos in GetWaveCells(originalPosition, direction))
         {
             if (!grid.IsValidCell(pos))
                 continue;
@@ -50,8 +73,13 @@ public class WaterWaveSkill : SkillBase
             if (target == null || target.IsPlayer == user.IsPlayer)
                 continue;
 
-            int finalDamage = Mathf.Max(1, damage + user.Stats.Attack - target.Stats.Defense);
+            int finalDamage = Mathf.Max(
+                1,
+                damage + user.Stats.Attack - target.Stats.Defense
+            );
+
             target.TakeDamage(finalDamage, DamageType.Water);
+            target.ApplyStatusEffect(new SlowEffect(slowDuration));
         }
 
         yield return null;
@@ -61,18 +89,44 @@ public class WaterWaveSkill : SkillBase
     {
         Vector2Int direction = GetDirection(origin, targetCell);
 
-        foreach (var cell in GetLineCells(origin, direction))
+        foreach (var cell in GetWaveCells(origin, direction))
             yield return cell;
     }
 
-    private IEnumerable<Vector2Int> GetLineCells(Vector2Int origin, Vector2Int direction)
+    private List<Vector2Int> BuildMovementPath(
+        Vector2Int origin,
+        Vector2Int direction,
+        GridSystem grid)
+    {
+        List<Vector2Int> path = new();
+
+        for (int i = 1; i <= MaxRange; i++)
+        {
+            Vector2Int next = origin + direction * i;
+
+            if (grid.IsBlockedForMovement(next))
+                break;
+
+            path.Add(next);
+        }
+
+        return path;
+    }
+
+    private IEnumerable<Vector2Int> GetWaveCells(Vector2Int origin, Vector2Int direction)
     {
         if (direction == Vector2Int.zero)
             yield break;
 
-        for (int i = 1; i <= lineLength; i++)
+        Vector2Int side = GetSideDirection(direction);
+
+        for (int i = 1; i <= MaxRange; i++)
         {
-            yield return origin + direction * i;
+            Vector2Int center = origin + direction * i;
+
+            yield return center;
+            yield return center + side;
+            yield return center - side;
         }
     }
 
@@ -87,5 +141,13 @@ public class WaterWaveSkill : SkillBase
             return new Vector2Int(delta.x > 0 ? 1 : -1, 0);
 
         return new Vector2Int(0, delta.y > 0 ? 1 : -1);
+    }
+
+    private Vector2Int GetSideDirection(Vector2Int direction)
+    {
+        if (direction.x != 0)
+            return Vector2Int.up;
+
+        return Vector2Int.right;
     }
 }

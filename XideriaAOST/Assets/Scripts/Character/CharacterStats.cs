@@ -21,7 +21,7 @@ public class CharacterStats
         CurrentHP = maxHP;
 
         MaxEnergy = maxEnergy;
-        CurrentEnergy = energyRegen;
+        CurrentEnergy = 0;
         EnergyRegen = energyRegen;
     }
 

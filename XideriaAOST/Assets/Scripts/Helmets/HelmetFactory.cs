@@ -40,11 +40,16 @@ public static class HelmetFactory
             Description = "Dominio del agua.",
             ActiveSkills = new List<SkillBase>
             {
-            new WaterBasicSkill(),
-            new WaterHealSkill(),
-            new WaterWaveSkill(),
-            new WaterPrisonSkill()
+                new WaterBasicSkill(),
+                new WaterHealSkill(),
+                new WaterWaveSkill(),
+                new WaterPrisonSkill()
+            },
+            PassiveEffects = new List<PassiveEffect>
+            {
+                new PoisonResistancePassive()
             }
+
         };
     }
 }
