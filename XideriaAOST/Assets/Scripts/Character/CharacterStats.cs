@@ -21,7 +21,7 @@ public class CharacterStats
         CurrentHP = maxHP;
 
         MaxEnergy = maxEnergy;
-        CurrentEnergy = energyRegen;
+        CurrentEnergy = 0;
         EnergyRegen = energyRegen;
     }
 
@@ -40,6 +40,14 @@ public class CharacterStats
     public void TakeDamage(int amount)
     {
         CurrentHP = Mathf.Max(0, CurrentHP - amount);
+    }
+
+    public void Heal(int amount)
+    {
+        CurrentHP += amount;
+
+        if (CurrentHP > MaxHP)
+            CurrentHP = MaxHP;
     }
 
     public bool IsAlive => CurrentHP > 0;

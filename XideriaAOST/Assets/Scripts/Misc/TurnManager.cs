@@ -29,7 +29,7 @@ public class TurnManager : MonoBehaviour
 
     private IEnumerator TurnLoop()
     {
-        while (true)
+        while (!GameSession.IsGameOver)
         {
             Character current = turnOrder[currentIndex];
 
@@ -47,8 +47,6 @@ public class TurnManager : MonoBehaviour
             }
 
             GameEvents.OnTurnEnded?.Invoke(current);
-
-            current.ResetTurn();
 
             currentIndex = (currentIndex + 1) % turnOrder.Count;
         }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VectorGraphics;
@@ -15,6 +16,7 @@ public class GridInputHandler : MonoBehaviour
     [SerializeField] private GameObject rangeTilePrefab;
     [SerializeField] private Character playerCharacter;
     [SerializeField] private GameObject aoeTilePrefab;
+    [SerializeField] private BattleHUD battleHUD;
     [SerializeField] private CharacterInfoHUD characterInfoHUD;
 
     private List<GameObject> aoeTiles = new();
@@ -30,6 +32,8 @@ public class GridInputHandler : MonoBehaviour
     private bool isPlayerTurn = false;
     private ActionMode currentMode = ActionMode.Move;
     private int selectedSkillIndex = 0;
+    private HelmetPickup hoveredHelmet;
+    [SerializeField] private HelmetHoverUI helmetHoverUI;
 
     private void Start()
     {
@@ -50,6 +54,9 @@ public class GridInputHandler : MonoBehaviour
 
     private void Update()
     {
+        if (GameSession.IsGameOver)
+            return;
+
         if (!isPlayerTurn) return;
 
         if (Keyboard.current.spaceKey.wasPressedThisFrame && !isMoving)
@@ -63,28 +70,35 @@ public class GridInputHandler : MonoBehaviour
 
         if (isCharacterSelected)
         {
-            if (Keyboard.current.digit1Key.wasPressedThisFrame)
+            if (Keyboard.current.qKey.wasPressedThisFrame)
                 SelectSkill(0);
 
-            if (Keyboard.current.digit2Key.wasPressedThisFrame)
+            if (Keyboard.current.wKey.wasPressedThisFrame)
                 SelectSkill(1);
 
-            if (Keyboard.current.digit3Key.wasPressedThisFrame)
+            if (Keyboard.current.eKey.wasPressedThisFrame)
                 SelectSkill(2);
 
-            if (Keyboard.current.digit4Key.wasPressedThisFrame)
+            if (Keyboard.current.rKey.wasPressedThisFrame)
                 SelectSkill(3);
         }
 
-        if (Keyboard.current.eKey.wasPressedThisFrame && isCharacterSelected && !isMoving)
-        {
-            var helmet = GetAdjacentHelmet();
+        UpdateHelmetHover();
 
-            if (helmet != null)
+        if (Keyboard.current.fKey.wasPressedThisFrame && isCharacterSelected && !isMoving)
+        {
+            if (hoveredHelmet != null)
             {
-                selectedCharacter.EquipHelmet(helmet.GetHelmet());
-                Destroy(helmet.gameObject);
-                characterInfoHUD.Refresh();
+                selectedCharacter.EquipHelmet(
+                    hoveredHelmet.GetHelmet());
+
+                Destroy(hoveredHelmet.gameObject);
+
+                hoveredHelmet = null;
+
+                helmetHoverUI.Hide();
+
+                battleHUD.Refresh();
             }
         }
 
@@ -122,7 +136,7 @@ public class GridInputHandler : MonoBehaviour
 
         //QUITAR REINICIO Y EXIT CUANDO TENGAMOS TIEMPO
 
-        if (Keyboard.current.rKey.wasPressedThisFrame)
+        if (Keyboard.current.pKey.wasPressedThisFrame)
         {
             UnityEngine.SceneManagement.Scene currentScene = SceneManager.GetActiveScene();
             SceneManager.LoadScene(currentScene.buildIndex);
@@ -171,24 +185,14 @@ public class GridInputHandler : MonoBehaviour
 
     private void OnTurnStarted(Character character)
     {
-        isPlayerTurn = character.IsPlayer;
-
-        selectedCharacter = null;
-        isCharacterSelected = false;
-        currentMode = ActionMode.Move;
-
-        ClearTiles();
-        ClearRangeTiles();
-        ClearAoeTiles();
-
-        characterInfoHUD.Show(character);
+        StartCoroutine(RefreshHudNextFrame(character));
     }
 
     private void UpdateMovementRange()
     {
         if (selectedCharacter == null) return;
 
-        int energy = selectedCharacter.Stats.CurrentEnergy;
+        int energy = selectedCharacter.Stats.CurrentEnergy / selectedCharacter.GetMovementCostPerCell();
 
         reachableCells = _rangeCalculator.GetReachableCells(
             selectedCharacter.GridPosition,
@@ -239,7 +243,7 @@ public class GridInputHandler : MonoBehaviour
 
                 if (character != null)
                 {
-                    characterInfoHUD.Show(character);
+                    battleHUD.ShowCharacter(character);
 
                     if (character.IsPlayer && isPlayerTurn)
                     {
@@ -345,7 +349,7 @@ public class GridInputHandler : MonoBehaviour
         isMoving = false;
         currentMode = ActionMode.Move;
 
-        characterInfoHUD.Refresh();
+        battleHUD.Refresh();
     }
 
     private void SelectSkill(int index)
@@ -358,6 +362,7 @@ public class GridInputHandler : MonoBehaviour
             return;
 
         selectedSkillIndex = index;
+        battleHUD.SetSelectedSkill(index);
 
         Debug.Log($"Skill seleccionada: {skill.Name}");
 
@@ -382,7 +387,7 @@ public class GridInputHandler : MonoBehaviour
 
         isMoving = false;
 
-        characterInfoHUD.Refresh();
+        battleHUD.Refresh();
 
         if (currentMode == ActionMode.BasicAttack)
         {
@@ -395,6 +400,11 @@ public class GridInputHandler : MonoBehaviour
         selectedCharacter = null;
         isCharacterSelected = false;
         currentMode = ActionMode.None;
+        selectedSkillIndex = -1;
+        hoveredHelmet = null;
+        helmetHoverUI.Hide();
+
+        battleHUD.SetSelectedSkill(-1);
 
         ClearTiles();
         ClearRangeTiles();
@@ -432,6 +442,45 @@ public class GridInputHandler : MonoBehaviour
         return null;
     }
 
+    private IEnumerator RefreshHudNextFrame(Character character)
+    {
+        isPlayerTurn = character.IsPlayer;
+
+        selectedCharacter = null;
+        isCharacterSelected = false;
+        currentMode = ActionMode.Move;
+        selectedSkillIndex = -1;
+
+        ClearTiles();
+        ClearRangeTiles();
+        ClearAoeTiles();
+
+        battleHUD.SetPlayerTurn(isPlayerTurn);
+
+        yield return null;
+
+        battleHUD.ShowCharacter(character);
+        battleHUD.SetSelectedSkill(-1);
+    }
+
+    public void SelectSkillFromUI(int index)
+    {
+        if (!isPlayerTurn) return;
+        if (!isCharacterSelected) return;
+        if (selectedCharacter == null) return;
+        if (isMoving) return;
+
+        SelectSkill(index);
+    }
+
+    public void EndTurnFromUI()
+    {
+        if (!isPlayerTurn) return;
+        if (isMoving) return;
+
+        playerCharacter.FinishTurn();
+    }
+
     private bool IsHelmetAt(Vector2Int pos)
     {
         HelmetPickup[] helmets = FindObjectsOfType<HelmetPickup>();
@@ -443,6 +492,47 @@ public class GridInputHandler : MonoBehaviour
         }
 
         return false;
+    }
+
+    private void UpdateHelmetHover()
+    {
+        hoveredHelmet = null;
+
+        helmetHoverUI.Hide();
+
+        if (!isCharacterSelected || selectedCharacter == null)
+            return;
+
+        Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+
+        if (!Physics.Raycast(ray, out RaycastHit hit, 100f))
+            return;
+
+        HelmetPickup helmet =
+            hit.collider.GetComponentInParent<HelmetPickup>();
+
+        if (helmet == null)
+            return;
+
+        int distance =
+            Mathf.Abs(
+                helmet.GridPosition.x - selectedCharacter.GridPosition.x)
+            +
+            Mathf.Abs(
+                helmet.GridPosition.y - selectedCharacter.GridPosition.y);
+
+        if (distance != 1)
+            return;
+
+        hoveredHelmet = helmet;
+
+        Vector3 screenPos =
+            mainCamera.WorldToScreenPoint(
+                helmet.transform.position + Vector3.up * 2f);
+
+        helmetHoverUI.Show(
+            $"[F] Recoger {helmet.GetHelmet().Name}",
+            screenPos);
     }
 
     private Vector2Int GetLastValidDestination(List<Vector2Int> path)

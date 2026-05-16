@@ -4,24 +4,32 @@ using UnityEngine;
 
 public class MoveAction : IAction
 {
-    private readonly List<Vector2Int> _path;
+    private readonly List<Vector2Int> path;
 
     public MoveAction(List<Vector2Int> path)
     {
-        _path = path;
+        this.path = path;
     }
 
     public bool CanExecute(Character actor)
     {
-        if (actor == null || actor.Stats == null) return false;
-        if (_path == null || _path.Count == 0) return false;
+        if (actor == null || actor.Stats == null)
+            return false;
 
-        return actor.Stats.HasEnergy(_path.Count);
+        if (path == null || path.Count == 0)
+            return false;
+
+        int totalCost = path.Count * actor.GetMovementCostPerCell();
+
+        return actor.Stats.HasEnergy(totalCost);
     }
 
     public IEnumerator Execute(Character actor)
     {
-        actor.Stats.ConsumeEnergy(_path.Count);
-        yield return actor.Movement.MoveAlongRoutine(_path);
+        int totalCost = path.Count * actor.GetMovementCostPerCell();
+
+        actor.Stats.ConsumeEnergy(totalCost);
+
+        yield return actor.Movement.MoveAlongRoutine(path);
     }
 }

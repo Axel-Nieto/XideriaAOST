@@ -11,7 +11,8 @@ public class BasicAttackSkill : SkillBase
             cooldown: 0,
             minRange: 1,
             maxRange: 1,
-            targetType: SkillTargetType.TargetCell)
+            targetType: SkillTargetType.TargetCell,
+            damageType: DamageType.Physical)
     {
     }
 
@@ -37,12 +38,16 @@ public class BasicAttackSkill : SkillBase
         if (target.IsPlayer == user.IsPlayer)
             return false;
 
+        if (user.IsSkillOnCooldown(this))
+            return false;
+
         return true;
     }
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
         user.Stats.ConsumeEnergy(EnergyCost);
+        user.StartCooldown(this);
 
         Character target = grid.GetCharacterAt(targetCell);
 

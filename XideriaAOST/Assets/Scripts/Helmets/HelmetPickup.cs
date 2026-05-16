@@ -4,7 +4,8 @@ public class HelmetPickup : MonoBehaviour
 {
     [SerializeField] private HelmetType helmetType;
     [SerializeField] private Vector2Int startGridPosition;
-    [SerializeField] private float visualYOffset = 0.1f;
+    [SerializeField] private Vector3 visualOffset;
+    [SerializeField] private GameObject helmetVisualPrefab;
 
     private GridSystem _grid;
     private HelmetData _helmetData;
@@ -15,12 +16,13 @@ public class HelmetPickup : MonoBehaviour
     {
         _grid = FindObjectOfType<GridSystem>();
         _helmetData = CreateHelmet(helmetType);
+        _helmetData.HelmetVisualPrefab = helmetVisualPrefab;
 
         GridPosition = startGridPosition;
 
         if (_grid != null)
         {
-            transform.position = _grid.GridToWorld(startGridPosition) + Vector3.up * visualYOffset;
+            transform.position = _grid.GridToWorld(startGridPosition) + visualOffset;
         }
     }
 
@@ -35,7 +37,8 @@ public class HelmetPickup : MonoBehaviour
         {
             case HelmetType.Fire:
                 return HelmetFactory.CreateFireHelmet();
-
+            case HelmetType.Water:
+                return HelmetFactory.CreateWaterHelmet();
             default:
                 return HelmetFactory.CreateDefaultHelmet();
         }
@@ -45,5 +48,6 @@ public class HelmetPickup : MonoBehaviour
 public enum HelmetType
 {
     Default,
-    Fire
+    Fire,
+    Water
 }

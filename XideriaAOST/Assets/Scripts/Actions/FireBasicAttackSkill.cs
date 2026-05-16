@@ -6,12 +6,13 @@ public class FireBasicAttackSkill : SkillBase
     public FireBasicAttackSkill()
         : base(
             name: "Ataque Ígneo",
-            description: "Lanza un ataque de fuego a distancia.",
+            description: "Lanza un ataque de fuego a distancia. Aplica quemadura",
             energyCost: 3,
             cooldown: 0,
             minRange: 3,
             maxRange: 5,
-            targetType: SkillTargetType.TargetCell)
+            targetType: SkillTargetType.TargetCell,
+            damageType: DamageType.Fire)
     {
     }
 
@@ -37,12 +38,16 @@ public class FireBasicAttackSkill : SkillBase
         if (target.IsPlayer == user.IsPlayer)
             return false;
 
+        if (user.IsSkillOnCooldown(this))
+            return false;
+
         return true;
     }
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
         user.Stats.ConsumeEnergy(EnergyCost);
+        user.StartCooldown(this);
 
         Character target = grid.GetCharacterAt(targetCell);
 
@@ -52,10 +57,9 @@ public class FireBasicAttackSkill : SkillBase
         int damage = Mathf.Max(1, user.Stats.Attack - target.Stats.Defense);
 
         target.TakeDamage(damage, DamageType.Fire);
+        target.ApplyStatusEffect(new BurnEffect(3, 2));
 
         Debug.Log($"{user.name} usa {Name} contra {target.name} por {damage} de fuego");
-
-        // Acá después aplicamos burn
 
         yield return null;
     }
