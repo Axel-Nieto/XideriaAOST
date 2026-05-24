@@ -73,5 +73,6 @@ public class WaterBasicSkill : SkillBase
         target.SetGridPosition(destination);
 
         grid.RegisterCharacter(destination, target);
+        target.ProcessCurrentTerrain();
     }
 }

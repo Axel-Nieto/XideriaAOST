@@ -1,7 +1,8 @@
 public enum CellType
 {
-    Normal,
+    Ground,
     Water,
     Lava,
-    Blocked
+    Blocked,
+    Void
 }

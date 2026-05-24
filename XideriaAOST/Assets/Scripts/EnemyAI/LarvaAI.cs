@@ -82,7 +82,8 @@ public class LarvaAI : MonoBehaviour, IEnemyAI
     {
         List<Vector2Int> path = pathfinding.FindPath(
             character.GridPosition,
-            player.GridPosition
+            player.GridPosition,
+            avoidUnsafeCells: true
         );
 
         if (path == null || path.Count <= 1)
@@ -97,17 +98,16 @@ public class LarvaAI : MonoBehaviour, IEnemyAI
 
         foreach (var step in path)
         {
-            // no pisar al player ni objetos bloqueados
             if (grid.IsBlockedForMovement(step))
+                break;
+
+            if (!IsValidAIStep(step))
                 break;
 
             int energyAfterMove = character.Stats.CurrentEnergy - ((energySpent + 1) * movementCost);
 
-            // no caminar si después no queda energía para ninguna skill
             if (!CanUseAnySkillFromPosition(step, player, energyAfterMove))
             {
-                // si todavía no estamos en rango, permitimos caminar un poco
-                // pero dejando al menos 2 de energía para mordida
                 if (energyAfterMove < 2)
                     break;
             }
@@ -115,7 +115,6 @@ public class LarvaAI : MonoBehaviour, IEnemyAI
             movement.Add(step);
             energySpent++;
 
-            // si desde esta nueva posición ya puede atacar, se detiene
             if (CanUseAnySkillFromPosition(step, player, energyAfterMove))
                 break;
         }
@@ -148,5 +147,16 @@ public class LarvaAI : MonoBehaviour, IEnemyAI
         }
 
         return false;
+    }
+
+    private bool IsValidAIStep(Vector2Int pos)
+    {
+        if (grid.IsBlockedForMovement(pos))
+            return false;
+
+        if (!grid.IsSafeForAI(pos))
+            return false;
+
+        return true;
     }
 }

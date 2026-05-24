@@ -20,17 +20,6 @@ public class CharacterMovement : MonoBehaviour
         _character = GetComponent<Character>();
     }
 
-    public void Initialize(GridSystem grid, Vector2Int startPos)
-    {
-        _grid = grid;
-
-        _character.SetGridPosition(startPos);
-
-        transform.position = _grid.GridToWorld(startPos) + _character.VisualOffset;
-
-        _grid.RegisterCharacter(startPos, _character);
-    }
-
     public IEnumerator MoveAlongRoutine(List<Vector2Int> path)
     {
         if (_character.HasStatusEffect<RootEffect>())
@@ -74,6 +63,10 @@ public class CharacterMovement : MonoBehaviour
             _character.SetGridPosition(step);
 
             _grid.RegisterCharacter(step, _character);
+            _character.ProcessCurrentTerrain();
+
+            if (!_character.Stats.IsAlive)
+                yield break;
         }
     }
 }

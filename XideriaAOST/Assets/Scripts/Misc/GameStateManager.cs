@@ -43,7 +43,7 @@ public class GameStateManager : MonoBehaviour
 
         if (!string.IsNullOrEmpty(nextLevelName))
         {
-            SceneManager.LoadScene(nextLevelName);
+            SceneTransitionManager.Instance.LoadScene(nextLevelName);
         }
         else
         {
@@ -66,6 +66,6 @@ public class GameStateManager : MonoBehaviour
 
         Debug.Log("DERROTA");
 
-        SceneManager.LoadScene("Tutorial");
+        SceneTransitionManager.Instance.LoadScene("Tutorial");
     }
 }

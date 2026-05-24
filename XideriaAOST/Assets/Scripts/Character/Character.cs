@@ -82,18 +82,6 @@ public class Character : MonoBehaviour
         ProcessStatusEffects();
     }
 
-    public void Initialize(CharacterStats stats, CharacterMovement movement, GridSystem grid, Vector2Int startPos)
-    {
-        _grid = grid;
-        Stats = stats;
-        Movement = movement;
-        GridPosition = startPos;
-
-        transform.position = _grid.GridToWorld(startPos) + visualSpawnOffset;
-
-        _grid.RegisterCharacter(startPos, this);
-    }
-
 
     public void SetGridPosition(Vector2Int newPosition)
     {
@@ -350,5 +338,19 @@ public class Character : MonoBehaviour
         }
 
         return false;
+    }
+
+    public void ProcessCurrentTerrain()
+    {
+        GridCell cell = _grid.GetCell(GridPosition);
+
+        if (cell == null)
+            return;
+
+        if (cell.Type == CellType.Void)
+        {
+            Debug.Log($"{name} cayó al vacío.");
+            Die();
+        }
     }
 }

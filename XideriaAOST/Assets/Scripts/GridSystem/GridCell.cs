@@ -10,17 +10,26 @@ public class GridCell
     public int MoveCost =>
         Type switch
         {
-            CellType.Normal => 1,
+            CellType.Ground => 1,
             CellType.Water => 2,
             CellType.Lava => 3,
+            CellType.Void => 1,
+            CellType.Blocked => int.MaxValue,
             _ => int.MaxValue
         };
 
-    public GridCell(Vector2Int position, bool walkable, CellType type)
+    public GridCell(Vector2Int position, CellType type)
     {
         Position = position;
-        Walkable = walkable;
         Type = type;
         IsOccupied = false;
+        Walkable = type != CellType.Blocked;
+    }
+
+    public void SetType(CellType type)
+    {
+        Type = type;
+
+        Walkable = type != CellType.Blocked;
     }
 }

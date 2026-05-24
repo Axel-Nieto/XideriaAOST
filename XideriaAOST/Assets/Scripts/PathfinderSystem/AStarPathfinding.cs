@@ -24,7 +24,7 @@ public class AStarPathfinding
         }
     }
 
-    public List<Vector2Int> FindPath(Vector2Int start, Vector2Int end)
+    public List<Vector2Int> FindPath(Vector2Int start, Vector2Int end, bool avoidUnsafeCells = false)
     {
         var openSet = new List<PathNode>();
         var closedSet = new HashSet<Vector2Int>();
@@ -55,6 +55,9 @@ public class AStarPathfinding
                     continue;
 
                 if (!_grid.IsWalkable(neighborPos))
+                    continue;
+
+                if (avoidUnsafeCells && !_grid.IsSafeForAI(neighborPos))
                     continue;
 
                 if (_grid.IsBlockedForMovement(neighborPos) && neighborPos != end)

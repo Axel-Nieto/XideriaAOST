@@ -6,6 +6,7 @@ public class GridSystem : MonoBehaviour
     [SerializeField] private int width;
     [SerializeField] private int height;
     [SerializeField] private float cellSize;
+    [SerializeField] private List<TerrainCellData> terrainCells = new();
     [SerializeField] private float yOffset = 0.5f;
 
     private Dictionary<Vector2Int, GridCell> _grid = new();
@@ -24,8 +25,28 @@ public class GridSystem : MonoBehaviour
             for (int y = 0; y < height; y++)
             {
                 var pos = new Vector2Int(x, y);
-                _grid[pos] = new GridCell(pos, true, CellType.Normal);
+                _grid[pos] = new GridCell(pos, CellType.Ground);
             }
+        }
+
+        ApplyTerrainOverrides();
+    }
+
+    public void SetCellType(Vector2Int pos, CellType type)
+    {
+        GridCell cell = GetCell(pos);
+
+        if (cell == null)
+            return;
+
+        cell.SetType(type);
+    }
+
+    private void ApplyTerrainOverrides()
+    {
+        foreach (var terrainCell in terrainCells)
+        {
+            SetCellType(terrainCell.Position, terrainCell.Type);
         }
     }
 
@@ -42,6 +63,7 @@ public class GridSystem : MonoBehaviour
     public bool IsWalkable(Vector2Int pos)
     {
         var cell = GetCell(pos);
+
         return cell != null && cell.Walkable;
     }
 
@@ -101,6 +123,22 @@ public class GridSystem : MonoBehaviour
         _characters[pos] = character;
     }
 
+    public bool IsSafeForAI(Vector2Int pos)
+    {
+        GridCell cell = GetCell(pos);
+
+        if (cell == null)
+            return false;
+
+        if (!cell.Walkable)
+            return false;
+
+        if (cell.Type == CellType.Void)
+            return false;
+
+        return true;
+    }
+
     public void UnregisterCharacter(Vector2Int pos)
     {
         if (_characters.ContainsKey(pos))
@@ -148,14 +186,31 @@ public class GridSystem : MonoBehaviour
         {
             Vector3 worldPos = GridToWorld(cell.Position);
 
-            if (!cell.Walkable)
-                Gizmos.color = Color.red;
-            else if (IsOccupied(cell.Position))
-                Gizmos.color = Color.blue;
-            else
-                Gizmos.color = Color.white;
+            switch (cell.Type)
+            {
+                case CellType.Ground:
+                    Gizmos.color = Color.white;
+                    break;
 
-            Gizmos.DrawWireCube(worldPos, new Vector3(cellSize, 0.1f, cellSize));
+                case CellType.Water:
+                    Gizmos.color = Color.blue;
+                    break;
+
+                case CellType.Lava:
+                    Gizmos.color = Color.red;
+                    break;
+                case CellType.Void:
+                    Gizmos.color = Color.brown;
+                    break;
+                case CellType.Blocked:
+                    Gizmos.color = Color.violet;
+                    break;
+            }
+
+            Gizmos.DrawWireCube(
+                worldPos,
+                new Vector3(cellSize, 0.1f, cellSize)
+            );
         }
     }
 }
