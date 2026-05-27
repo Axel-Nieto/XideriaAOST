@@ -34,6 +34,8 @@ public class GridInputHandler : MonoBehaviour
     private int selectedSkillIndex = 0;
     private HelmetPickup hoveredHelmet;
     [SerializeField] private HelmetHoverUI helmetHoverUI;
+    private CharacterPositionIndicator selectedIndicator;
+    private CharacterPositionIndicator turnIndicator;
 
     private void Start()
     {
@@ -122,6 +124,9 @@ public class GridInputHandler : MonoBehaviour
                 selectedCharacter = null;
                 isCharacterSelected = false;
                 currentMode = ActionMode.None;
+
+                selectedIndicator?.SetSelected(false);
+                selectedIndicator = null;
 
                 ClearTiles();
                 ClearRangeTiles();
@@ -254,6 +259,10 @@ public class GridInputHandler : MonoBehaviour
                         selectedCharacter = character;
                         isCharacterSelected = true;
                         currentMode = ActionMode.Move;
+
+                        selectedIndicator?.SetSelected(false);
+                        selectedIndicator = selectedCharacter.GetComponentInChildren<CharacterPositionIndicator>();
+                        selectedIndicator?.SetSelected(true);
                     }
 
                     return;
@@ -405,6 +414,8 @@ public class GridInputHandler : MonoBehaviour
         helmetHoverUI.Hide();
 
         battleHUD.SetSelectedSkill(-1);
+        selectedIndicator?.SetSelected(false);
+        selectedIndicator = null;
 
         ClearTiles();
         ClearRangeTiles();
@@ -454,6 +465,10 @@ public class GridInputHandler : MonoBehaviour
         ClearTiles();
         ClearRangeTiles();
         ClearAoeTiles();
+
+        turnIndicator?.SetTurnActive(false);
+        turnIndicator = character.GetComponentInChildren<CharacterPositionIndicator>();
+        turnIndicator?.SetTurnActive(true);
 
         battleHUD.SetPlayerTurn(isPlayerTurn);
 
