@@ -8,13 +8,16 @@ public class WaterHealSkill : SkillBase
     public WaterHealSkill()
         : base(
             name: "Agua Curativa",
-            description: "Te curás y removés Burn.",
+            description: "Restable parte de la salud del personaje.",
             energyCost: 4,
             cooldown: 3,
             minRange: 0,
             maxRange: 0,
             targetType: SkillTargetType.Self,
-            damageType: DamageType.Water)
+            damageType: DamageType.Water,
+            icon: SkillIconLibrary.Instance != null
+            ? SkillIconLibrary.Instance.waterHeal
+            : null)
     {
     }
 
@@ -41,5 +44,10 @@ public class WaterHealSkill : SkillBase
         user.Heal(healAmount);
 
         yield return null;
+    }
+
+    public override string GetTooltipDetails(Character user)
+    {
+        return $"Curación: {healAmount}";
     }
 }

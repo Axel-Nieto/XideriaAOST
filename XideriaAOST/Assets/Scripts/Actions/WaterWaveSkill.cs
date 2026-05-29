@@ -18,7 +18,10 @@ public class WaterWaveSkill : SkillBase
             minRange: 1,
             maxRange: 6,
             targetType: SkillTargetType.TargetCell,
-            damageType: DamageType.Water)
+            damageType: DamageType.Water,
+            icon: SkillIconLibrary.Instance != null
+            ? SkillIconLibrary.Instance.waterWave
+            : null)
     {
     }
 
@@ -149,5 +152,15 @@ public class WaterWaveSkill : SkillBase
             return Vector2Int.up;
 
         return Vector2Int.right;
+    }
+
+    public override string GetTooltipDetails(Character user)
+    {
+        int estimatedDamage = user == null
+            ? damage
+            : damage + user.Stats.Attack;
+
+        return
+            $"Daño: {estimatedDamage}";
     }
 }

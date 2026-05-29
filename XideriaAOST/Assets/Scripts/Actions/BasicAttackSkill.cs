@@ -12,7 +12,10 @@ public class BasicAttackSkill : SkillBase
             minRange: 1,
             maxRange: 1,
             targetType: SkillTargetType.TargetCell,
-            damageType: DamageType.Physical)
+            damageType: DamageType.Physical,
+            icon: SkillIconLibrary.Instance != null
+            ? SkillIconLibrary.Instance.basicAttack
+            : null)
     {
     }
 
@@ -61,5 +64,14 @@ public class BasicAttackSkill : SkillBase
         target.TakeDamage(damage, DamageType.Physical);
 
         yield return null;
+    }
+
+    public override string GetTooltipDetails(Character user)
+    {
+        int estimatedDamage = user == null
+            ? 0
+            : user.Stats.Attack;
+
+        return $"Daño: {estimatedDamage}";
     }
 }

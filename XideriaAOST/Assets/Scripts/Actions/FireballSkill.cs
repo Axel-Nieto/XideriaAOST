@@ -17,7 +17,10 @@ public class FireballSkill : SkillBase
             minRange: 2,
             maxRange: 4,
             targetType: SkillTargetType.TargetCell,
-            damageType: DamageType.Fire)
+            damageType: DamageType.Fire,
+            icon: SkillIconLibrary.Instance != null
+            ? SkillIconLibrary.Instance.fireball
+            : null)
     {
         damage = 6;
         aoeRadius =3;
@@ -84,5 +87,15 @@ public class FireballSkill : SkillBase
     {
         foreach (var cell in GetAreaCells(targetCell, aoeRadius))
             yield return cell;
+    }
+
+    public override string GetTooltipDetails(Character user)
+    {
+        int estimatedDamage = user == null
+            ? damage
+            : damage + user.Stats.Attack;
+
+        return
+            $"Daño: {estimatedDamage}"; ;
     }
 }

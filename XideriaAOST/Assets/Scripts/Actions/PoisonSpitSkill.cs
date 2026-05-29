@@ -56,4 +56,14 @@ public class PoisonSpitSkill : SkillBase
 
         yield return null;
     }
+
+    public override string GetTooltipDetails(Character user)
+    {
+        int estimatedDamage = user == null
+            ? damage
+            : damage + user.Stats.Attack;
+
+        return
+            $"Daño: {estimatedDamage}";
+    }
 }

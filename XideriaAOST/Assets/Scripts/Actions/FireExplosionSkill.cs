@@ -18,10 +18,16 @@ public class FireExplosionSkill : SkillBase
             minRange: 0,
             maxRange: 0,
             targetType: SkillTargetType.Self,
-            damageType: DamageType.Fire)
+            damageType: DamageType.Fire,
+            icon: SkillIconLibrary.Instance != null
+            ? SkillIconLibrary.Instance.fireExplosion
+            : null)
     {
         damage = 7;
         aoeRadius = 2;
+
+        Debug.Log("SkillIconLibrary: " + SkillIconLibrary.Instance);
+        Debug.Log("Fire Explosion Icon: " + SkillIconLibrary.Instance?.fireExplosion);
     }
 
     public override bool CanUse(Character user, Vector2Int targetCell, GridSystem grid)
@@ -76,5 +82,15 @@ public class FireExplosionSkill : SkillBase
     {
         foreach (var cell in GetAreaCells(origin, aoeRadius))
             yield return cell;
+    }
+
+    public override string GetTooltipDetails(Character user)
+    {
+        int estimatedDamage = user == null
+            ? damage
+            : damage + user.Stats.Attack;
+
+        return
+            $"Daño: {estimatedDamage}";
     }
 }

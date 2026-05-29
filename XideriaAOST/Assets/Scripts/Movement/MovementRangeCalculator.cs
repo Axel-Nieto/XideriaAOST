@@ -5,7 +5,10 @@ public class MovementRangeCalculator
 {
     private GridSystem _grid;
 
-    public MovementRangeCalculator(GridSystem grid) {  _grid = grid; }
+    public MovementRangeCalculator(GridSystem grid)
+    {
+        _grid = grid;
+    }
 
     public HashSet<Vector2Int> GetReachableCells(Vector2Int start, int maxCost)
     {
@@ -22,23 +25,30 @@ public class MovementRangeCalculator
         {
             var current = queue.Dequeue();
 
-            foreach(var dir in GetDirections())
+            foreach (var dir in GetDirections())
             {
                 var next = current + dir;
-                if (!_grid.IsValidCell(next)) continue;
-                if (!_grid.IsWalkable(next)) continue;
+
+                if (!_grid.IsValidCell(next))
+                    continue;
+
+                if (_grid.IsBlockedForMovement(next))
+                    continue;
 
                 int newCost = costSoFar[current] + 1;
 
-                if (newCost > maxCost) continue;
+                if (newCost > maxCost)
+                    continue;
 
-                if (!costSoFar.ContainsKey(next) || newCost < costSoFar[next]) {
+                if (!costSoFar.ContainsKey(next) || newCost < costSoFar[next])
+                {
                     costSoFar[next] = newCost;
                     visited.Add(next);
                     queue.Enqueue(next);
                 }
             }
         }
+
         return visited;
     }
 

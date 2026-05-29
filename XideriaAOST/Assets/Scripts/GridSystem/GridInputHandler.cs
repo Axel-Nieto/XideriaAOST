@@ -12,6 +12,8 @@ public class GridInputHandler : MonoBehaviour
     [SerializeField] private GridSystem gridSystem;
     [SerializeField] private LayerMask gridLayer;
     [SerializeField] private GameObject pathTilePrefab;
+    [SerializeField] private GameObject movementRangeTilePrefab;
+    [SerializeField] private GameObject skillRangeTilePrefab;
     [SerializeField] private Vector3 pathTileOffset;
     [SerializeField] private GameObject rangeTilePrefab;
     [SerializeField] private Character playerCharacter;
@@ -113,9 +115,9 @@ public class GridInputHandler : MonoBehaviour
             {
                 currentMode = ActionMode.Move;
 
+                battleHUD.SetSelectedSkill(-1);
                 ClearTiles();
                 ClearAoeTiles();
-
                 return;
             }
 
@@ -171,7 +173,7 @@ public class GridInputHandler : MonoBehaviour
             ClearAoeTiles();
 
             UpdateMovementRange();
-            DrawRangeTiles();
+            DrawRangeTiles(movementRangeTilePrefab);
 
             UpdatePathPreview();
             DrawPathTiles();
@@ -179,7 +181,7 @@ public class GridInputHandler : MonoBehaviour
         else if (currentMode == ActionMode.BasicAttack)
         {
             UpdateBasicAttackRange();
-            DrawRangeTiles();
+            DrawRangeTiles(skillRangeTilePrefab);
 
             currentPath.Clear();
             ClearTiles();
@@ -286,6 +288,9 @@ public class GridInputHandler : MonoBehaviour
 
         if (currentMode == ActionMode.Move)
         {
+            if (gridSystem.IsBlockedForMovement(targetPos))
+                return;
+
             var path = _pathfinding.FindPath(
                 selectedCharacter.GridPosition,
                 targetPos
@@ -357,29 +362,39 @@ public class GridInputHandler : MonoBehaviour
 
         isMoving = false;
         currentMode = ActionMode.Move;
-
+        battleHUD.SetSelectedSkill(-1);
         battleHUD.Refresh();
     }
 
     private void SelectSkill(int index)
     {
         if (isMoving) return;
+        if (selectedCharacter == null) return;
 
         var skill = selectedCharacter.GetSkill(index);
 
         if (skill == null)
             return;
 
+        if (!selectedCharacter.Stats.HasEnergy(skill.EnergyCost) ||
+            selectedCharacter.IsSkillOnCooldown(skill))
+        {
+            battleHUD.FlashSkillError(index);
+            return;
+        }
+
         selectedSkillIndex = index;
-        battleHUD.SetSelectedSkill(index);
 
         Debug.Log($"Skill seleccionada: {skill.Name}");
 
         if (skill.TargetType == SkillTargetType.Self)
         {
+            battleHUD.FlashSkillSelected(index);
             StartCoroutine(ExecuteSkill(skill, selectedCharacter.GridPosition));
             return;
         }
+
+        battleHUD.SetSelectedSkill(index);
 
         currentMode = ActionMode.BasicAttack;
 
@@ -457,9 +472,6 @@ public class GridInputHandler : MonoBehaviour
     {
         isPlayerTurn = character.IsPlayer;
 
-        selectedCharacter = null;
-        isCharacterSelected = false;
-        currentMode = ActionMode.Move;
         selectedSkillIndex = -1;
 
         ClearTiles();
@@ -469,6 +481,26 @@ public class GridInputHandler : MonoBehaviour
         turnIndicator?.SetTurnActive(false);
         turnIndicator = character.GetComponentInChildren<CharacterPositionIndicator>();
         turnIndicator?.SetTurnActive(true);
+
+        if (isPlayerTurn)
+        {
+            selectedCharacter = character;
+            isCharacterSelected = true;
+            currentMode = ActionMode.Move;
+
+            selectedIndicator?.SetSelected(false);
+            selectedIndicator = selectedCharacter.GetComponentInChildren<CharacterPositionIndicator>();
+            selectedIndicator?.SetSelected(true);
+        }
+        else
+        {
+            selectedCharacter = null;
+            isCharacterSelected = false;
+            currentMode = ActionMode.Move;
+
+            selectedIndicator?.SetSelected(false);
+            selectedIndicator = null;
+        }
 
         battleHUD.SetPlayerTurn(isPlayerTurn);
 
@@ -583,6 +615,18 @@ public class GridInputHandler : MonoBehaviour
 
         Vector2Int targetGridPos = gridSystem.WorldToGrid(hit.point);
 
+        if (!reachableCells.Contains(targetGridPos))
+        {
+            currentPath.Clear();
+            return;
+        }
+
+        if (gridSystem.IsBlockedForMovement(targetGridPos))
+        {
+            currentPath.Clear();
+            return;
+        }
+
         if (!gridSystem.IsWalkable(targetGridPos))
         {
             currentPath.Clear();
@@ -639,7 +683,7 @@ public class GridInputHandler : MonoBehaviour
         }
     }
 
-    private void DrawRangeTiles()
+    private void DrawRangeTiles(GameObject tilePrefab)
     {
         ClearRangeTiles();
 
@@ -648,7 +692,12 @@ public class GridInputHandler : MonoBehaviour
             Vector3 worldPos = gridSystem.GridToWorld(cell);
             worldPos += pathTileOffset;
 
-            var tile = Instantiate(rangeTilePrefab, worldPos, Quaternion.Euler(90, 0, 0));
+            var tile = Instantiate(
+                tilePrefab,
+                worldPos,
+                Quaternion.Euler(90, 0, 0)
+            );
+
             rangeTiles.Add(tile);
         }
     }

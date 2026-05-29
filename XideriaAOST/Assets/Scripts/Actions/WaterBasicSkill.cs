@@ -15,7 +15,10 @@ public class WaterBasicSkill : SkillBase
             minRange: 2,
             maxRange: 4,
             targetType: SkillTargetType.TargetCell,
-            damageType: DamageType.Water)
+            damageType: DamageType.Water,
+            icon: SkillIconLibrary.Instance != null
+            ? SkillIconLibrary.Instance.basicAttack
+            : null)
     {
     }
 
@@ -74,5 +77,15 @@ public class WaterBasicSkill : SkillBase
 
         grid.RegisterCharacter(destination, target);
         target.ProcessCurrentTerrain();
+    }
+
+    public override string GetTooltipDetails(Character user)
+    {
+        int estimatedDamage = user == null
+            ? damage
+            : damage + user.Stats.Attack;
+
+        return
+            $"Daño: {estimatedDamage}";
     }
 }

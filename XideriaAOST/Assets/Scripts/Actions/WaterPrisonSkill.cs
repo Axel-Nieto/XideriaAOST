@@ -15,7 +15,10 @@ public class WaterPrisonSkill : SkillBase
             minRange: 2,
             maxRange: 4,
             targetType: SkillTargetType.TargetCell,
-            damageType: DamageType.Water)
+            damageType: DamageType.Water,
+            icon: SkillIconLibrary.Instance != null
+            ? SkillIconLibrary.Instance.waterPrison
+            : null)
     {
     }
 
@@ -51,5 +54,15 @@ public class WaterPrisonSkill : SkillBase
         target.ApplyStatusEffect(new RootEffect(rootDuration));
 
         yield return null;
+    }
+
+    public override string GetTooltipDetails(Character user)
+    {
+        int estimatedDamage = user == null
+            ? damage
+            : damage + user.Stats.Attack;
+
+        return
+            $"Daño: {estimatedDamage}";
     }
 }

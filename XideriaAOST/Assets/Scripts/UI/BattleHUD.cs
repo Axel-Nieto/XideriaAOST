@@ -21,6 +21,11 @@ public class BattleHUD : MonoBehaviour
     [Header("Input")]
     [SerializeField] private GridInputHandler inputHandler;
 
+    [Header("Skill Frame Colors")]
+    [SerializeField] private string defaultFrameHex = "#FFFFFF";
+    [SerializeField] private string fireFrameHex = "#D73C3C";
+    [SerializeField] private string waterFrameHex = "#4E9BEE";
+
     private Character currentCharacter;
     private int selectedSkillIndex = -1;
 
@@ -76,8 +81,7 @@ public class BattleHUD : MonoBehaviour
 
             foreach (var effect in effects)
             {
-                text +=
-                    $"- {effect.EffectName} ({effect.RemainingTurns})\n";
+                text += $"- {effect.EffectName} ({effect.RemainingTurns})\n";
             }
         }
 
@@ -106,12 +110,25 @@ public class BattleHUD : MonoBehaviour
     public void SetSelectedSkill(int index)
     {
         selectedSkillIndex = index;
+
+        for (int i = 0; i < skillSlots.Length; i++)
+        {
+            skillSlots[i].SetSelected(i == selectedSkillIndex);
+        }
+
         RefreshSkills();
     }
 
     private void RefreshSkills()
     {
+        if (currentCharacter == null)
+        {
+            ClearSkills();
+            return;
+        }
+
         List<SkillBase> skills = currentCharacter.GetActiveSkills();
+        Color frameColor = GetFrameColor(currentCharacter);
 
         for (int i = 0; i < skillSlots.Length; i++)
         {
@@ -121,7 +138,30 @@ public class BattleHUD : MonoBehaviour
                 skill = skills[i];
 
             skillSlots[i].SetSkill(currentCharacter, skill);
+            skillSlots[i].SetFrameColor(frameColor);
+            skillSlots[i].SetSelected(i == selectedSkillIndex);
         }
+    }
+
+    private Color GetFrameColor(Character character)
+    {
+        if (character == null || !character.IsPlayer || character.EquippedHelmet == null)
+            return Hex(defaultFrameHex);
+
+        return character.EquippedHelmet.Name switch
+        {
+            "Casco de Fuego" => Hex(fireFrameHex),
+            "Casco de Agua" => Hex(waterFrameHex),
+            _ => Hex(defaultFrameHex)
+        };
+    }
+
+    private Color Hex(string hex)
+    {
+        if (ColorUtility.TryParseHtmlString(hex, out Color color))
+            return color;
+
+        return Color.white;
     }
 
     private void ClearSkills()
@@ -164,9 +204,16 @@ public class BattleHUD : MonoBehaviour
             ? $" | Área: radio {skill.AreaRadius}"
             : "";
 
+        string details = skill.GetTooltipDetails(currentCharacter);
+
+        string detailsText = string.IsNullOrWhiteSpace(details)
+            ? ""
+            : $"{details}\n\n";
+
         tooltipText.text =
             $"{skill.Name}\n" +
             $"{skill.Description}\n\n" +
+            detailsText +
             $"Coste: {skill.EnergyCost}\n" +
             $"Cooldown: {skill.Cooldown}\n" +
             $"Tipo: {skill.DamageType}\n" +
@@ -176,5 +223,21 @@ public class BattleHUD : MonoBehaviour
     public void HideTooltip()
     {
         tooltipPanel.SetActive(false);
+    }
+
+    public void FlashSkillSelected(int index)
+    {
+        if (index < 0 || index >= skillSlots.Length)
+            return;
+
+        skillSlots[index].FlashSelected();
+    }
+
+    public void FlashSkillError(int index)
+    {
+        if (index < 0 || index >= skillSlots.Length)
+            return;
+
+        skillSlots[index].FlashError();
     }
 }

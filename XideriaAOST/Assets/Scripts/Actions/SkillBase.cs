@@ -13,6 +13,7 @@ public abstract class SkillBase
     public SkillTargetType TargetType { get; }
     public DamageType DamageType { get; }
     public virtual int AreaRadius => 0;
+    public Sprite Icon { get; }
 
     protected SkillBase(
     string name,
@@ -22,7 +23,8 @@ public abstract class SkillBase
     int minRange,
     int maxRange,
     SkillTargetType targetType,
-    DamageType damageType)
+    DamageType damageType,
+    Sprite icon = null)
     {
         Name = name;
         Description = description;
@@ -32,6 +34,7 @@ public abstract class SkillBase
         MaxRange = maxRange;
         TargetType = targetType;
         DamageType = damageType;
+        Icon = icon;
     }
 
     public bool IsInRange(Vector2Int origin, Vector2Int target)
@@ -47,5 +50,10 @@ public abstract class SkillBase
     public virtual IEnumerable<Vector2Int> GetPreviewCells(Vector2Int origin, Vector2Int targetCell)
     {
         yield return targetCell;
+    }
+
+    public virtual string GetTooltipDetails(Character user)
+    {
+        return "";
     }
 }

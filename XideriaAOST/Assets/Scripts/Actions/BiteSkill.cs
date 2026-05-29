@@ -48,4 +48,13 @@ public class BiteSkill : SkillBase
 
         yield return null;
     }
+
+    public override string GetTooltipDetails(Character user)
+    {
+        int estimatedDamage = user == null
+            ? 0
+            : user.Stats.Attack;
+
+        return $"Daño: {estimatedDamage}";
+    }
 }

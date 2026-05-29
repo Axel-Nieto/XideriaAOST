@@ -17,7 +17,10 @@ public class FlameDashSkill : SkillBase
             minRange: 2,
             maxRange: 8,
             targetType: SkillTargetType.TargetCell,
-            damageType: DamageType.Fire)
+            damageType: DamageType.Fire,
+            icon: SkillIconLibrary.Instance != null
+            ? SkillIconLibrary.Instance.flameDash
+            : null)
     {
     }
 
@@ -132,5 +135,15 @@ public class FlameDashSkill : SkillBase
 
         foreach (var cell in GetAreaCells(targetCell, aoeRadius))
             yield return cell;
+    }
+
+    public override string GetTooltipDetails(Character user)
+    {
+        int estimatedDamage = user == null
+            ? damage
+            : damage + user.Stats.Attack;
+
+        return
+            $"Daño: {estimatedDamage}";
     }
 }

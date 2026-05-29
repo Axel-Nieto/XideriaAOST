@@ -12,7 +12,10 @@ public class FireBasicAttackSkill : SkillBase
             minRange: 3,
             maxRange: 5,
             targetType: SkillTargetType.TargetCell,
-            damageType: DamageType.Fire)
+            damageType: DamageType.Fire,
+            icon: SkillIconLibrary.Instance != null
+            ? SkillIconLibrary.Instance.basicAttack
+            : null)
     {
     }
 
@@ -62,5 +65,15 @@ public class FireBasicAttackSkill : SkillBase
         Debug.Log($"{user.name} usa {Name} contra {target.name} por {damage} de fuego");
 
         yield return null;
+    }
+
+    public override string GetTooltipDetails(Character user)
+    {
+        int estimatedDamage = user == null
+            ? 0
+            : user.Stats.Attack;
+
+        return
+        $"Daño: {estimatedDamage}";
     }
 }
