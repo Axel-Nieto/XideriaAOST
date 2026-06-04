@@ -240,4 +240,14 @@ public class BattleHUD : MonoBehaviour
 
         skillSlots[index].FlashError();
     }
+
+    public void Clear()
+    {
+        currentCharacter = null;
+        selectedSkillIndex = -1;
+
+        characterInfoText.text = "";
+        HideTooltip();
+        ClearSkills();
+    }
 }

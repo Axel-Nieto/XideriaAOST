@@ -132,6 +132,7 @@ public class GridInputHandler : MonoBehaviour
 
                 ClearTiles();
                 ClearRangeTiles();
+                battleHUD.Clear();
                 return;
             }
         }
@@ -425,12 +426,12 @@ public class GridInputHandler : MonoBehaviour
         isCharacterSelected = false;
         currentMode = ActionMode.None;
         selectedSkillIndex = -1;
-        hoveredHelmet = null;
-        helmetHoverUI.Hide();
 
-        battleHUD.SetSelectedSkill(-1);
         selectedIndicator?.SetSelected(false);
         selectedIndicator = null;
+
+        battleHUD.SetSelectedSkill(-1);
+        battleHUD.Clear();
 
         ClearTiles();
         ClearRangeTiles();

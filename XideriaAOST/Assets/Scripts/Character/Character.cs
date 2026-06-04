@@ -229,6 +229,13 @@ public class Character : MonoBehaviour
             currentHelmetVisual.transform.localPosition = Vector3.zero;
             currentHelmetVisual.transform.localRotation = Quaternion.identity;
             currentHelmetVisual.transform.localScale = Vector3.one;
+
+            Animator[] animators = currentHelmetVisual.GetComponentsInChildren<Animator>();
+
+            foreach (var animator in animators)
+            {
+                animator.enabled = false;
+            }
         }
 
         Debug.Log($"{name} equipó {newHelmet.Name}");
