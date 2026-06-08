@@ -492,6 +492,11 @@ public class GridInputHandler : MonoBehaviour
             selectedIndicator?.SetSelected(false);
             selectedIndicator = selectedCharacter.GetComponentInChildren<CharacterPositionIndicator>();
             selectedIndicator?.SetSelected(true);
+
+            UpdateMovementRange();
+            DrawRangeTiles(movementRangeTilePrefab);
+            currentPath.Clear();
+            ClearTiles();
         }
         else
         {

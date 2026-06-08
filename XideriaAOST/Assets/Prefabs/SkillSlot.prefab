@@ -140,10 +140,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkillSlotUI
   keyText: {fileID: 3610849314372678234}
   cooldownText: {fileID: 5997642097468094521}
-  darkOverlay: {fileID: 2555063631974163362}
-  button: {fileID: 3715391980960835659}
   frameImage: {fileID: 4475047314241566006}
   iconImage: {fileID: 1289653504558837863}
+  darkOverlay: {fileID: 2555063631974163362}
+  button: {fileID: 3715391980960835659}
+  selectedHex: '#FFD700'
+  errorHex: '#FF2D2D'
 --- !u!1 &1792341478341917390
 GameObject:
   m_ObjectHideFlags: 0
@@ -346,7 +348,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 153befdf7d6bc4e44885371c5dd179e7, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1

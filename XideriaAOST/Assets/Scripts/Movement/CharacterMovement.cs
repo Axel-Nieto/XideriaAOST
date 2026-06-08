@@ -32,6 +32,17 @@ public class CharacterMovement : MonoBehaviour
         yield return FollowPath(path);
     }
 
+    public IEnumerator MoveAlongRoutine(List<Vector2Int> path, float customSpeed)
+    {
+        float originalSpeed = moveSpeed;
+
+        moveSpeed = customSpeed;
+
+        yield return MoveAlongRoutine(path);
+
+        moveSpeed = originalSpeed;
+    }
+
     private IEnumerator FollowPath(List<Vector2Int> path)
     {
         if (_grid == null)

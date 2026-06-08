@@ -237,7 +237,7 @@ public class Character : MonoBehaviour
                 animator.enabled = false;
             }
         }
-
+        GetComponent<CharacterColorByHelmet>()?.ApplyHelmetColor(newHelmet);
         Debug.Log($"{name} equipó {newHelmet.Name}");
     }
 
@@ -359,5 +359,16 @@ public class Character : MonoBehaviour
             Debug.Log($"{name} cayó al vacío.");
             Die();
         }
+    }
+
+    public Transform GetGroundAnchor()
+    {
+        CharacterPositionIndicator indicator =
+            GetComponentInChildren<CharacterPositionIndicator>();
+
+        if (indicator != null)
+            return indicator.transform;
+
+        return transform;
     }
 }

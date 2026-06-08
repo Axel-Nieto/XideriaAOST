@@ -41,6 +41,8 @@ public class WaterHealSkill : SkillBase
 
         user.StartCooldown(this);
 
+        SkillVFXSpawner.SpawnAttached(SkillVFXLibrary.Instance.waterHeal, user.transform, Vector3.up * 0.5f);
+
         user.Heal(healAmount);
 
         yield return null;

@@ -64,6 +64,20 @@ public class WaterWaveSkill : SkillBase
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
+        Vector3 waveStart =
+            grid.GridToWorld(originalPosition) + Vector3.up * 0.2f;
+
+        Vector3 waveEnd =
+            grid.GridToWorld(originalPosition + direction * MaxRange) + Vector3.up * 0.2f;
+
+        SkillVFXSpawner.SpawnMovingVFX(
+            SkillVFXLibrary.Instance.waterWave,
+            waveStart,
+            waveEnd,
+            GetRotationFromDirection(direction),
+            speed: 8f
+        );
+
         yield return user.Movement.MoveAlongRoutine(movementPath);
 
         foreach (var pos in GetWaveCells(originalPosition, direction))
@@ -162,5 +176,22 @@ public class WaterWaveSkill : SkillBase
 
         return
             $"Daño: {estimatedDamage}";
+    }
+
+    private Quaternion GetRotationFromDirection(Vector2Int direction)
+    {
+        if (direction == Vector2Int.up)
+            return Quaternion.Euler(0f, 180f, 0f);
+
+        if (direction == Vector2Int.down)
+            return Quaternion.Euler(0f, 0f, 0f);
+
+        if (direction == Vector2Int.right)
+            return Quaternion.Euler(0f, -90f, 0f);
+
+        if (direction == Vector2Int.left)
+            return Quaternion.Euler(0f, 90f, 0f);
+
+        return Quaternion.identity;
     }
 }

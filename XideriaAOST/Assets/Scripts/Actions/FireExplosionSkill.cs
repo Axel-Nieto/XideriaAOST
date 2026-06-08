@@ -46,6 +46,13 @@ public class FireExplosionSkill : SkillBase
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
+        SkillVFXSpawner.SpawnAtCell(
+            SkillVFXLibrary.Instance.fireExplosion,
+            grid,
+            user.GridPosition,
+            Vector3.up * 0.05f
+        );
+
         Vector2Int center = user.GridPosition;
 
         foreach (var pos in GetAreaCells(center, aoeRadius))

@@ -121,7 +121,7 @@ public class BattleHUD : MonoBehaviour
 
     private void RefreshSkills()
     {
-        if (currentCharacter == null)
+        if (currentCharacter == null || !currentCharacter.IsPlayer)
         {
             ClearSkills();
             return;
