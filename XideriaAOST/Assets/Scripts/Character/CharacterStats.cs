@@ -37,6 +37,16 @@ public class CharacterStats
         CurrentEnergy -= amount;
     }
 
+    public void SetCurrentHP(int value)
+    {
+        CurrentHP = Mathf.Clamp(value, 0, MaxHP);
+    }
+
+    public void SetCurrentEnergy(int value)
+    {
+        CurrentEnergy = Mathf.Clamp(value, 0, MaxEnergy);
+    }
+
     public void TakeDamage(int amount)
     {
         CurrentHP = Mathf.Max(0, CurrentHP - amount);

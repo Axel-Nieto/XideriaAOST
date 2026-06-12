@@ -9,6 +9,7 @@ public static class GameSession
 public class GameStateManager : MonoBehaviour
 {
     [SerializeField] private string nextLevelName;
+    [SerializeField] private string tutorialSceneName = "Tutorial";
 
     private bool gameEnded = false;
 
@@ -39,15 +40,17 @@ public class GameStateManager : MonoBehaviour
         gameEnded = true;
         GameSession.IsGameOver = true;
 
-        Debug.Log("NIVEL COMPLETADO");
+        Character player = FindPlayer();
 
-        if (!string.IsNullOrEmpty(nextLevelName))
+        if (!string.IsNullOrEmpty(nextLevelName) && nextLevelName != tutorialSceneName)
         {
+            player?.SavePlayerSession();
             SceneTransitionManager.Instance.LoadScene(nextLevelName);
         }
         else
         {
-            Debug.Log("VICTORIA FINAL");
+            PlayerSessionData.Instance?.ResetSession();
+            SceneTransitionManager.Instance.LoadScene(tutorialSceneName);
         }
     }
 
@@ -66,6 +69,20 @@ public class GameStateManager : MonoBehaviour
 
         Debug.Log("DERROTA");
 
-        SceneTransitionManager.Instance.LoadScene("Tutorial");
+        PlayerSessionData.Instance?.ResetSession();
+        SceneTransitionManager.Instance.LoadScene(tutorialSceneName);
+    }
+
+    private Character FindPlayer()
+    {
+        Character[] characters = FindObjectsOfType<Character>();
+
+        foreach (var character in characters)
+        {
+            if (character.IsPlayer)
+                return character;
+        }
+
+        return null;
     }
 }

@@ -9,11 +9,6 @@ public class CharacterColorByHelmet : MonoBehaviour
     [SerializeField] private Color fireHelmetColor = new Color(255f, 76f, 0f);
     [SerializeField] private Color waterHelmetColor = new Color(0f, 134f, 255f);
 
-    private void Start()
-    {
-        SetColor(defaultColor);
-    }
-
     public void ApplyHelmetColor(HelmetData helmet)
     {
         if (helmet == null)

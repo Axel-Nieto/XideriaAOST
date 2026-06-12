@@ -7,6 +7,7 @@ public static class HelmetFactory
     {
         return new HelmetData
         {
+            Type = HelmetType.Default,
             Name = "Casco Básico",
             Description = "Un casco simple.",
             ActiveSkills = new List<SkillBase>
@@ -20,6 +21,7 @@ public static class HelmetFactory
     {
         return new HelmetData
         {
+            Type = HelmetType.Fire,
             Name = "Casco de Fuego",
             Description = "Dominio del fuego.",
             ActiveSkills = new List<SkillBase>
@@ -36,6 +38,7 @@ public static class HelmetFactory
     {
         return new HelmetData
         {
+            Type = HelmetType.Water,
             Name = "Casco de Agua",
             Description = "Dominio del agua.",
             ActiveSkills = new List<SkillBase>

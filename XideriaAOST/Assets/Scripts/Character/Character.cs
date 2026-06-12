@@ -47,6 +47,17 @@ public class Character : MonoBehaviour
         InitializePosition();
     }
 
+    private void Start()
+    {
+        if (IsPlayer)
+        {
+            LoadPlayerSession();
+
+            if (EquippedHelmet != null)
+                GetComponent<CharacterColorByHelmet>()?.ApplyHelmetColor(EquippedHelmet);
+        }
+    }
+
     private void OnEnable()
     {
         GameEvents.OnTurnStarted += HandleTurnStarted;
@@ -371,4 +382,121 @@ public class Character : MonoBehaviour
 
         return transform;
     }
+
+    public void SetSkillCooldown(SkillBase skill, int cooldown)
+    {
+        if (skill == null)
+            return;
+
+        skillCooldowns[skill.Name] = cooldown;
+    }
+
+    public void LoadPlayerSession()
+    {
+        if (!IsPlayer || PlayerSessionData.Instance == null)
+            return;
+
+        var session = PlayerSessionData.Instance;
+
+        if (session.forceNewRun)
+        {
+            session.forceNewRun = false;
+
+            EquippedHelmet = HelmetFactory.CreateDefaultHelmet();
+
+            if (currentHelmetVisual != null)
+            {
+                Destroy(currentHelmetVisual);
+                currentHelmetVisual = null;
+            }
+
+            GetComponent<CharacterColorByHelmet>()?.ApplyHelmetColor(null);
+
+            return;
+        }
+
+        if (!session.hasSavedData)
+        {
+            EquippedHelmet = HelmetFactory.CreateDefaultHelmet();
+
+            if (currentHelmetVisual != null)
+            {
+                Destroy(currentHelmetVisual);
+                currentHelmetVisual = null;
+            }
+
+            GetComponent<CharacterColorByHelmet>()?.ApplyHelmetColor(null);
+
+            return;
+        }
+
+        Stats.SetCurrentHP(session.currentHP);
+        Stats.SetCurrentEnergy(session.currentEnergy);
+
+        if (session.hasHelmet)
+        {
+            HelmetData helmet = session.equippedHelmetType switch
+            {
+                HelmetType.Fire => HelmetFactory.CreateFireHelmet(),
+                HelmetType.Water => HelmetFactory.CreateWaterHelmet(),
+                _ => HelmetFactory.CreateDefaultHelmet()
+            };
+
+            HelmetPickup pickup = FindHelmetPickupByType(session.equippedHelmetType);
+
+            if (pickup != null)
+            {
+                helmet.HelmetVisualPrefab = pickup.GetHelmet().HelmetVisualPrefab;
+            }
+
+            EquipHelmet(helmet);
+            GetComponent<CharacterColorByHelmet>()?.ApplyHelmetColor(helmet);
+        }
+
+        foreach (var skill in GetActiveSkills())
+        {
+            if (session.skillCooldowns.TryGetValue(skill.Name, out int cooldown))
+                SetSkillCooldown(skill, cooldown);
+        }
+    }
+
+    private HelmetPickup FindHelmetPickupByType(HelmetType type)
+    {
+        HelmetPickup[] pickups = FindObjectsOfType<HelmetPickup>();
+
+        foreach (var pickup in pickups)
+        {
+            if (pickup.GetHelmet().Type == type)
+                return pickup;
+        }
+
+        return null;
+    }
+
+    public void SavePlayerSession()
+    {
+        if (!IsPlayer || PlayerSessionData.Instance == null)
+        {
+            return;
+        }
+
+        var session = PlayerSessionData.Instance;
+
+        session.hasSavedData = true;
+        session.currentHP = Stats.CurrentHP;
+        session.currentEnergy = Stats.CurrentEnergy;
+
+        session.hasHelmet = EquippedHelmet != null;
+
+        if (EquippedHelmet != null)
+            session.equippedHelmetType = EquippedHelmet.Type;
+
+        session.skillCooldowns.Clear();
+
+        foreach (var skill in GetActiveSkills())
+        {
+            session.skillCooldowns[skill.Name] = GetSkillCooldown(skill);
+        }
+    }
+
 }
