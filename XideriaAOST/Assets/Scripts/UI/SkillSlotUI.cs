@@ -82,7 +82,7 @@ public class SkillSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (darkOverlay != null)
             darkOverlay.SetActive(!usable);
 
-        button.interactable = usable;
+        button.interactable = true;
 
         ApplyFrameColor();
     }
@@ -106,7 +106,23 @@ public class SkillSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     public void FlashError()
     {
-        Flash(Hex(errorHex));
+        if (flashRoutine != null)
+            StopCoroutine(flashRoutine);
+
+        flashRoutine = StartCoroutine(FlashColorRoutine(Hex(errorHex)));
+    }
+
+    private IEnumerator FlashColorRoutine(Color color)
+    {
+        Color previousColor = frameImage.color;
+
+        frameImage.color = color;
+
+        yield return new WaitForSeconds(0.15f);
+
+        ApplyFrameColor();
+
+        flashRoutine = null;
     }
 
     private void Flash(Color color)

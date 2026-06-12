@@ -26,6 +26,9 @@ public class BattleHUD : MonoBehaviour
     [SerializeField] private string fireFrameHex = "#D73C3C";
     [SerializeField] private string waterFrameHex = "#4E9BEE";
 
+    [Header("End Turn Button")]
+    [SerializeField] private EndTurnButtonPulse endTurnPulse;
+
     private Character currentCharacter;
     private int selectedSkillIndex = -1;
 
@@ -100,11 +103,15 @@ public class BattleHUD : MonoBehaviour
         characterInfoText.text = text;
 
         RefreshSkills();
+        UpdateEndTurnPulse();
     }
 
     public void SetPlayerTurn(bool isPlayerTurn)
     {
         endTurnButton.interactable = isPlayerTurn;
+
+        if (!isPlayerTurn && endTurnPulse != null)
+            endTurnPulse.SetPulsing(false);
     }
 
     public void SetSelectedSkill(int index)
@@ -174,14 +181,7 @@ public class BattleHUD : MonoBehaviour
 
     public void SelectSkill(int index)
     {
-        if (currentCharacter == null)
-            return;
-
-        selectedSkillIndex = index;
-
         inputHandler.SelectSkillFromUI(index);
-
-        RefreshSkills();
     }
 
     private void EndTurn()
@@ -249,5 +249,46 @@ public class BattleHUD : MonoBehaviour
         characterInfoText.text = "";
         HideTooltip();
         ClearSkills();
+    }
+
+    private bool HasUsableSkill(Character character)
+    {
+        if (character == null)
+            return false;
+
+        if (!character.IsPlayer)
+            return false;
+
+        var skills = character.GetActiveSkills();
+
+        if (skills == null || skills.Count == 0)
+            return false;
+
+        foreach (var skill in skills)
+        {
+            if (skill == null)
+                continue;
+
+            bool hasEnergy = character.Stats.HasEnergy(skill.EnergyCost);
+            bool isOnCooldown = character.IsSkillOnCooldown(skill);
+
+            if (hasEnergy && !isOnCooldown)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void UpdateEndTurnPulse()
+    {
+        if (endTurnPulse == null)
+            return;
+
+        bool shouldPulse =
+            currentCharacter != null &&
+            currentCharacter.IsPlayer &&
+            !HasUsableSkill(currentCharacter);
+
+        endTurnPulse.SetPulsing(shouldPulse);
     }
 }

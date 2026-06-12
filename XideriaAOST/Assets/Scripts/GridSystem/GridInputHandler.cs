@@ -20,6 +20,7 @@ public class GridInputHandler : MonoBehaviour
     [SerializeField] private GameObject aoeTilePrefab;
     [SerializeField] private BattleHUD battleHUD;
     [SerializeField] private CharacterInfoHUD characterInfoHUD;
+    [SerializeField] private GameObject dangerRangeTilePrefab;
 
     private List<GameObject> aoeTiles = new();
     private Character selectedCharacter;
@@ -38,6 +39,8 @@ public class GridInputHandler : MonoBehaviour
     [SerializeField] private HelmetHoverUI helmetHoverUI;
     private CharacterPositionIndicator selectedIndicator;
     private CharacterPositionIndicator turnIndicator;
+    private List<GameObject> dangerRangeTiles = new();
+    private HashSet<Vector2Int> dangerousPreviewCells = new();
 
     private void Start()
     {
@@ -110,6 +113,19 @@ public class GridInputHandler : MonoBehaviour
         {
             if (!isCharacterSelected)
                 return;
+
+            if (currentMode == ActionMode.SelfSkillConfirm)
+            {
+                currentMode = ActionMode.Move;
+
+                battleHUD.SetSelectedSkill(-1);
+
+                ClearTiles();
+                ClearAoeTiles();
+                ClearRangeTiles();
+
+                return;
+            }
 
             if (currentMode == ActionMode.BasicAttack)
             {
@@ -189,6 +205,15 @@ public class GridInputHandler : MonoBehaviour
 
             DrawAoePreview();
         }
+        else if (currentMode == ActionMode.SelfSkillConfirm)
+        {
+            currentPath.Clear();
+            ClearTiles();
+            ClearRangeTiles();
+
+            var skill = selectedCharacter.GetSkill(selectedSkillIndex);
+            DrawSelfSkillPreview(skill);
+        }
     }
 
     private void OnTurnStarted(Character character)
@@ -206,6 +231,7 @@ public class GridInputHandler : MonoBehaviour
             selectedCharacter.GridPosition,
             energy
         );
+        UpdateDangerousPreviewCells();
     }
 
     private void UpdateBasicAttackRange()
@@ -275,6 +301,20 @@ public class GridInputHandler : MonoBehaviour
 
         if (!isCharacterSelected || selectedCharacter == null)
             return;
+
+        if (currentMode == ActionMode.SelfSkillConfirm)
+        {
+            var skill = selectedCharacter.GetSkill(selectedSkillIndex);
+
+            if (skill == null)
+            {
+                CancelSelection();
+                return;
+            }
+
+            StartCoroutine(ExecuteSkill(skill, selectedCharacter.GridPosition));
+            return;
+        }
 
         if (!Physics.Raycast(ray, out RaycastHit hitGrid, 100f, gridLayer))
             return;
@@ -377,6 +417,13 @@ public class GridInputHandler : MonoBehaviour
         if (skill == null)
             return;
 
+        if (currentMode == ActionMode.SelfSkillConfirm &&
+            selectedSkillIndex == index)
+        {
+            StartCoroutine(ExecuteSkill(skill, selectedCharacter.GridPosition));
+            return;
+        }
+
         if (!selectedCharacter.Stats.HasEnergy(skill.EnergyCost) ||
             selectedCharacter.IsSkillOnCooldown(skill))
         {
@@ -386,12 +433,18 @@ public class GridInputHandler : MonoBehaviour
 
         selectedSkillIndex = index;
 
-        Debug.Log($"Skill seleccionada: {skill.Name}");
-
         if (skill.TargetType == SkillTargetType.Self)
         {
-            battleHUD.FlashSkillSelected(index);
-            StartCoroutine(ExecuteSkill(skill, selectedCharacter.GridPosition));
+            battleHUD.SetSelectedSkill(index);
+
+            currentMode = ActionMode.SelfSkillConfirm;
+
+            ClearTiles();
+            ClearRangeTiles();
+            ClearAoeTiles();
+
+            DrawSelfSkillPreview(skill);
+
             return;
         }
 
@@ -645,6 +698,43 @@ public class GridInputHandler : MonoBehaviour
         );
     }
 
+    private void UpdateDangerousPreviewCells()
+    {
+        dangerousPreviewCells.Clear();
+
+        foreach (var cell in reachableCells)
+        {
+            GridCell gridCell = gridSystem.GetCell(cell);
+
+            if (gridCell == null || gridCell.Type == CellType.Void)
+                continue;
+
+            foreach (var dir in GetDirections())
+            {
+                Vector2Int neighbor = cell + dir;
+
+                GridCell neighborCell = gridSystem.GetCell(neighbor);
+
+                if (neighborCell == null)
+                    continue;
+
+                if (neighborCell.Type == CellType.Void)
+                    dangerousPreviewCells.Add(neighbor);
+            }
+        }
+    }
+
+    private List<Vector2Int> GetDirections()
+    {
+        return new List<Vector2Int>
+    {
+        Vector2Int.up,
+        Vector2Int.down,
+        Vector2Int.left,
+        Vector2Int.right
+    };
+    }
+
     private void ClearAoeTiles()
     {
         foreach (var tile in aoeTiles)
@@ -695,11 +785,30 @@ public class GridInputHandler : MonoBehaviour
 
         foreach (var cell in reachableCells)
         {
+            GridCell gridCell = gridSystem.GetCell(cell);
+
+            if (gridCell != null && gridCell.Type == CellType.Void)
+                continue;
+
             Vector3 worldPos = gridSystem.GridToWorld(cell);
             worldPos += pathTileOffset;
 
             var tile = Instantiate(
                 tilePrefab,
+                worldPos,
+                Quaternion.Euler(90, 0, 0)
+            );
+
+            rangeTiles.Add(tile);
+        }
+
+        foreach (var cell in dangerousPreviewCells)
+        {
+            Vector3 worldPos = gridSystem.GridToWorld(cell);
+            worldPos += pathTileOffset;
+
+            var tile = Instantiate(
+                dangerRangeTilePrefab,
                 worldPos,
                 Quaternion.Euler(90, 0, 0)
             );
@@ -745,6 +854,33 @@ public class GridInputHandler : MonoBehaviour
         }
     }
 
+    private void DrawSelfSkillPreview(SkillBase skill)
+    {
+        ClearAoeTiles();
+
+        if (selectedCharacter == null || skill == null)
+            return;
+
+        foreach (var cell in skill.GetPreviewCells(
+            selectedCharacter.GridPosition,
+            selectedCharacter.GridPosition))
+        {
+            if (!gridSystem.IsValidCell(cell))
+                continue;
+
+            Vector3 worldPos = gridSystem.GridToWorld(cell);
+            worldPos += pathTileOffset;
+
+            var tile = Instantiate(
+                aoeTilePrefab,
+                worldPos,
+                Quaternion.Euler(90, 0, 0)
+            );
+
+            aoeTiles.Add(tile);
+        }
+    }
+
     private void OnDrawGizmos()
     {
         if (currentPath == null || currentPath.Count == 0 || gridSystem == null)
@@ -770,6 +906,7 @@ public class GridInputHandler : MonoBehaviour
     {
         None,
         Move,
-        BasicAttack
+        BasicAttack,
+        SelfSkillConfirm
     }
 }

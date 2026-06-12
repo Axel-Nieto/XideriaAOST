@@ -80,4 +80,20 @@ public class CharacterMovement : MonoBehaviour
                 yield break;
         }
     }
+
+    public IEnumerator MoveToCell(Vector2Int destination, float customSpeed)
+    {
+        float originalSpeed = moveSpeed;
+
+        moveSpeed = customSpeed;
+
+        List<Vector2Int> path = new()
+    {
+        destination
+    };
+
+        yield return FollowPath(path);
+
+        moveSpeed = originalSpeed;
+    }
 }

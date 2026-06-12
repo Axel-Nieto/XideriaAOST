@@ -59,15 +59,17 @@ public class WaterBasicSkill : SkillBase
         if (target == null)
             yield break;
 
-        int finalDamage = Mathf.Max(1, damage + user.Stats.Attack - target.Stats.Defense);
+        int finalDamage = Mathf.Max(
+            1,
+            damage + user.Stats.Attack - target.Stats.Defense
+        );
+
         target.TakeDamage(finalDamage, DamageType.Water);
 
-        TryPush(user, target, grid);
-
-        yield return null;
+        yield return TryPush(user, target, grid);
     }
 
-    private void TryPush(Character user, Character target, GridSystem grid)
+    private IEnumerator TryPush(Character user, Character target, GridSystem grid)
     {
         Vector2Int direction = target.GridPosition - user.GridPosition;
 
@@ -76,17 +78,35 @@ public class WaterBasicSkill : SkillBase
         else
             direction = new Vector2Int(0, direction.y > 0 ? 1 : -1);
 
-        Vector2Int destination = target.GridPosition + direction * pushDistance;
+        Vector2Int origin = target.GridPosition;
+        Vector2Int destination = origin + direction * pushDistance;
 
         if (grid.IsBlockedForMovement(destination))
-            return;
+            yield break;
 
-        grid.UnregisterCharacter(target.GridPosition);
+        grid.UnregisterCharacter(origin);
 
-        target.transform.position = grid.GridToWorld(destination) + target.VisualOffset;
+        Vector3 startPosition = target.transform.position;
+        Vector3 endPosition = grid.GridToWorld(destination) + target.VisualOffset;
+
+        float pushSpeed = 10f;
+
+        while (Vector3.Distance(target.transform.position, endPosition) > 0.05f)
+        {
+            target.transform.position = Vector3.MoveTowards(
+                target.transform.position,
+                endPosition,
+                pushSpeed * Time.deltaTime
+            );
+
+            yield return null;
+        }
+
+        target.transform.position = endPosition;
+
         target.SetGridPosition(destination);
-
         grid.RegisterCharacter(destination, target);
+
         target.ProcessCurrentTerrain();
     }
 
