@@ -181,6 +181,11 @@ public class Character : MonoBehaviour
 
     private void Die()
     {
+        if (!IsPlayer)
+        {
+            GetComponent<EnemyLootDropper>()?.TryDrop(this);
+        }
+
         _grid.UnregisterCharacter(GridPosition);
         gameObject.SetActive(false);
     }

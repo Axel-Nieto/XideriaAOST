@@ -43,6 +43,20 @@ public class HelmetPickup : MonoBehaviour
                 return HelmetFactory.CreateDefaultHelmet();
         }
     }
+
+    public void SetGridPosition(Vector2Int gridPosition)
+    {
+        GridPosition = gridPosition;
+
+        if (_grid == null)
+            _grid = FindObjectOfType<GridSystem>();
+
+        if (_grid != null)
+        {
+            transform.position =
+                _grid.GridToWorld(GridPosition) + visualOffset;
+        }
+    }
 }
 
 public enum HelmetType

@@ -356,6 +356,7 @@ MonoBehaviour:
   currentEnergy: 0
   hasHelmet: 0
   equippedHelmetType: 0
+  forceNewRun: 0
 --- !u!4 &38989383
 Transform:
   m_ObjectHideFlags: 0
@@ -2999,6 +3000,53 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 938971563}
   m_CullTransparentMesh: 1
+--- !u!1 &953029693
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 953029695}
+  - component: {fileID: 953029694}
+  m_Layer: 0
+  m_Name: DropTable
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &953029694
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 953029693}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff9b50cd32d076d40b0c8e6b07885a1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HelmetDropTable
+  helmetPickupPrefabs:
+  - {fileID: 5307122232728041071, guid: 6d9594dde3690694a84e8d0b5287706f, type: 3}
+  - {fileID: 9169458669550499221, guid: 8367075371e239243b519667268f83c4, type: 3}
+--- !u!4 &953029695
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 953029693}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.2, y: 2.07342, z: 0.2227}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &983249506
 GameObject:
   m_ObjectHideFlags: 0
@@ -5632,8 +5680,31 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2176366916659692524, guid: dade2b881b801774391a6d285cf8bdb9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1593180330}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 9215078433803696543, guid: dade2b881b801774391a6d285cf8bdb9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1352074184033038623}
   m_SourcePrefab: {fileID: 100100000, guid: dade2b881b801774391a6d285cf8bdb9, type: 3}
+--- !u!1 &1352074184033038622 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9215078433803696543, guid: dade2b881b801774391a6d285cf8bdb9, type: 3}
+  m_PrefabInstance: {fileID: 1352074184033038621}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1352074184033038623
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1352074184033038622}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 205011471c580644781ad1d744c9c799, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyLootDropper
+  rewardDropChance: 1
+  helmetDropChance: 1
+  healAmount: 5
 --- !u!1001 &3557094228292635407
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6122,8 +6193,31 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 643964779160678144, guid: d9de3cad25761af418e94d74803f79fb, type: 3}
       insertIndex: -1
       addedObject: {fileID: 684232299}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6554652166455712344, guid: d9de3cad25761af418e94d74803f79fb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8810365063040805427}
   m_SourcePrefab: {fileID: 100100000, guid: d9de3cad25761af418e94d74803f79fb, type: 3}
+--- !u!1 &8810365063040805426 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6554652166455712344, guid: d9de3cad25761af418e94d74803f79fb, type: 3}
+  m_PrefabInstance: {fileID: 8810365063040805425}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8810365063040805427
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8810365063040805426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 205011471c580644781ad1d744c9c799, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyLootDropper
+  rewardDropChance: 1
+  helmetDropChance: 1
+  healAmount: 5
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -6149,3 +6243,4 @@ SceneRoots:
   - {fileID: 1585853734}
   - {fileID: 1660557803}
   - {fileID: 38989383}
+  - {fileID: 953029695}
