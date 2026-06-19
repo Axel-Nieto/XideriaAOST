@@ -105,6 +105,7 @@ GameObject:
   - component: {fileID: 7308124857279026096}
   - component: {fileID: 6636659004518384819}
   - component: {fileID: 3826183753003728720}
+  - component: {fileID: 7304882463643250356}
   m_Layer: 0
   m_Name: Larva
   m_TagString: Untagged
@@ -142,6 +143,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Character
   startGridPosition: {x: 9, y: 9}
+  modelForwardYOffset: 90
   baseStats:
     attack: 4
     defense: 2
@@ -150,6 +152,7 @@ MonoBehaviour:
     energyRegen: 6
   visualSpawnOffset: {x: -0.5, y: 0.1, z: -0.5}
   isPlayer: 0
+  helmetSocket: {fileID: 0}
 --- !u!114 &5006836337009051739
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -224,6 +227,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5537837ee409a1d40a7b62fd6d1894ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LarvaAI
+--- !u!114 &7304882463643250356
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5643338015365915146}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 205011471c580644781ad1d744c9c799, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyLootDropper
+  rewardDropChance: 0.7
+  helmetDropChance: 0.3
+  healAmount: 5
 --- !u!1 &6792052153288717098
 GameObject:
   m_ObjectHideFlags: 0

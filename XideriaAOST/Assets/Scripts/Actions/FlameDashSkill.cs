@@ -108,7 +108,7 @@ public class FlameDashSkill : SkillBase
                 damage + user.Stats.Attack - target.Stats.Defense
             );
 
-            target.TakeDamage(finalDamage, DamageType.Fire);
+            target.TakeDamage(finalDamage, DamageType.Fire, user);
         }
     }
 

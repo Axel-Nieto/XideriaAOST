@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 public static class GameSession
@@ -20,6 +21,12 @@ public class GameStateManager : MonoBehaviour
 
     private void Update()
     {
+        if (Keyboard.current.lKey.wasPressedThisFrame)
+        {
+            SkipLevel();
+            return;
+        }
+
         if (gameEnded)
             return;
 
@@ -84,5 +91,24 @@ public class GameStateManager : MonoBehaviour
         }
 
         return null;
+    }
+
+    private void SkipLevel()
+    {
+        Character player = FindPlayer();
+
+        if (!string.IsNullOrEmpty(nextLevelName))
+        {
+            player?.SavePlayerSession();
+
+            SceneTransitionManager.Instance.LoadScene(nextLevelName);
+        }
+        else
+        {
+
+            PlayerSessionData.Instance?.ResetSession();
+
+            SceneTransitionManager.Instance.LoadScene(tutorialSceneName);
+        }
     }
 }

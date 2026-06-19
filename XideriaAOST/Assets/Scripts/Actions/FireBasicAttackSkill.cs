@@ -49,6 +49,8 @@ public class FireBasicAttackSkill : SkillBase
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
+        user.FaceCell(targetCell);
+
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
@@ -70,7 +72,7 @@ public class FireBasicAttackSkill : SkillBase
 
         int damage = Mathf.Max(1, user.Stats.Attack - target.Stats.Defense);
 
-        target.TakeDamage(damage, DamageType.Fire);
+        target.TakeDamage(damage, DamageType.Fire, user);
         target.ApplyStatusEffect(new BurnEffect(3, 2));
 
         Debug.Log($"{user.name} usa {Name} contra {target.name} por {damage} de fuego");

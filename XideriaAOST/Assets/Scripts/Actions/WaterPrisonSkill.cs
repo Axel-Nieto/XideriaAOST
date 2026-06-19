@@ -40,6 +40,8 @@ public class WaterPrisonSkill : SkillBase
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
+        user.FaceCell(targetCell);
+
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
@@ -50,7 +52,7 @@ public class WaterPrisonSkill : SkillBase
 
         int finalDamage = Mathf.Max(1, damage + user.Stats.Attack - target.Stats.Defense);
 
-        target.TakeDamage(finalDamage, DamageType.Water);
+        target.TakeDamage(finalDamage, DamageType.Water, user);
         target.ApplyStatusEffect(new RootEffect(rootDuration));
 
         yield return null;

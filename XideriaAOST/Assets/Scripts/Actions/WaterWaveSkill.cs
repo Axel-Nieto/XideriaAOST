@@ -95,7 +95,7 @@ public class WaterWaveSkill : SkillBase
                 damage + user.Stats.Attack - target.Stats.Defense
             );
 
-            target.TakeDamage(finalDamage, DamageType.Water);
+            target.TakeDamage(finalDamage, DamageType.Water, user);
             target.ApplyStatusEffect(new SlowEffect(slowDuration));
         }
 

@@ -40,6 +40,8 @@ public class WaterBasicSkill : SkillBase
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
+        user.FaceCell(targetCell);
+
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
@@ -64,7 +66,7 @@ public class WaterBasicSkill : SkillBase
             damage + user.Stats.Attack - target.Stats.Defense
         );
 
-        target.TakeDamage(finalDamage, DamageType.Water);
+        target.TakeDamage(finalDamage, DamageType.Water, user);
 
         yield return TryPush(user, target, grid);
     }

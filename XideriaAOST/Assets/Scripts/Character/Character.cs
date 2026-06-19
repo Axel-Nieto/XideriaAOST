@@ -5,6 +5,7 @@ using UnityEngine;
 public class Character : MonoBehaviour
 {
     [SerializeField] private Vector2Int startGridPosition;
+    [SerializeField] private float modelForwardYOffset = 180f;
     [SerializeField] private CharacterStatsData baseStats;
     public HelmetData EquippedHelmet { get; private set; }
     public CharacterStats Stats { get; private set; }
@@ -99,6 +100,28 @@ public class Character : MonoBehaviour
         GridPosition = newPosition;
     }
 
+    public void FaceCell(Vector2Int targetCell)
+    {
+        Vector2Int direction = targetCell - GridPosition;
+
+        if (direction == Vector2Int.zero)
+            return;
+
+        FaceDirection(direction);
+    }
+
+    public void FaceDirection(Vector2Int direction)
+    {
+        Vector3 worldDirection = new Vector3(direction.x, 0f, direction.y);
+
+        if (worldDirection == Vector3.zero)
+            return;
+
+        transform.rotation =
+            Quaternion.LookRotation(worldDirection) *
+            Quaternion.Euler(0f, modelForwardYOffset, 0f);
+    }
+
     public void TakeDamage(int amount, DamageType damageType)
     {
         foreach (var passive in GetPassiveEffects())
@@ -126,6 +149,14 @@ public class Character : MonoBehaviour
         {
             Die();
         }
+    }
+
+    public void TakeDamage(int amount, DamageType damageType, Character attacker)
+    {
+        if (attacker != null)
+            FaceCell(attacker.GridPosition);
+
+        TakeDamage(amount, damageType);
     }
 
     public int GetMovementCostPerCell()

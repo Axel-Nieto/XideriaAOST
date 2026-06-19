@@ -1921,6 +1921,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Character
   startGridPosition: {x: 1, y: 1}
+  modelForwardYOffset: 180
   baseStats:
     attack: 5
     defense: 2
@@ -5611,6 +5612,10 @@ PrefabInstance:
       value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 1158872204221671853, guid: dade2b881b801774391a6d285cf8bdb9, type: 3}
+      propertyPath: modelForwardYOffset
+      value: 90
+      objectReference: {fileID: 0}
+    - target: {fileID: 1158872204221671853, guid: dade2b881b801774391a6d285cf8bdb9, type: 3}
       propertyPath: visualSpawnOffset.x
       value: -0.4
       objectReference: {fileID: 0}
@@ -6114,6 +6119,10 @@ PrefabInstance:
     - target: {fileID: 497329772674024630, guid: d9de3cad25761af418e94d74803f79fb, type: 3}
       propertyPath: visualYOffset
       value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 497329772674024630, guid: d9de3cad25761af418e94d74803f79fb, type: 3}
+      propertyPath: modelForwardYOffset
+      value: 90
       objectReference: {fileID: 0}
     - target: {fileID: 497329772674024630, guid: d9de3cad25761af418e94d74803f79fb, type: 3}
       propertyPath: visualSpawnOffset.x

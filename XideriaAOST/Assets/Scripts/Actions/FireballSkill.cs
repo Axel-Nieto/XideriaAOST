@@ -48,6 +48,8 @@ public class FireballSkill : SkillBase
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
+        user.FaceCell(targetCell);
+
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
@@ -74,7 +76,7 @@ public class FireballSkill : SkillBase
 
             int finalDamage = Mathf.Max(1, damage + user.Stats.Attack - target.Stats.Defense);
 
-            target.TakeDamage(finalDamage, DamageType.Fire);
+            target.TakeDamage(finalDamage, DamageType.Fire, user);
         }
 
         yield return null;

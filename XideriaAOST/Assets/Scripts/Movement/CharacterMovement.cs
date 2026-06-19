@@ -53,6 +53,8 @@ public class CharacterMovement : MonoBehaviour
 
         foreach (var step in path)
         {
+            _character.FaceCell(step);
+
             _grid.UnregisterCharacter(_character.GridPosition);
 
             Vector3 targetPos = _grid.GridToWorld(step) + _character.VisualOffset;

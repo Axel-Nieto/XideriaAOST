@@ -38,6 +38,8 @@ public class PoisonSpitSkill : SkillBase
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
+        user.FaceCell(targetCell);
+
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
@@ -51,7 +53,7 @@ public class PoisonSpitSkill : SkillBase
             damage + user.Stats.Attack - target.Stats.Defense
         );
 
-        target.TakeDamage(finalDamage, DamageType.Poison);
+        target.TakeDamage(damage, DamageType.Poison, user);
         target.ApplyStatusEffect(new PoisonEffect(poisonDuration, poisonDamage));
 
         yield return null;

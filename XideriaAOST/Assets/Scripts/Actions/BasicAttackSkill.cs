@@ -49,6 +49,8 @@ public class BasicAttackSkill : SkillBase
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
+        user.FaceCell(targetCell);
+
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
@@ -61,7 +63,7 @@ public class BasicAttackSkill : SkillBase
 
         Debug.Log($"{user.name} usa {Name} sobre {target.name} por {damage}");
 
-        target.TakeDamage(damage, DamageType.Physical);
+        target.TakeDamage(damage, DamageType.Physical, user);
 
         yield return null;
     }

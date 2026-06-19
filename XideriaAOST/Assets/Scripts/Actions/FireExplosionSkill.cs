@@ -64,7 +64,7 @@ public class FireExplosionSkill : SkillBase
 
             int finalDamage = Mathf.Max(1, damage + user.Stats.Attack - target.Stats.Defense);
 
-            target.TakeDamage(finalDamage, DamageType.Fire);
+            target.TakeDamage(finalDamage, DamageType.Fire, user);
             target.ApplyStatusEffect(new BurnEffect(2, 4));
         }
 

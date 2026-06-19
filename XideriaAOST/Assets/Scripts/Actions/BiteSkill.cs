@@ -34,6 +34,8 @@ public class BiteSkill : SkillBase
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
+        user.FaceCell(targetCell);
+
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
@@ -44,7 +46,7 @@ public class BiteSkill : SkillBase
 
         int damage = Mathf.Max(1, user.Stats.Attack - target.Stats.Defense);
 
-        target.TakeDamage(damage, DamageType.Physical);
+        target.TakeDamage(damage, DamageType.Physical, user);
 
         yield return null;
     }
