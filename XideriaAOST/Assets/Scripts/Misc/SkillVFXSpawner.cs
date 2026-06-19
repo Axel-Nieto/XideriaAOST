@@ -169,4 +169,59 @@ public static class SkillVFXSpawner
 
         return Object.Instantiate(prefab, position, rotation);
     }
+
+
+    //Slash
+    public static GameObject SpawnSlashAtWorld(
+    GameObject prefab,
+    Vector3 position,
+    DamageType damageType,
+    float destroyDelay = 1.5f)
+    {
+        if (prefab == null)
+            return null;
+
+        GameObject instance = Object.Instantiate(
+            prefab,
+            position,
+            Quaternion.Euler(90f, 0f, 0f) // usá el quaternion que te funcionó
+        );
+
+        ApplySlashColor(instance, GetSlashColor(damageType));
+
+        Object.Destroy(instance, destroyDelay);
+
+        return instance;
+    }
+
+    private static void ApplySlashColor(GameObject instance, Color color)
+    {
+        Renderer[] renderers = instance.GetComponentsInChildren<Renderer>();
+
+        foreach (var renderer in renderers)
+        {
+            foreach (var material in renderer.materials)
+            {
+                if (material.HasProperty("_ColorSlash"))
+                    material.SetColor("_ColorSlash", color);
+            }
+        }
+    }
+
+    private static Color GetSlashColor(DamageType damageType)
+    {
+        return damageType switch
+        {
+            DamageType.Fire => Hex("#FF4000"),
+            DamageType.Water => Hex("#00E5FF"),
+            DamageType.Poison => Hex("#7CFF4D"),
+            _ => Hex("#FFFFFF")
+        };
+    }
+
+    private static Color Hex(string hex)
+    {
+        ColorUtility.TryParseHtmlString(hex, out Color color);
+        return color;
+    }
 }

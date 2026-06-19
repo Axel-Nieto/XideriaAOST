@@ -45,21 +45,12 @@ public class WaterBasicSkill : SkillBase
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
-        Vector3 startPos = grid.GridToWorld(user.GridPosition) + Vector3.up * 1f;
-        Vector3 endPos = grid.GridToWorld(targetCell) + Vector3.up * 1f;
-
-        yield return SkillVFXSpawner.SpawnProjectile(
-            SkillVFXLibrary.Instance.waterBasic,
-            SkillVFXLibrary.Instance.waterBasic,
-            startPos,
-            endPos,
-            speed: 10f
-        );
-
         Character target = grid.GetCharacterAt(targetCell);
 
         if (target == null)
             yield break;
+
+        yield return BasicAttackVFX.Play(target, DamageType.Water);
 
         int finalDamage = Mathf.Max(
             1,

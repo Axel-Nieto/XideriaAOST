@@ -4,8 +4,10 @@ public class SkillVFXLibrary : MonoBehaviour
 {
     public static SkillVFXLibrary Instance { get; private set; }
 
+    [Header("Basic Attack")]
+    public GameObject basicSlash;
+
     [Header("Fire")]
-    public GameObject fireBasic;
     public GameObject fireballProjectile;
     public GameObject fireballExplosion;
     public GameObject flameDashTrail;
@@ -13,7 +15,6 @@ public class SkillVFXLibrary : MonoBehaviour
     public GameObject fireExplosion;
 
     [Header("Water")]
-    public GameObject waterBasic;
     public GameObject waterHeal;
     public GameObject waterWave;
     public GameObject waterPrison;

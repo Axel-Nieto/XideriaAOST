@@ -43,6 +43,17 @@ public class PoisonSpitSkill : SkillBase
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
+        Vector3 startPos = grid.GridToWorld(user.GridPosition) + Vector3.up * 1f;
+        Vector3 endPos = grid.GridToWorld(targetCell) + Vector3.up * 1f;
+
+        yield return SkillVFXSpawner.SpawnProjectile(
+            SkillVFXLibrary.Instance.poisonSpit,
+            null,
+            startPos,
+            endPos,
+            speed: 10f
+        );
+
         Character target = grid.GetCharacterAt(targetCell);
 
         if (target == null)

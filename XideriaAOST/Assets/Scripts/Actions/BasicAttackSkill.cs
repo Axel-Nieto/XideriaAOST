@@ -59,6 +59,8 @@ public class BasicAttackSkill : SkillBase
         if (target == null)
             yield break;
 
+        yield return BasicAttackVFX.Play(target, DamageType.Physical);
+
         int damage = Mathf.Max(1, user.Stats.Attack - target.Stats.Defense);
 
         Debug.Log($"{user.name} usa {Name} sobre {target.name} por {damage}");

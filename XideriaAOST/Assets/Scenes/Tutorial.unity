@@ -4135,17 +4135,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87913be9ae95c6748b076b1ae47f216d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SkillVFXLibrary
-  fireBasic: {fileID: 2690840151633016909, guid: 4a32c241ead6f1d4fa05e679d848092b, type: 3}
+  basicSlash: {fileID: 5693478556313208044, guid: edbb9c407a0b5d547b3996cbd85a6464, type: 3}
   fireballProjectile: {fileID: 5042446473105836695, guid: c4b1274495b8adf498f00e14a6514435, type: 3}
   fireballExplosion: {fileID: 6907562770880969022, guid: 28205f8bc0690b2428541b2f7c8f51d7, type: 3}
   flameDashTrail: {fileID: 4429816360833586470, guid: 00be6426e1f905542870283ee6c18899, type: 3}
   flameDashImpact: {fileID: 8747371725796100896, guid: 63ac0ccc98f96664eb1b4b047496e46e, type: 3}
   fireExplosion: {fileID: 1934272128246151556, guid: d8b012bfb63f5824d9ecef7db54db5ac, type: 3}
-  waterBasic: {fileID: 2690840151633016909, guid: 54ea37a91afbeb34983e9204a6e73c0a, type: 3}
   waterHeal: {fileID: 3567885193149749750, guid: c7c58c0e2cadda647b360b46fdd3bbd0, type: 3}
   waterWave: {fileID: 3628217786026338439, guid: 287558cde0880064099199e62865c4fe, type: 3}
   waterPrison: {fileID: 5362749153085598053, guid: cdda4d600eadcd74abbaefa3111cfb68, type: 3}
-  poisonSpit: {fileID: 0}
+  poisonSpit: {fileID: 105154628130394105, guid: 92a101e23983adb4fac1517ef341d141, type: 3}
   larvaBite: {fileID: 0}
 --- !u!4 &1660557803
 Transform:
