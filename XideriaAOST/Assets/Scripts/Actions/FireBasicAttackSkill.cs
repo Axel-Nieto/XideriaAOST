@@ -59,6 +59,11 @@ public class FireBasicAttackSkill : SkillBase
         if (target == null)
             yield break;
 
+        var anim = user.GetComponentInChildren<CharacterAnimationController>();
+
+        if (anim != null)
+            yield return anim.PlayAttackUntilHitFrame();
+
         yield return BasicAttackVFX.Play(target, DamageType.Fire);
 
         int damage = Mathf.Max(1, user.Stats.Attack - target.Stats.Defense);
@@ -66,7 +71,8 @@ public class FireBasicAttackSkill : SkillBase
         target.TakeDamage(damage, DamageType.Fire, user);
         target.ApplyStatusEffect(new BurnEffect(3, 2));
 
-        Debug.Log($"{user.name} usa {Name} contra {target.name} por {damage} de fuego");
+        if (anim != null)
+            yield return anim.WaitAttackFinished();
 
         yield return null;
     }
