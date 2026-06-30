@@ -66,7 +66,7 @@ Material:
     - _Test1: 15.8
     - _teste2: 11.25
     m_Colors:
-    - _BodyColor: {r: 0.5803922, g: 0.972549, b: 0.84569305, a: 1}
+    - _BodyColor: {r: 0.21787111, g: 0.78028965, b: 0.9056604, a: 1}
     - _Color_Edge: {r: 0.7147454, g: 9.189588, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

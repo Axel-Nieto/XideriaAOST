@@ -65,6 +65,6 @@ Material:
     - _VoroScale: 3.1
     - _VoroSpeed: 8.39
     m_Colors:
-    - _ColorSlash: {r: 188.31995, g: 4.0635605, b: 0, a: 1}
+    - _ColorSlash: {r: 0, g: 188.31995, b: 178.91331, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
