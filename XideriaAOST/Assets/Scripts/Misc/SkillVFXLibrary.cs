@@ -4,8 +4,10 @@ public class SkillVFXLibrary : MonoBehaviour
 {
     public static SkillVFXLibrary Instance { get; private set; }
 
-    [Header("Basic Attack")]
-    public GameObject basicSlash;
+    [Header("Basic Slash")]
+    public GameObject basicSlashNormal;
+    public GameObject basicSlashFire;
+    public GameObject basicSlashWater;
 
     [Header("Fire")]
     public GameObject fireballProjectile;
@@ -26,5 +28,15 @@ public class SkillVFXLibrary : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+    }
+
+    public GameObject GetBasicSlash(DamageType damageType)
+    {
+        return damageType switch
+        {
+            DamageType.Fire => basicSlashFire,
+            DamageType.Water => basicSlashWater,
+            _ => basicSlashNormal
+        };
     }
 }

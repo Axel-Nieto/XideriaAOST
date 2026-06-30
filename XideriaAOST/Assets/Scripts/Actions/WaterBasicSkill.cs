@@ -50,6 +50,11 @@ public class WaterBasicSkill : SkillBase
         if (target == null)
             yield break;
 
+        var anim = user.GetComponentInChildren<CharacterAnimationController>();
+
+        if (anim != null)
+            yield return anim.PlayAttackUntilHitFrame();
+
         yield return BasicAttackVFX.Play(target, DamageType.Water);
 
         int finalDamage = Mathf.Max(
@@ -60,6 +65,9 @@ public class WaterBasicSkill : SkillBase
         target.TakeDamage(finalDamage, DamageType.Water, user);
 
         yield return TryPush(user, target, grid);
+
+        if (anim != null)
+            yield return anim.WaitAttackFinished();
     }
 
     private IEnumerator TryPush(Character user, Character target, GridSystem grid)

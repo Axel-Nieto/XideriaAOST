@@ -51,8 +51,15 @@ public class CharacterMovement : MonoBehaviour
             yield break;
         }
 
-        foreach (var step in path)
+        CharacterAnimationController anim =
+            _character.GetComponentInChildren<CharacterAnimationController>();
+
+        anim?.SetWalking(true);
+
+        for (int i = 0; i < path.Count; i++)
         {
+            Vector2Int step = path[i];
+
             _character.FaceCell(step);
 
             _grid.UnregisterCharacter(_character.GridPosition);
@@ -60,8 +67,19 @@ public class CharacterMovement : MonoBehaviour
             Vector3 targetPos = _grid.GridToWorld(step) + _character.VisualOffset;
             Vector3 targetFlat = new Vector3(targetPos.x, transform.position.y, targetPos.z);
 
+            bool isLastStep = (i == path.Count - 1);
+            bool walkStopped = false;
+
             while (Vector3.Distance(transform.position, targetFlat) > 0.05f)
             {
+                if (isLastStep &&
+                    !walkStopped &&
+                    Vector3.Distance(transform.position, targetFlat) < 0.5f)
+                {
+                    anim?.SetWalking(false);
+                    walkStopped = true;
+                }
+
                 transform.position = Vector3.MoveTowards(
                     transform.position,
                     targetFlat,
@@ -71,7 +89,11 @@ public class CharacterMovement : MonoBehaviour
                 yield return null;
             }
 
-            transform.position = new Vector3(targetFlat.x, transform.position.y, targetFlat.z);
+            transform.position = new Vector3(
+                targetFlat.x,
+                transform.position.y,
+                targetFlat.z
+            );
 
             _character.SetGridPosition(step);
 
@@ -79,8 +101,19 @@ public class CharacterMovement : MonoBehaviour
             _character.ProcessCurrentTerrain();
 
             if (!_character.Stats.IsAlive)
+            {
+                anim?.SetWalking(false);
                 yield break;
+            }
+
+            if (_character.HasStatusEffect<RootEffect>())
+            {
+                anim?.SetWalking(false);
+                yield break;
+            }
         }
+
+        anim?.SetWalking(false);
     }
 
     public IEnumerator MoveToCell(Vector2Int destination, float customSpeed)

@@ -49,6 +49,7 @@ public class BasicAttackSkill : SkillBase
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
+
         user.FaceCell(targetCell);
 
         user.Stats.ConsumeEnergy(EnergyCost);
@@ -59,13 +60,21 @@ public class BasicAttackSkill : SkillBase
         if (target == null)
             yield break;
 
+        var anim = user.GetComponentInChildren<CharacterAnimationController>();
+
+        if (anim != null)
+            yield return anim.PlayAttackUntilHitFrame();
+
+
+
         yield return BasicAttackVFX.Play(target, DamageType.Physical);
 
         int damage = Mathf.Max(1, user.Stats.Attack - target.Stats.Defense);
 
-        Debug.Log($"{user.name} usa {Name} sobre {target.name} por {damage}");
-
         target.TakeDamage(damage, DamageType.Physical, user);
+
+        if (anim != null)
+            yield return anim.WaitAttackFinished();
 
         yield return null;
     }
