@@ -55,17 +55,17 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Color_1: 12.1
-    - _Opacity: 0.452
+    - _Color_1: 30
+    - _Opacity: 0.482
     - _QueueControl: 0
     - _QueueOffset: 1
-    - _RadialDistorcion: 3
+    - _RadialDistorcion: 4
     - _RadialScale: 20
-    - _Speed: 0.2
-    - _TwirlDistorcion: 3
+    - _Speed: 0.218
+    - _TwirlDistorcion: 3.18
     - _TwirlScale: 2
-    - _TwirlStrength: 15
+    - _TwirlStrength: 14.4
     m_Colors:
-    - _Color: {r: 92.198296, g: 16.96101, b: 20.604927, a: 1}
+    - _Color: {r: 11.984313, g: 3.548884, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
