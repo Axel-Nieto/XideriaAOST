@@ -7,6 +7,8 @@ public abstract class StatusEffect
     public bool IsFinished => RemainingTurns <= 0;
 
     public abstract string EffectName { get; }
+    public virtual Sprite Icon => null;
+    public string Description { get; } = string.Empty;
 
     protected StatusEffect(int duration)
     {

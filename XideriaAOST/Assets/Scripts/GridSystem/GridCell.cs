@@ -13,7 +13,7 @@ public class GridCell
             CellType.Ground => 1,
             CellType.Water => 2,
             CellType.Lava => 3,
-            CellType.Void => 1,
+            CellType.Void => 4,
             CellType.Blocked => int.MaxValue,
             _ => int.MaxValue
         };

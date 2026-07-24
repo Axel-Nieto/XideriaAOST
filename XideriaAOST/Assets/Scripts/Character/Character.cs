@@ -28,6 +28,8 @@ public class Character : MonoBehaviour
     private GameObject currentHelmetVisual;
 
     public bool IsPlayer => isPlayer;
+    private bool isDying;
+    public bool IsDying => isDying;
 
     public SkillBase BasicSkill { get; private set; }
 
@@ -141,6 +143,8 @@ public class Character : MonoBehaviour
             return;
         }
 
+        GetComponentInChildren<CharacterAnimationController>()?.PlayHit();
+
         Stats.TakeDamage(amount);
 
         floatingText?.ShowDamage(amount, damageType);
@@ -212,11 +216,21 @@ public class Character : MonoBehaviour
 
     private void Die()
     {
-        if (!IsPlayer)
-        {
-            GetComponent<EnemyLootDropper>()?.TryDrop(this);
-        }
+        StartCoroutine(DieRoutine());
+    }
 
+    private IEnumerator DieRoutine()
+    {
+        isDying = true;
+        if (!IsPlayer && GetComponentInChildren<CharacterAnimationController>())
+        {
+            GetComponentInChildren<CharacterAnimationController>()?.PlayDeath();
+
+            yield return new WaitForSeconds(3f);
+
+        }
+        if (!isPlayer) GetComponent<EnemyLootDropper>()?.TryDrop(this);
+        
         _grid.UnregisterCharacter(GridPosition);
         gameObject.SetActive(false);
     }

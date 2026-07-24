@@ -41,11 +41,19 @@ public class WaterHealSkill : SkillBase
 
         user.StartCooldown(this);
 
+        CharacterAnimationController anim =
+            user.GetComponentInChildren<CharacterAnimationController>();
+
+        if (anim != null)
+            yield return anim.PlayCastUntilHitFrame();
+
+
         SkillVFXSpawner.SpawnAttached(SkillVFXLibrary.Instance.waterHeal, user.transform, Vector3.up * 0.5f);
 
         user.Heal(healAmount);
 
-        yield return null;
+        if (anim != null)
+            yield return anim.WaitCastFinished();
     }
 
     public override string GetTooltipDetails(Character user)

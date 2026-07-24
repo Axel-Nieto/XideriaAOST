@@ -11,7 +11,11 @@ public class EnemyLootDropper : MonoBehaviour
     [SerializeField] private float helmetDropChance = 0.6f;
 
     [Header("Heal Reward")]
+    [SerializeField] private GameObject healRewardPrefab;
+    [SerializeField] private float healRewardLifetime = 3f;
+    [SerializeField] private Vector3 healRewardOffset = Vector3.up * 0.5f;
     [SerializeField] private int healAmount = 5;
+
 
     public void TryDrop(Character deadEnemy)
     {
@@ -24,7 +28,7 @@ public class EnemyLootDropper : MonoBehaviour
         if (Random.value <= helmetDropChance)
             DropHelmet(deadEnemy);
         else
-            HealPlayer();
+            HealPlayer(deadEnemy);
     }
 
     private void DropHelmet(Character deadEnemy)
@@ -54,17 +58,37 @@ public class EnemyLootDropper : MonoBehaviour
         pickup.SetGridPosition(deadEnemy.GridPosition);
     }
 
-    private void HealPlayer()
+    private void HealPlayer(Character deadEnemy)
+    {
+        if (healRewardPrefab != null)
+        {
+            GameObject heart = Instantiate(
+                healRewardPrefab,
+                deadEnemy.transform.position + healRewardOffset,
+                Quaternion.identity
+            );
+
+            Destroy(heart, healRewardLifetime);
+        }
+
+        Character player = FindPlayer();
+
+        if (player != null)
+        {
+            player.Heal(healAmount);
+        }
+    }
+
+    private Character FindPlayer()
     {
         Character[] characters = FindObjectsOfType<Character>();
 
         foreach (var character in characters)
         {
-            if (!character.IsPlayer)
-                continue;
-
-            character.Heal(healAmount);
-            return;
+            if (character.IsPlayer)
+                return character;
         }
+
+        return null;
     }
 }

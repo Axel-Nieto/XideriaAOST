@@ -53,6 +53,12 @@ public class FireballSkill : SkillBase
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
+        CharacterAnimationController anim =
+        user.GetComponentInChildren<CharacterAnimationController>();
+
+        if (anim != null)
+            yield return anim.PlayAttackUntilHitFrame();
+
         Vector3 startPos = grid.GridToWorld(user.GridPosition) + Vector3.up * 1f;
         Vector3 endPos = grid.GridToWorld(targetCell) + Vector3.up * 1f;
 
@@ -79,7 +85,8 @@ public class FireballSkill : SkillBase
             target.TakeDamage(finalDamage, DamageType.Fire, user);
         }
 
-        yield return null;
+        if (anim != null)
+            yield return anim.WaitAttackFinished();
     }
 
     private IEnumerable<Vector2Int> GetAreaCells(Vector2Int center, int radius)

@@ -96,16 +96,7 @@ public class GridInputHandler : MonoBehaviour
         {
             if (hoveredHelmet != null)
             {
-                selectedCharacter.EquipHelmet(
-                    hoveredHelmet.GetHelmet());
-
-                Destroy(hoveredHelmet.gameObject);
-
-                hoveredHelmet = null;
-
-                helmetHoverUI.Hide();
-
-                battleHUD.Refresh();
+                StartCoroutine(PickupHelmetRoutine(hoveredHelmet));
             }
         }
 
@@ -639,6 +630,30 @@ public class GridInputHandler : MonoBehaviour
         helmetHoverUI.Show(
             $"[F] Recoger {helmet.GetHelmet().Name}",
             screenPos);
+    }
+
+    private IEnumerator PickupHelmetRoutine(HelmetPickup helmet)
+    {
+        if (helmet == null || selectedCharacter == null)
+            yield break;
+
+        HelmetData helmetData = helmet.GetHelmet();
+
+        helmetHoverUI.Hide();
+
+        HelmetPickupAnimator pickupAnimator =
+            helmet.GetComponentInChildren<HelmetPickupAnimator>();
+
+        if (pickupAnimator != null)
+            yield return pickupAnimator.PlayPickup();
+
+        selectedCharacter.EquipHelmet(helmetData);
+
+        Destroy(helmet.gameObject);
+
+        hoveredHelmet = null;
+
+        battleHUD.Refresh();
     }
 
     private Vector2Int GetLastValidDestination(List<Vector2Int> path)
