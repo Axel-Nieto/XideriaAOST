@@ -8,6 +8,9 @@ public class CharacterAnimationController : MonoBehaviour
     private bool attackHitFrameReached;
     private bool attackAnimationFinished;
 
+    private bool castHitFrameReached;
+    private bool castAnimationFinished;
+
     private void Awake()
     {
         if (animator == null)
@@ -44,5 +47,48 @@ public class CharacterAnimationController : MonoBehaviour
     public void SetWalking(bool walking)
     {
         animator.SetBool("IsWalk", walking);
+    }
+
+    public IEnumerator PlayCastUntilHitFrame()
+    {
+        castHitFrameReached = false;
+        castAnimationFinished = false;
+
+        animator.SetTrigger("MagicAttack");
+
+        while (!castHitFrameReached)
+            yield return null;
+    }
+
+    public IEnumerator WaitCastFinished()
+    {
+        while (!castAnimationFinished)
+            yield return null;
+    }
+
+    public void OnCastHitFrame()
+    {
+        castHitFrameReached = true;
+    }
+
+    public void OnCastAnimationFinished()
+    {
+        castAnimationFinished = true;
+    }
+
+    public void PlayHit()
+    {
+        if (animator == null)
+            return;
+
+        animator.SetTrigger("IsHit");
+    }
+
+    public void PlayDeath()
+    {
+        if (animator == null)
+            return;
+
+        animator.SetTrigger("Death");
     }
 }

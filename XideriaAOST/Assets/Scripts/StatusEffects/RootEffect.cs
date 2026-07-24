@@ -4,6 +4,9 @@ public class RootEffect : StatusEffect
 {
     public override string EffectName => "Root";
 
+    public override Sprite Icon =>
+        StatusIconDatabase.Instance.rootIcon;
+
     private StatusVFXHandle vfxHandle;
 
     public RootEffect(int duration)

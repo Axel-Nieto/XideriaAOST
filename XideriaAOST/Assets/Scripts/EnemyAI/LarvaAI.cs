@@ -19,6 +19,9 @@ public class LarvaAI : MonoBehaviour, IEnemyAI
 
     public IEnumerator TakeTurn()
     {
+        if (!character.Stats.IsAlive || character.IsDying)
+            yield break;
+
         yield return new WaitForSeconds(0.5f);
 
         Character player = FindPlayer();

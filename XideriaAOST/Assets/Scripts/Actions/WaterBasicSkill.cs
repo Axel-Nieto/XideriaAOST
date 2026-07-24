@@ -64,6 +64,9 @@ public class WaterBasicSkill : SkillBase
 
         target.TakeDamage(finalDamage, DamageType.Water, user);
 
+        if (!target.Stats.IsAlive || target.IsDying)
+            yield break;
+
         yield return TryPush(user, target, grid);
 
         if (anim != null)

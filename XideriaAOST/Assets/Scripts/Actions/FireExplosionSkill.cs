@@ -46,6 +46,12 @@ public class FireExplosionSkill : SkillBase
         user.Stats.ConsumeEnergy(EnergyCost);
         user.StartCooldown(this);
 
+        CharacterAnimationController anim =
+            user.GetComponentInChildren<CharacterAnimationController>();
+
+        if (anim != null)
+            yield return anim.PlayCastUntilHitFrame();
+
         SkillVFXSpawner.SpawnAtCell(
             SkillVFXLibrary.Instance.fireExplosion,
             grid,
@@ -68,7 +74,8 @@ public class FireExplosionSkill : SkillBase
             target.ApplyStatusEffect(new BurnEffect(2, 4));
         }
 
-        yield return null;
+        if (anim != null)
+            yield return anim.WaitCastFinished();
     }
 
     private IEnumerable<Vector2Int> GetAreaCells(Vector2Int center, int radius)

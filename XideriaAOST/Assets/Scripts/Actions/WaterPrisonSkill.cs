@@ -50,12 +50,19 @@ public class WaterPrisonSkill : SkillBase
         if (target == null)
             yield break;
 
+        CharacterAnimationController anim =
+            user.GetComponentInChildren<CharacterAnimationController>();
+
+        if (anim != null)
+            yield return anim.PlayCastUntilHitFrame();
+
         int finalDamage = Mathf.Max(1, damage + user.Stats.Attack - target.Stats.Defense);
 
         target.TakeDamage(finalDamage, DamageType.Water, user);
         target.ApplyStatusEffect(new RootEffect(rootDuration));
 
-        yield return null;
+        if (anim != null)
+            yield return anim.WaitCastFinished();
     }
 
     public override string GetTooltipDetails(Character user)

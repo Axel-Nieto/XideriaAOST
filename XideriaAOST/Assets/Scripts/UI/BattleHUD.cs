@@ -1,12 +1,25 @@
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class BattleHUD : MonoBehaviour
 {
     [Header("Character Panel")]
-    [SerializeField] private TextMeshProUGUI characterInfoText;
+    [SerializeField] private GameObject characterPanel;
+    [SerializeField] private TextMeshProUGUI characterNameText;
+    [SerializeField] private Image hpFillImage;
+    [SerializeField] private TextMeshProUGUI hpText;
+    [SerializeField] private Image energyFillImage;
+    [SerializeField] private TextMeshProUGUI energyText;
+    [SerializeField] private TextMeshProUGUI helmetText;
+
+    [Header("Status / Passive Icons")]
+    [SerializeField] private Transform statusIconContainer;
+    [SerializeField] private StatusIconUI statusIconPrefab;
+    [SerializeField] private Sprite defaultStatusIcon;
+    [SerializeField] private Sprite defaultPassiveIcon;
 
     [Header("Skills")]
     [SerializeField] private SkillSlotUI[] skillSlots;
@@ -59,7 +72,6 @@ public class BattleHUD : MonoBehaviour
     {
         if (currentCharacter == null)
         {
-            characterInfoText.text = "";
             ClearSkills();
             return;
         }
@@ -100,10 +112,50 @@ public class BattleHUD : MonoBehaviour
             }
         }
 
-        characterInfoText.text = text;
-
+        RefreshCharacterPanel();
+        RefreshStatusIcons();
         RefreshSkills();
         UpdateEndTurnPulse();
+    }
+
+    private void RefreshCharacterPanel()
+    {
+        if (currentCharacter == null)
+        {
+            characterPanel.SetActive(false);
+            ClearStatusIcons();
+            return;
+        }
+
+        characterPanel.SetActive(true);
+
+        var stats = currentCharacter.Stats;
+
+        characterNameText.text = currentCharacter.name;
+
+        hpFillImage.fillAmount =
+            stats.MaxHP <= 0 ? 0f : (float)stats.CurrentHP / stats.MaxHP;
+
+        hpText.text = $"{stats.CurrentHP} / {stats.MaxHP}";
+
+        energyFillImage.fillAmount =
+            stats.MaxEnergy <= 0 ? 0f : (float)stats.CurrentEnergy / stats.MaxEnergy;
+
+        energyText.text = $"{stats.CurrentEnergy} / {stats.MaxEnergy}";
+
+        helmetText.text =
+            currentCharacter.IsPlayer && currentCharacter.EquippedHelmet != null
+                ? currentCharacter.EquippedHelmet.Name
+                : "";
+    }
+
+    public void ShowGenericTooltip(string title, string description)
+    {
+        tooltipPanel.SetActive(true);
+
+        tooltipText.text =
+            $"{title}\n" +
+            $"{description}";
     }
 
     public void SetPlayerTurn(bool isPlayerTurn)
@@ -165,7 +217,7 @@ public class BattleHUD : MonoBehaviour
 
     private Color Hex(string hex)
     {
-        if (ColorUtility.TryParseHtmlString(hex, out Color color))
+        if (UnityEngine.ColorUtility.TryParseHtmlString(hex, out Color color))
             return color;
 
         return Color.white;
@@ -246,7 +298,6 @@ public class BattleHUD : MonoBehaviour
         currentCharacter = null;
         selectedSkillIndex = -1;
 
-        characterInfoText.text = "";
         HideTooltip();
         ClearSkills();
     }
@@ -290,5 +341,63 @@ public class BattleHUD : MonoBehaviour
             !HasUsableSkill(currentCharacter);
 
         endTurnPulse.SetPulsing(shouldPulse);
+    }
+
+    private void RefreshStatusIcons()
+    {
+        ClearStatusIcons();
+
+        if (currentCharacter == null)
+            return;
+
+        foreach (var effect in currentCharacter.GetStatusEffects())
+        {
+            StatusIconUI icon = Instantiate(
+                statusIconPrefab,
+                statusIconContainer
+            );
+
+            Sprite effectIcon =
+                effect.Icon != null
+                ? effect.Icon
+                : StatusIconDatabase.Instance.defaultStatusIcon;
+
+            icon.Setup(
+                effectIcon,
+                effect.EffectName,
+                effect.Description,
+                effect.RemainingTurns,
+                this
+            );
+        }
+
+        foreach (var passive in currentCharacter.GetPassiveEffects())
+        {
+            StatusIconUI icon = Instantiate(
+                statusIconPrefab,
+                statusIconContainer
+            );
+
+            Sprite passiveIcon =
+                passive.Icon != null
+                ? passive.Icon
+                : StatusIconDatabase.Instance.defaultPassiveIcon;
+
+            icon.Setup(
+                passiveIcon,
+                passive.Name,
+                passive.Description,
+                0,
+                this
+            );
+        }
+    }
+
+    private void ClearStatusIcons()
+    {
+        foreach (Transform child in statusIconContainer)
+        {
+            Destroy(child.gameObject);
+        }
     }
 }

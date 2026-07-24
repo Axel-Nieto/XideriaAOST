@@ -6,6 +6,9 @@ public class BurnEffect : StatusEffect
 
     public override string EffectName => "Burn";
 
+    public override Sprite Icon =>
+        StatusIconDatabase.Instance.burnIcon;
+
     public BurnEffect(int duration, int damagePerTurn)
         : base(duration)
     {
