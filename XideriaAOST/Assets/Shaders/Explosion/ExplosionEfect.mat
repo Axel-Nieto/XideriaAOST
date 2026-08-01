@@ -28,6 +28,14 @@ Material:
         m_Texture: {fileID: 2800000, guid: f7b388c588b43484ba980d4fe5c01495, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _Mask:
+        m_Texture: {fileID: 2800000, guid: f7b388c588b43484ba980d4fe5c01495, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Texture2DAsset_18de793e3f5d4be3aedcc2f28aeb01d5_Out_0_Texture2D:
+        m_Texture: {fileID: 10300, guid: 0000000000000000f000000000000000, type: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -44,14 +52,19 @@ Material:
     m_Floats:
     - _DisolveEfect: 0
     - _DisolveEfect_1: 0
+    - _DistortionStrength: 0
+    - _Power: 2
+    - _Power_2: 0.4
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _SmoothStep: 1
-    - _SmoothStep_1: 0.08
+    - _ScrollSpeed: 0.1
+    - _SmoothStep: 2
+    - _SmoothStep_1: 0.8
+    - _TwirlStrength: 2
     m_Colors:
     - White: {r: 1, g: 1, b: 1, a: 1}
-    - _DarkColor: {r: 1, g: 0.11931791, b: 0, a: 1}
-    - _RedColor: {r: 1.435839, g: 0.23304193, b: 0, a: 1}
+    - _DarkColor: {r: 1, g: 0, b: 0, a: 1}
+    - _RedColor: {r: 2.9960783, g: 2.778486, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &8132834792818448002
