@@ -11,6 +11,9 @@ public class GridCell
         Type switch
         {
             CellType.Ground => 1,
+            CellType.ExitRun => 1,
+            CellType.ExitTutorial => 1,
+            CellType.Shop => 1,
             CellType.Water => 2,
             CellType.Lava => 3,
             CellType.Void => 4,

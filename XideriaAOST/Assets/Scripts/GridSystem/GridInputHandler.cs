@@ -41,6 +41,12 @@ public class GridInputHandler : MonoBehaviour
     private CharacterPositionIndicator turnIndicator;
     private List<GameObject> dangerRangeTiles = new();
     private HashSet<Vector2Int> dangerousPreviewCells = new();
+    private GameStateManager gameStateManager;
+
+    private void Awake()
+    {
+        gameStateManager = FindFirstObjectByType<GameStateManager>();
+    }
 
     private void Start()
     {
@@ -181,7 +187,19 @@ public class GridInputHandler : MonoBehaviour
             ClearAoeTiles();
 
             UpdateMovementRange();
-            DrawRangeTiles(movementRangeTilePrefab);
+
+            bool explorationMode =
+                gameStateManager != null &&
+                gameStateManager.IsExplorationMode;
+
+            if (explorationMode)
+            {
+                ClearRangeTiles();
+            }
+            else
+            {
+                DrawRangeTiles(movementRangeTilePrefab);
+            }
 
             UpdatePathPreview();
             DrawPathTiles();
@@ -214,15 +232,35 @@ public class GridInputHandler : MonoBehaviour
 
     private void UpdateMovementRange()
     {
-        if (selectedCharacter == null) return;
+        if (selectedCharacter == null)
+            return;
 
-        int energy = selectedCharacter.Stats.CurrentEnergy / selectedCharacter.GetMovementCostPerCell();
+        bool explorationMode =
+            gameStateManager != null &&
+            gameStateManager.IsExplorationMode;
+
+        int maxSteps;
+
+        if (explorationMode)
+        {
+            maxSteps = gridSystem.Width * gridSystem.Height;
+        }
+        else
+        {
+            maxSteps =
+                selectedCharacter.Stats.CurrentEnergy /
+                selectedCharacter.GetMovementCostPerCell();
+        }
 
         reachableCells = _rangeCalculator.GetReachableCells(
             selectedCharacter.GridPosition,
-            energy
+            maxSteps
         );
-        UpdateDangerousPreviewCells();
+
+        if (!explorationMode)
+            UpdateDangerousPreviewCells();
+        else
+            dangerousPreviewCells.Clear();
     }
 
     private void UpdateBasicAttackRange()
@@ -346,12 +384,26 @@ public class GridInputHandler : MonoBehaviour
 
             path.RemoveAt(0);
 
-            int energy = selectedCharacter.Stats.CurrentEnergy;
+            bool explorationMode =
+                gameStateManager != null &&
+                gameStateManager.IsExplorationMode;
 
-            if (path.Count > energy)
-                path = path.GetRange(0, energy);
+            if (!explorationMode)
+            {
+                int movementCost =
+                    selectedCharacter.GetMovementCostPerCell();
 
-            IAction action = new MoveAction(path);
+                int maxSteps =
+                    selectedCharacter.Stats.CurrentEnergy / movementCost;
+
+                if (path.Count > maxSteps)
+                    path = path.GetRange(0, maxSteps);
+            }
+
+            IAction action = new MoveAction(
+                path,
+                ignoreEnergyCost: explorationMode
+            );
             StartCoroutine(ExecuteSelectedAction(action));
             return;
         }
@@ -538,7 +590,20 @@ public class GridInputHandler : MonoBehaviour
             selectedIndicator?.SetSelected(true);
 
             UpdateMovementRange();
-            DrawRangeTiles(movementRangeTilePrefab);
+
+            bool explorationMode =
+                gameStateManager != null &&
+                gameStateManager.IsExplorationMode;
+
+            if (explorationMode)
+            {
+                ClearRangeTiles();
+            }
+            else
+            {
+                DrawRangeTiles(movementRangeTilePrefab);
+            }
+
             currentPath.Clear();
             ClearTiles();
         }

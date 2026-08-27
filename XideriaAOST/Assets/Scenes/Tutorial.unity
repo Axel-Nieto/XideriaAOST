@@ -515,8 +515,14 @@ MonoBehaviour:
   width: 12
   height: 12
   cellSize: 1
-  terrainCells: []
+  terrainCells:
+  - Position: {x: 10, y: 6}
+    Type: 6
+    targetSceneName: Lobby
   yOffset: 0
+  exitRunTilePrefab: {fileID: 794436471247037025, guid: a8c4faba2faf72b4d9af8f391fd4298a, type: 3}
+  exitTutorialTilePrefab: {fileID: 794436471247037025, guid: 32527a5b912e5cb4388d60c4c0173fc0, type: 3}
+  shopTilePrefab: {fileID: 794436471247037025, guid: 341cc0f1630024246b21667c9b1a1ba6, type: 3}
 --- !u!4 &146492726
 Transform:
   m_ObjectHideFlags: 0
@@ -1636,7 +1642,7 @@ MonoBehaviour:
   skillRangeTilePrefab: {fileID: 794436471247037025, guid: 7eea7bfda49143847aeac35dfb70e0b0, type: 3}
   pathTileOffset: {x: -0.3, y: 0.3, z: -0.3}
   rangeTilePrefab: {fileID: 794436471247037025, guid: 7eea7bfda49143847aeac35dfb70e0b0, type: 3}
-  playerCharacter: {fileID: 0}
+  playerCharacter: {fileID: 314890132}
   aoeTilePrefab: {fileID: 4749570132469252559, guid: 904cbf87eaffbf7428bf3cc67f187f64, type: 3}
   battleHUD: {fileID: 37589165}
   characterInfoHUD: {fileID: 220287046}
@@ -3559,6 +3565,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameStateManager
   nextLevelName: Level01
   tutorialSceneName: Tutorial
+  gridSystem: {fileID: 146492725}
 --- !u!4 &1125913478
 Transform:
   m_ObjectHideFlags: 0

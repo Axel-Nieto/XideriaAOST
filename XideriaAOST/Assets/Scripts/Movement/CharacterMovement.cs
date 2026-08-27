@@ -100,6 +100,11 @@ public class CharacterMovement : MonoBehaviour
             _grid.RegisterCharacter(step, _character);
             _character.ProcessCurrentTerrain();
 
+            if (_character.IsPlayer)
+            {
+                CheckSpecialCell(step);
+            }
+
             if (!_character.Stats.IsAlive)
             {
                 anim?.SetWalking(false);
@@ -130,5 +135,53 @@ public class CharacterMovement : MonoBehaviour
         yield return FollowPath(path);
 
         moveSpeed = originalSpeed;
+    }
+
+    private void CheckSpecialCell(Vector2Int position)
+    {
+        GameStateManager gameStateManager =
+            FindFirstObjectByType<GameStateManager>();
+
+        if (gameStateManager == null ||
+            !gameStateManager.IsExplorationMode)
+        {
+            return;
+        }
+
+        GridCell cell = _grid.GetCell(position);
+        CellType type = cell.Type;
+
+        switch (type)
+        {
+            case CellType.ExitTutorial:
+                LoadSpecialCellScene(position);
+                break;
+
+            case CellType.ExitRun:
+                LoadSpecialCellScene(position);
+                break;
+
+            case CellType.Shop:
+                Debug.Log("Tienda todavía no implementada.");
+                break;
+        }
+    }
+
+    private void LoadSpecialCellScene(Vector2Int position)
+    {
+        string targetScene = _grid.GetTargetScene(position);
+
+        if (string.IsNullOrWhiteSpace(targetScene))
+        {
+            Debug.LogWarning(
+                $"La celda {position} no tiene Target Scene Name configurado."
+            );
+
+            return;
+        }
+
+        _character.SavePlayerSession();
+
+        SceneTransitionManager.Instance.LoadScene(targetScene);
     }
 }

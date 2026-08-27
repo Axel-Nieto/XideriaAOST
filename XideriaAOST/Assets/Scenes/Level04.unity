@@ -6026,125 +6026,194 @@ MonoBehaviour:
   terrainCells:
   - Position: {x: 0, y: 0}
     Type: 3
+    targetSceneName: 
   - Position: {x: 0, y: 1}
     Type: 3
+    targetSceneName: 
   - Position: {x: 0, y: 2}
     Type: 3
+    targetSceneName: 
   - Position: {x: 0, y: 3}
     Type: 3
+    targetSceneName: 
   - Position: {x: 1, y: 0}
     Type: 3
+    targetSceneName: 
   - Position: {x: 1, y: 1}
     Type: 3
+    targetSceneName: 
   - Position: {x: 1, y: 2}
     Type: 3
+    targetSceneName: 
   - Position: {x: 1, y: 3}
     Type: 3
+    targetSceneName: 
   - Position: {x: 2, y: 0}
     Type: 3
+    targetSceneName: 
   - Position: {x: 2, y: 1}
     Type: 3
+    targetSceneName: 
   - Position: {x: 2, y: 2}
     Type: 3
+    targetSceneName: 
   - Position: {x: 2, y: 3}
     Type: 3
+    targetSceneName: 
   - Position: {x: 3, y: 0}
     Type: 3
+    targetSceneName: 
   - Position: {x: 3, y: 1}
     Type: 3
+    targetSceneName: 
   - Position: {x: 3, y: 2}
     Type: 3
+    targetSceneName: 
   - Position: {x: 3, y: 3}
     Type: 3
+    targetSceneName: 
   - Position: {x: 0, y: 12}
     Type: 3
+    targetSceneName: 
   - Position: {x: 0, y: 13}
     Type: 3
+    targetSceneName: 
   - Position: {x: 1, y: 13}
     Type: 3
+    targetSceneName: 
   - Position: {x: 12, y: 13}
     Type: 3
+    targetSceneName: 
   - Position: {x: 11, y: 13}
     Type: 3
+    targetSceneName: 
   - Position: {x: 3, y: 12}
     Type: 3
+    targetSceneName: 
   - Position: {x: 8, y: 12}
     Type: 3
+    targetSceneName: 
   - Position: {x: 10, y: 7}
     Type: 3
+    targetSceneName: 
   - Position: {x: 10, y: 1}
     Type: 3
+    targetSceneName: 
   - Position: {x: 7, y: 0}
     Type: 3
+    targetSceneName: 
   - Position: {x: 5, y: 2}
     Type: 3
+    targetSceneName: 
   - Position: {x: 3, y: 5}
     Type: 3
+    targetSceneName: 
   - Position: {x: 3, y: 7}
     Type: 4
+    targetSceneName: 
   - Position: {x: 3, y: 8}
     Type: 4
+    targetSceneName: 
   - Position: {x: 3, y: 9}
     Type: 4
+    targetSceneName: 
   - Position: {x: 3, y: 10}
     Type: 4
+    targetSceneName: 
   - Position: {x: 4, y: 7}
     Type: 4
+    targetSceneName: 
   - Position: {x: 4, y: 8}
     Type: 4
+    targetSceneName: 
   - Position: {x: 4, y: 9}
     Type: 4
+    targetSceneName: 
   - Position: {x: 4, y: 10}
     Type: 4
+    targetSceneName: 
   - Position: {x: 5, y: 7}
     Type: 4
+    targetSceneName: 
   - Position: {x: 5, y: 8}
     Type: 4
+    targetSceneName: 
   - Position: {x: 5, y: 9}
     Type: 4
+    targetSceneName: 
   - Position: {x: 5, y: 10}
     Type: 4
+    targetSceneName: 
   - Position: {x: 6, y: 10}
     Type: 4
+    targetSceneName: 
   - Position: {x: 6, y: 9}
     Type: 4
+    targetSceneName: 
   - Position: {x: 6, y: 8}
     Type: 4
+    targetSceneName: 
   - Position: {x: 6, y: 7}
     Type: 4
+    targetSceneName: 
   - Position: {x: 6, y: 6}
     Type: 4
+    targetSceneName: 
   - Position: {x: 6, y: 5}
     Type: 4
+    targetSceneName: 
   - Position: {x: 6, y: 4}
     Type: 4
+    targetSceneName: 
   - Position: {x: 7, y: 4}
     Type: 4
+    targetSceneName: 
   - Position: {x: 7, y: 5}
     Type: 4
+    targetSceneName: 
   - Position: {x: 7, y: 6}
     Type: 4
+    targetSceneName: 
   - Position: {x: 7, y: 7}
     Type: 4
+    targetSceneName: 
   - Position: {x: 7, y: 8}
     Type: 4
+    targetSceneName: 
   - Position: {x: 7, y: 9}
     Type: 4
+    targetSceneName: 
   - Position: {x: 7, y: 10}
     Type: 4
+    targetSceneName: 
   - Position: {x: 8, y: 10}
     Type: 4
+    targetSceneName: 
   - Position: {x: 8, y: 9}
     Type: 4
+    targetSceneName: 
   - Position: {x: 8, y: 8}
     Type: 4
+    targetSceneName: 
   - Position: {x: 8, y: 7}
     Type: 4
+    targetSceneName: 
   - Position: {x: 8, y: 6}
     Type: 4
+    targetSceneName: 
   - Position: {x: 8, y: 5}
     Type: 4
+    targetSceneName: 
+  - Position: {x: 11, y: 8}
+    Type: 5
+    targetSceneName: Level05
+  - Position: {x: 11, y: 9}
+    Type: 5
+    targetSceneName: Level05
   yOffset: 0
+  exitRunTilePrefab: {fileID: 794436471247037025, guid: a8c4faba2faf72b4d9af8f391fd4298a, type: 3}
+  exitTutorialTilePrefab: {fileID: 794436471247037025, guid: 32527a5b912e5cb4388d60c4c0173fc0, type: 3}
+  shopTilePrefab: {fileID: 794436471247037025, guid: 341cc0f1630024246b21667c9b1a1ba6, type: 3}
 --- !u!4 &146492726
 Transform:
   m_ObjectHideFlags: 0
@@ -13165,7 +13234,7 @@ MonoBehaviour:
   skillRangeTilePrefab: {fileID: 794436471247037025, guid: 7eea7bfda49143847aeac35dfb70e0b0, type: 3}
   pathTileOffset: {x: -0.3, y: 0.3, z: -0.3}
   rangeTilePrefab: {fileID: 794436471247037025, guid: 7eea7bfda49143847aeac35dfb70e0b0, type: 3}
-  playerCharacter: {fileID: 0}
+  playerCharacter: {fileID: 1733361991}
   aoeTilePrefab: {fileID: 4749570132469252559, guid: 904cbf87eaffbf7428bf3cc67f187f64, type: 3}
   battleHUD: {fileID: 37589165}
   characterInfoHUD: {fileID: 220287046}
@@ -13863,6 +13932,10 @@ PrefabInstance:
     - target: {fileID: 148436075675949062, guid: 4b42b6b28f207a74c81954448e985113, type: 3}
       propertyPath: m_Name
       value: LarbaVeneno
+      objectReference: {fileID: 0}
+    - target: {fileID: 148436075675949062, guid: 4b42b6b28f207a74c81954448e985113, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 667809825730904764, guid: 4b42b6b28f207a74c81954448e985113, type: 3}
       propertyPath: m_LocalScale.x
@@ -14846,6 +14919,10 @@ PrefabInstance:
     - target: {fileID: 148436075675949062, guid: 4b42b6b28f207a74c81954448e985113, type: 3}
       propertyPath: m_Name
       value: LarbaVeneno
+      objectReference: {fileID: 0}
+    - target: {fileID: 148436075675949062, guid: 4b42b6b28f207a74c81954448e985113, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 667809825730904764, guid: 4b42b6b28f207a74c81954448e985113, type: 3}
       propertyPath: m_LocalScale.x
@@ -22698,6 +22775,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameStateManager
   nextLevelName: Tutorial
   tutorialSceneName: Tutorial
+  gridSystem: {fileID: 146492725}
 --- !u!4 &1125913478
 Transform:
   m_ObjectHideFlags: 0
@@ -22834,6 +22912,10 @@ PrefabInstance:
     - target: {fileID: 148436075675949062, guid: 4b42b6b28f207a74c81954448e985113, type: 3}
       propertyPath: m_Name
       value: LarbaVeneno
+      objectReference: {fileID: 0}
+    - target: {fileID: 148436075675949062, guid: 4b42b6b28f207a74c81954448e985113, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 667809825730904764, guid: 4b42b6b28f207a74c81954448e985113, type: 3}
       propertyPath: m_LocalScale.x
@@ -31575,6 +31657,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 1a041f1bc545a114b8844b096f6bc42b, type: 3}
       propertyPath: m_Name
       value: 1-4-Base
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 1a041f1bc545a114b8844b096f6bc42b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

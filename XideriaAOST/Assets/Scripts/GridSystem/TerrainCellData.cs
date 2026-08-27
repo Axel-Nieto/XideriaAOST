@@ -5,4 +5,6 @@ public class TerrainCellData
 {
     public Vector2Int Position;
     public CellType Type;
+
+    public string targetSceneName;
 }

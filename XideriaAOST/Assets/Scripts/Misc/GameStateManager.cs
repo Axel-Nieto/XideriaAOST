@@ -2,6 +2,12 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
+public enum LevelPhase
+{
+    Combat,
+    Exploration
+}
+
 public static class GameSession
 {
     public static bool IsGameOver { get; set; }
@@ -11,6 +17,9 @@ public class GameStateManager : MonoBehaviour
 {
     [SerializeField] private string nextLevelName;
     [SerializeField] private string tutorialSceneName = "Tutorial";
+    [SerializeField] private GridSystem gridSystem;
+    public LevelPhase CurrentPhase { get; private set; } = LevelPhase.Combat;
+    public bool IsExplorationMode => CurrentPhase == LevelPhase.Exploration;
 
     private bool gameEnded = false;
 
@@ -40,25 +49,24 @@ public class GameStateManager : MonoBehaviour
 
         foreach (var character in characters)
         {
-            if (!character.IsPlayer && character.gameObject.activeSelf)
+            if (character.IsPlayer)
+                continue;
+
+            if (character.Stats.IsAlive && !character.IsDying)
                 return;
         }
 
-        gameEnded = true;
-        GameSession.IsGameOver = true;
+        EnterExplorationMode();
+    }
 
-        Character player = FindPlayer();
+    private void EnterExplorationMode()
+    {
+        if (CurrentPhase == LevelPhase.Exploration)
+            return;
 
-        if (!string.IsNullOrEmpty(nextLevelName) && nextLevelName != tutorialSceneName)
-        {
-            player?.SavePlayerSession();
-            SceneTransitionManager.Instance.LoadScene(nextLevelName);
-        }
-        else
-        {
-            PlayerSessionData.Instance?.ResetSession();
-            SceneTransitionManager.Instance.LoadScene(tutorialSceneName);
-        }
+        CurrentPhase = LevelPhase.Exploration;
+
+        gridSystem.SetSpecialCellsVisible(true);
     }
 
     private void CheckDefeat()
