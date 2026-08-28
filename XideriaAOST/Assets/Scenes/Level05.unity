@@ -11072,7 +11072,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c7454a1f9ff3bd4284952d4fbb89cd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GridSystem
-  width: 11
+  width: 12
   height: 14
   cellSize: 1
   terrainCells:
@@ -34146,8 +34146,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2b5cf522cc0876499c099ce2861bb39, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameStateManager
-  nextLevelName: Level03
-  tutorialSceneName: Tutorial
+  nextLevelName: Lobby
   gridSystem: {fileID: 146492725}
 --- !u!4 &1125913478
 Transform:

@@ -10819,18 +10819,6 @@ MonoBehaviour:
   height: 12
   cellSize: 1
   terrainCells:
-  - Position: {x: 0, y: 7}
-    Type: 3
-    targetSceneName: 
-  - Position: {x: 1, y: 7}
-    Type: 3
-    targetSceneName: 
-  - Position: {x: 2, y: 7}
-    Type: 3
-    targetSceneName: 
-  - Position: {x: 2, y: 9}
-    Type: 6
-    targetSceneName: Tutorial
   - Position: {x: 11, y: 5}
     Type: 5
     targetSceneName: Level01
@@ -10840,6 +10828,84 @@ MonoBehaviour:
   - Position: {x: 6, y: 1}
     Type: 7
     targetSceneName: Level01
+  - Position: {x: 7, y: 0}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 7, y: 1}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 7, y: 2}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 8, y: 0}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 8, y: 1}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 8, y: 2}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 9, y: 0}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 9, y: 1}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 9, y: 2}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 10, y: 0}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 10, y: 1}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 10, y: 2}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 11, y: 0}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 11, y: 1}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 11, y: 2}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 1, y: 9}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 3, y: 9}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 2, y: 10}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 10, y: 4}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 11, y: 4}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 10, y: 7}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 11, y: 7}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 9, y: 11}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 10, y: 11}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 11, y: 11}
+    Type: 3
+    targetSceneName: 
+  - Position: {x: 11, y: 10}
+    Type: 3
+    targetSceneName: 
   yOffset: 0
   exitRunTilePrefab: {fileID: 794436471247037025, guid: a8c4faba2faf72b4d9af8f391fd4298a, type: 3}
   exitTutorialTilePrefab: {fileID: 794436471247037025, guid: 32527a5b912e5cb4388d60c4c0173fc0, type: 3}
@@ -22081,6 +22147,56 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e67318849fa4f0744854be9cce0f56ce, type: 3}
   m_PrefabInstance: {fileID: 1489961649}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1017924341
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1017924343}
+  - component: {fileID: 1017924342}
+  m_Layer: 0
+  m_Name: SceneTransitionManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1017924342
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1017924341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5942bef52b5dffe4587743c50a2e16d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SceneTransitionManager
+  curtainMaterial: {fileID: 2100000, guid: badfa54192d10634d84960aad942008b, type: 2}
+  curtainPropertyName: _cortina
+  closeDuration: 0.8
+  openDuration: 0.8
+  minimumClosedTime: 0.4
+  gameplayHUD: {fileID: 383718571}
+--- !u!4 &1017924343
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1017924341}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.78872, y: 1.70803, z: 4.43644}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1023408944
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -28232,7 +28348,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameStateManager
   nextLevelName: Tutorial
-  tutorialSceneName: Tutorial
   gridSystem: {fileID: 146492725}
 --- !u!4 &1125913478
 Transform:
@@ -28967,6 +29082,56 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e67318849fa4f0744854be9cce0f56ce, type: 3}
   m_PrefabInstance: {fileID: 994339024}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1274380618
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1274380620}
+  - component: {fileID: 1274380619}
+  m_Layer: 0
+  m_Name: PlayerSessionData
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1274380619
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1274380618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f59bd17c55a0a664a9b1734db6059c72, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerSessionData
+  hasSavedData: 0
+  currentHP: 0
+  currentEnergy: 0
+  hasHelmet: 0
+  equippedHelmetType: 0
+  forceNewRun: 0
+--- !u!4 &1274380620
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1274380618}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.2, y: 2.07342, z: 0.2227}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1274552702 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e67318849fa4f0744854be9cce0f56ce, type: 3}
@@ -40001,6 +40166,7 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 330585546}
+  - {fileID: 1017924343}
   - {fileID: 410087041}
   - {fileID: 832575519}
   - {fileID: 146492726}
@@ -40019,3 +40185,4 @@ SceneRoots:
   - {fileID: 1116662390}
   - {fileID: 137909657}
   - {fileID: 151566613}
+  - {fileID: 1274380620}

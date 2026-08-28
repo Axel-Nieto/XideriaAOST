@@ -16,7 +16,6 @@ public static class GameSession
 public class GameStateManager : MonoBehaviour
 {
     [SerializeField] private string nextLevelName;
-    [SerializeField] private string tutorialSceneName = "Tutorial";
     [SerializeField] private GridSystem gridSystem;
     public LevelPhase CurrentPhase { get; private set; } = LevelPhase.Combat;
     public bool IsExplorationMode => CurrentPhase == LevelPhase.Exploration;
@@ -85,7 +84,7 @@ public class GameStateManager : MonoBehaviour
         Debug.Log("DERROTA");
 
         PlayerSessionData.Instance?.ResetSession();
-        SceneTransitionManager.Instance.LoadScene(tutorialSceneName);
+        SceneTransitionManager.Instance.LoadScene("Lobby");
     }
 
     private Character FindPlayer()
@@ -116,7 +115,7 @@ public class GameStateManager : MonoBehaviour
 
             PlayerSessionData.Instance?.ResetSession();
 
-            SceneTransitionManager.Instance.LoadScene(tutorialSceneName);
+            SceneTransitionManager.Instance.LoadScene("Lobby");
         }
     }
 }
