@@ -167,7 +167,7 @@ public class SkillSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (currentSkill == null)
             return;
 
-        battleHUD.ShowSkillTooltip(currentSkill);
+        battleHUD.ShowSkillTooltip(currentSkill, skillIndex);
     }
 
     public void OnPointerExit(PointerEventData eventData)

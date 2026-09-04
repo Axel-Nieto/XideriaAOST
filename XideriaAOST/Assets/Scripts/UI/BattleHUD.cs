@@ -24,7 +24,9 @@ public class BattleHUD : MonoBehaviour
 
     [Header("Tooltip")]
     [SerializeField] private GameObject tooltipPanel;
-    [SerializeField] private TextMeshProUGUI tooltipText;
+    [SerializeField] private TextMeshProUGUI tooltipTitleText;
+    [SerializeField] private TextMeshProUGUI tooltipDescriptionText;
+    [SerializeField] private TextMeshProUGUI tooltipStatsText;
 
     [Header("Turn")]
     [SerializeField] private Button endTurnButton;
@@ -108,9 +110,9 @@ public class BattleHUD : MonoBehaviour
     {
         tooltipPanel.SetActive(true);
 
-        tooltipText.text =
-            $"{title}\n" +
-            $"{description}";
+        tooltipTitleText.text = title;
+        tooltipDescriptionText.text = description;
+        tooltipStatsText.text = "";
     }
 
     public void SetPlayerTurn(bool isPlayerTurn)
@@ -209,35 +211,45 @@ public class BattleHUD : MonoBehaviour
         inputHandler.EndTurnFromUI();
     }
 
-    public void ShowSkillTooltip(SkillBase skill)
+    public void ShowSkillTooltip(SkillBase skill, int skillIndex)
     {
         if (skill == null)
             return;
 
         tooltipPanel.SetActive(true);
 
-        string rangeText = skill.TargetType == SkillTargetType.Self
-            ? "No requiere objetivo"
-            : $"Rango: {skill.MinRange}-{skill.MaxRange}";
+        // TÍTULO
+        string keyText =
+            skillIndex >= 0 && skillIndex < keys.Length
+                ? $" [{keys[skillIndex]}]"
+                : "";
 
-        string areaText = skill.AreaRadius > 0
-            ? $" | Área: radio {skill.AreaRadius}"
-            : "";
+        tooltipTitleText.text = $"{skill.Name}{keyText}";
 
+
+        // DESCRIPCIÓN
         string details = skill.GetTooltipDetails(currentCharacter);
 
-        string detailsText = string.IsNullOrWhiteSpace(details)
-            ? ""
-            : $"{details}\n\n";
+        tooltipDescriptionText.text =
+            string.IsNullOrWhiteSpace(details)
+                ? skill.Description
+                : $"{skill.Description}\n{details}";
 
-        tooltipText.text =
-            $"{skill.Name}\n" +
-            $"{skill.Description}\n\n" +
-            detailsText +
-            $"Coste: {skill.EnergyCost}\n" +
-            $"Cooldown: {skill.Cooldown}\n" +
-            $"Tipo: {skill.DamageType}\n" +
-            $"{rangeText}{areaText}";
+
+        // STATS
+        string rangeText = skill.TargetType == SkillTargetType.Self
+            ? "Personal"
+            : $"{skill.MinRange}-{skill.MaxRange}";
+
+        string areaText = skill.AreaRadius > 0
+            ? $"   Área: {skill.AreaRadius}"
+            : "";
+
+        tooltipStatsText.text =
+            $"Costo: {skill.EnergyCost}   " +
+            $"CD: {skill.Cooldown}   " +
+            $"Rango: {rangeText}" +
+            areaText;
     }
 
     public void HideTooltip()

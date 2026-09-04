@@ -242,8 +242,26 @@ public class GridSystem : MonoBehaviour
     {
         foreach (var terrainCell in terrainCells)
         {
-            if (terrainCell.Position == position)
-                return terrainCell.targetSceneName;
+            if (terrainCell.Position != position)
+                continue;
+
+            var targetScenes = terrainCell.TargetScenes;
+
+            if (targetScenes == null || targetScenes.Count == 0)
+            {
+                Debug.LogWarning(
+                    $"La celda {position} no tiene escenas destino configuradas."
+                );
+
+                return null;
+            }
+
+            if (targetScenes.Count == 1)
+                return targetScenes[0];
+
+            int randomIndex = Random.Range(0, targetScenes.Count);
+
+            return targetScenes[randomIndex];
         }
 
         return null;

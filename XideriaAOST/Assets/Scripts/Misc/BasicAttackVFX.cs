@@ -5,7 +5,9 @@ public static class BasicAttackVFX
 {
     public static IEnumerator Play(
         Character target,
-        DamageType damageType)
+        DamageType damageType,
+        Vector3 positionOffset,
+        float hitDelay)
     {
         if (SkillVFXLibrary.Instance == null || target == null)
             yield break;
@@ -18,10 +20,10 @@ public static class BasicAttackVFX
         SkillVFXSpawner.SpawnSlashAtWorld(
             slashPrefab,
             anchor.position,
-            new Vector3(0f, 1.2f, 0f),
+            positionOffset,
             destroyDelay: 3f
         );
 
-        yield return new WaitForSeconds(0.25f);
+        yield return new WaitForSeconds(hitDelay);
     }
 }

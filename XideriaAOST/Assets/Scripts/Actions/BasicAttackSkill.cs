@@ -3,6 +3,12 @@ using UnityEngine;
 
 public class BasicAttackSkill : SkillBase
 {
+    [SerializeField]
+    private Vector3 slashOffset = new Vector3(0f, 1.2f, 0f);
+
+    [SerializeField]
+    private float slashHitDelay = 0.25f;
+
     public BasicAttackSkill()
         : base(
             name: "Ataque Básico",
@@ -47,9 +53,11 @@ public class BasicAttackSkill : SkillBase
         return true;
     }
 
-    public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
+    public override IEnumerator Execute(
+    Character user,
+    Vector2Int targetCell,
+    GridSystem grid)
     {
-
         user.FaceCell(targetCell);
 
         user.Stats.ConsumeEnergy(EnergyCost);
@@ -60,18 +68,26 @@ public class BasicAttackSkill : SkillBase
         if (target == null)
             yield break;
 
-        var anim = user.GetComponentInChildren<CharacterAnimationController>();
+        var anim =
+            user.GetComponentInChildren<CharacterAnimationController>();
 
         if (anim != null)
             yield return anim.PlayAttackUntilHitFrame();
 
+        yield return BasicAttackVFX.Play(
+            target,
+            DamageType.Physical,
+            slashOffset,
+            slashHitDelay);
 
+        int damage = Mathf.Max(
+            1,
+            user.Stats.Attack - target.Stats.Defense);
 
-        yield return BasicAttackVFX.Play(target, DamageType.Physical);
-
-        int damage = Mathf.Max(1, user.Stats.Attack - target.Stats.Defense);
-
-        target.TakeDamage(damage, DamageType.Physical, user);
+        target.TakeDamage(
+            damage,
+            DamageType.Physical,
+            user);
 
         if (anim != null)
             yield return anim.WaitAttackFinished();
