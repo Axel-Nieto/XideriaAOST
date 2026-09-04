@@ -8,12 +8,10 @@ public class BattleHUD : MonoBehaviour
 {
     [Header("Character Panel")]
     [SerializeField] private GameObject characterPanel;
-    [SerializeField] private TextMeshProUGUI characterNameText;
-    [SerializeField] private Image hpFillImage;
-    [SerializeField] private TextMeshProUGUI hpText;
-    [SerializeField] private Image energyFillImage;
-    [SerializeField] private TextMeshProUGUI energyText;
-    [SerializeField] private TextMeshProUGUI helmetText;
+    [SerializeField] private TextMeshProUGUI hpCurrentText;
+    [SerializeField] private TextMeshProUGUI hpMaxText;
+    [SerializeField] private TextMeshProUGUI energyCurrentText;
+    [SerializeField] private TextMeshProUGUI energyMaxText;
 
     [Header("Status / Passive Icons")]
     [SerializeField] private Transform statusIconContainer;
@@ -34,16 +32,18 @@ public class BattleHUD : MonoBehaviour
     [Header("Input")]
     [SerializeField] private GridInputHandler inputHandler;
 
-    [Header("Skill Frame Colors")]
-    [SerializeField] private string defaultFrameHex = "#FFFFFF";
-    [SerializeField] private string fireFrameHex = "#D73C3C";
-    [SerializeField] private string waterFrameHex = "#4E9BEE";
+    
 
     [Header("End Turn Button")]
     [SerializeField] private EndTurnButtonPulse endTurnPulse;
 
+    [Header("Theme Controller")]
+    [SerializeField] private BattleHUDThemeController themeController;
+
     private Character currentCharacter;
     private int selectedSkillIndex = -1;
+
+    private bool themeInitialized = false;
 
     private readonly string[] keys = { "Q", "W", "E", "R" };
 
@@ -76,41 +76,7 @@ public class BattleHUD : MonoBehaviour
             return;
         }
 
-        var stats = currentCharacter.Stats;
-
-        string text =
-            $"{currentCharacter.name}\n" +
-            $"HP: {stats.CurrentHP} / {stats.MaxHP}\n" +
-            $"EN: {stats.CurrentEnergy} / {stats.MaxEnergy}\n";
-
-        if (currentCharacter.IsPlayer && currentCharacter.EquippedHelmet != null)
-        {
-            text += $"Casco: {currentCharacter.EquippedHelmet.Name}\n";
-        }
-
-        var effects = currentCharacter.GetStatusEffects();
-
-        if (effects != null && effects.Count > 0)
-        {
-            text += "\nEstados:\n";
-
-            foreach (var effect in effects)
-            {
-                text += $"- {effect.EffectName} ({effect.RemainingTurns})\n";
-            }
-        }
-
-        var passives = currentCharacter.GetPassiveEffects();
-
-        if (passives != null && passives.Count > 0)
-        {
-            text += "\nPasivas:\n";
-
-            foreach (var passive in passives)
-            {
-                text += $"- {passive.Name}\n";
-            }
-        }
+        RefreshHUDTheme();
 
         RefreshCharacterPanel();
         RefreshStatusIcons();
@@ -131,22 +97,11 @@ public class BattleHUD : MonoBehaviour
 
         var stats = currentCharacter.Stats;
 
-        characterNameText.text = currentCharacter.name;
+        hpCurrentText.text = stats.CurrentHP.ToString();
+        hpMaxText.text = stats.MaxHP.ToString();
 
-        hpFillImage.fillAmount =
-            stats.MaxHP <= 0 ? 0f : (float)stats.CurrentHP / stats.MaxHP;
-
-        hpText.text = $"{stats.CurrentHP} / {stats.MaxHP}";
-
-        energyFillImage.fillAmount =
-            stats.MaxEnergy <= 0 ? 0f : (float)stats.CurrentEnergy / stats.MaxEnergy;
-
-        energyText.text = $"{stats.CurrentEnergy} / {stats.MaxEnergy}";
-
-        helmetText.text =
-            currentCharacter.IsPlayer && currentCharacter.EquippedHelmet != null
-                ? currentCharacter.EquippedHelmet.Name
-                : "";
+        energyCurrentText.text = stats.CurrentEnergy.ToString();
+        energyMaxText.text = stats.MaxEnergy.ToString();
     }
 
     public void ShowGenericTooltip(string title, string description)
@@ -187,7 +142,6 @@ public class BattleHUD : MonoBehaviour
         }
 
         List<SkillBase> skills = currentCharacter.GetActiveSkills();
-        Color frameColor = GetFrameColor(currentCharacter);
 
         for (int i = 0; i < skillSlots.Length; i++)
         {
@@ -197,30 +151,44 @@ public class BattleHUD : MonoBehaviour
                 skill = skills[i];
 
             skillSlots[i].SetSkill(currentCharacter, skill);
-            skillSlots[i].SetFrameColor(frameColor);
             skillSlots[i].SetSelected(i == selectedSkillIndex);
         }
     }
 
-    private Color GetFrameColor(Character character)
+    private void RefreshHUDTheme()
     {
-        if (character == null || !character.IsPlayer || character.EquippedHelmet == null)
-            return Hex(defaultFrameHex);
+        if (themeController == null)
+            return;
+
+        if (currentCharacter == null || !currentCharacter.IsPlayer)
+            return;
+
+        HelmetType helmetType = GetHelmetType(currentCharacter);
+
+        themeController.SetHelmetTheme(
+            helmetType,
+            animate: themeInitialized
+        );
+
+        themeInitialized = true;
+    }
+
+
+    private HelmetType GetHelmetType(Character character)
+    {
+        if (character == null ||
+            !character.IsPlayer ||
+            character.EquippedHelmet == null)
+        {
+            return HelmetType.Default;
+        }
 
         return character.EquippedHelmet.Name switch
         {
-            "Casco de Fuego" => Hex(fireFrameHex),
-            "Casco de Agua" => Hex(waterFrameHex),
-            _ => Hex(defaultFrameHex)
+            "Casco de Fuego" => HelmetType.Fire,
+            "Casco de Agua" => HelmetType.Water,
+            _ => HelmetType.Default
         };
-    }
-
-    private Color Hex(string hex)
-    {
-        if (UnityEngine.ColorUtility.TryParseHtmlString(hex, out Color color))
-            return color;
-
-        return Color.white;
     }
 
     private void ClearSkills()

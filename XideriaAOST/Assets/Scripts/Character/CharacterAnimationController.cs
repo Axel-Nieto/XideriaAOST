@@ -11,6 +11,10 @@ public class CharacterAnimationController : MonoBehaviour
     private bool castHitFrameReached;
     private bool castAnimationFinished;
 
+    [SerializeField] private float referenceWalkSpeed = 3f;
+    [SerializeField] private float minWalkAnimationSpeed = 0.5f;
+    [SerializeField] private float maxWalkAnimationSpeed = 2f;
+
     private void Awake()
     {
         if (animator == null)
@@ -46,6 +50,9 @@ public class CharacterAnimationController : MonoBehaviour
 
     public void SetWalking(bool walking)
     {
+        if (animator == null)
+            return;
+
         animator.SetBool("IsWalk", walking);
     }
 
