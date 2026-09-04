@@ -4,5 +4,8 @@ public enum CellType
     Water,
     Lava,
     Blocked,
-    Void
+    Void,
+    ExitRun,
+    ExitTutorial,
+    Shop
 }

@@ -3,6 +3,12 @@ using UnityEngine;
 
 public class WaterBasicSkill : SkillBase
 {
+    [SerializeField]
+    private Vector3 slashOffset = new Vector3(0f, 1.2f, 0f);
+
+    [SerializeField]
+    private float slashHitDelay = 0.25f;
+
     private readonly int damage = 3;
     private readonly int pushDistance = 1;
 
@@ -38,7 +44,10 @@ public class WaterBasicSkill : SkillBase
         return true;
     }
 
-    public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
+    public override IEnumerator Execute(
+    Character user,
+    Vector2Int targetCell,
+    GridSystem grid)
     {
         user.FaceCell(targetCell);
 
@@ -50,24 +59,35 @@ public class WaterBasicSkill : SkillBase
         if (target == null)
             yield break;
 
-        var anim = user.GetComponentInChildren<CharacterAnimationController>();
+        var anim =
+            user.GetComponentInChildren<CharacterAnimationController>();
 
         if (anim != null)
             yield return anim.PlayAttackUntilHitFrame();
 
-        yield return BasicAttackVFX.Play(target, DamageType.Water);
+        yield return BasicAttackVFX.Play(
+            target,
+            DamageType.Water,
+            slashOffset,
+            slashHitDelay);
 
         int finalDamage = Mathf.Max(
             1,
             damage + user.Stats.Attack - target.Stats.Defense
         );
 
-        target.TakeDamage(finalDamage, DamageType.Water, user);
+        target.TakeDamage(
+            finalDamage,
+            DamageType.Water,
+            user);
 
         if (!target.Stats.IsAlive || target.IsDying)
             yield break;
 
-        yield return TryPush(user, target, grid);
+        yield return TryPush(
+            user,
+            target,
+            grid);
 
         if (anim != null)
             yield return anim.WaitAttackFinished();

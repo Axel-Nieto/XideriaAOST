@@ -3,6 +3,12 @@ using UnityEngine;
 
 public class FireBasicAttackSkill : SkillBase
 {
+    [SerializeField]
+    private Vector3 slashOffset = new Vector3(-1.5f, -2.5f, 0f);
+
+    [SerializeField]
+    private float slashHitDelay = 0.8f;
+
     public FireBasicAttackSkill()
         : base(
             name: "Ataque Ígneo",
@@ -47,7 +53,10 @@ public class FireBasicAttackSkill : SkillBase
         return true;
     }
 
-    public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
+    public override IEnumerator Execute(
+    Character user,
+    Vector2Int targetCell,
+    GridSystem grid)
     {
         user.FaceCell(targetCell);
 
@@ -59,22 +68,36 @@ public class FireBasicAttackSkill : SkillBase
         if (target == null)
             yield break;
 
-        var anim = user.GetComponentInChildren<CharacterAnimationController>();
+        var anim =
+            user.GetComponentInChildren<CharacterAnimationController>();
 
+        // Arranca la animación del personaje,
+        // pero NO esperamos hasta el hit frame.
         if (anim != null)
-            yield return anim.PlayAttackUntilHitFrame();
+            anim.StartCoroutine(anim.PlayAttackUntilHitFrame());
 
-        yield return BasicAttackVFX.Play(target, DamageType.Fire);
+        // El hacha aparece prácticamente al mismo tiempo.
+        yield return BasicAttackVFX.Play(
+            target,
+            DamageType.Fire,
+            slashOffset,
+            slashHitDelay);
 
-        int damage = Mathf.Max(1, user.Stats.Attack - target.Stats.Defense);
+        // El daño ocurre cuando el VFX llega al momento de impacto.
+        int damage = Mathf.Max(
+            1,
+            user.Stats.Attack - target.Stats.Defense);
 
-        target.TakeDamage(damage, DamageType.Fire, user);
-        target.ApplyStatusEffect(new BurnEffect(3, 2));
+        target.TakeDamage(
+            damage,
+            DamageType.Fire,
+            user);
+
+        target.ApplyStatusEffect(
+            new BurnEffect(3, 2));
 
         if (anim != null)
             yield return anim.WaitAttackFinished();
-
-        yield return null;
     }
 
     public override string GetTooltipDetails(Character user)

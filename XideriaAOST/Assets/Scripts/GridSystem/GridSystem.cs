@@ -12,6 +12,14 @@ public class GridSystem : MonoBehaviour
     private Dictionary<Vector2Int, GridCell> _grid = new();
 
     private Dictionary<Vector2Int, Character> _characters = new();
+    
+    [SerializeField] private GameObject exitRunTilePrefab;
+    [SerializeField] private GameObject exitTutorialTilePrefab;
+    [SerializeField] private GameObject shopTilePrefab;
+
+    private readonly List<GameObject> activeSpecialCellVisuals = new();
+    public int Width => width;
+    public int Height => height;
 
     private void Awake()
     {
@@ -175,6 +183,88 @@ public class GridSystem : MonoBehaviour
     public Vector3 GridToWorld(int x, int y)
     {
         return GridToWorld(new Vector2Int(x, y));
+    }
+
+    private IEnumerable<GridCell> GetAllCells()
+    {
+        return _grid.Values;
+    }
+
+    private void ClearSpecialCellVisuals()
+    {
+        foreach (var visual in activeSpecialCellVisuals)
+        {
+            if (visual != null)
+                Destroy(visual);
+        }
+
+        activeSpecialCellVisuals.Clear();
+    }
+
+    public void SetSpecialCellsVisible(bool visible)
+    {
+        ClearSpecialCellVisuals();
+
+        if (!visible)
+            return;
+
+        foreach (var cell in GetAllCells())
+        {
+            GameObject prefab = GetSpecialCellPrefab(cell.Type);
+
+            if (prefab == null)
+                continue;
+
+            Vector3 position = GridToWorld(cell.Position);
+
+            GameObject visual = Instantiate(
+                prefab,
+                position,
+                Quaternion.Euler(90f, 0f, 0f)
+            );
+
+            activeSpecialCellVisuals.Add(visual);
+        }
+    }
+
+    private GameObject GetSpecialCellPrefab(CellType type)
+    {
+        return type switch
+        {
+            CellType.ExitRun => exitRunTilePrefab,
+            CellType.ExitTutorial => exitTutorialTilePrefab,
+            CellType.Shop => shopTilePrefab,
+            _ => null
+        };
+    }
+
+    public string GetTargetScene(Vector2Int position)
+    {
+        foreach (var terrainCell in terrainCells)
+        {
+            if (terrainCell.Position != position)
+                continue;
+
+            var targetScenes = terrainCell.TargetScenes;
+
+            if (targetScenes == null || targetScenes.Count == 0)
+            {
+                Debug.LogWarning(
+                    $"La celda {position} no tiene escenas destino configuradas."
+                );
+
+                return null;
+            }
+
+            if (targetScenes.Count == 1)
+                return targetScenes[0];
+
+            int randomIndex = Random.Range(0, targetScenes.Count);
+
+            return targetScenes[randomIndex];
+        }
+
+        return null;
     }
 
     private void OnDrawGizmos()
