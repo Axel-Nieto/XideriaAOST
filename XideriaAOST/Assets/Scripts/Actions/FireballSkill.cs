@@ -59,15 +59,16 @@ public class FireballSkill : SkillBase
         if (anim != null)
             yield return anim.PlayAttackUntilHitFrame();
 
-        Vector3 startPos = grid.GridToWorld(user.GridPosition) + Vector3.up * 1f;
-        Vector3 endPos = grid.GridToWorld(targetCell) + Vector3.up * 1f;
+        Vector3 startPos = grid.GridToWorld(user.GridPosition) + Vector3.up * 3f;
+        Vector3 endPos = grid.GridToWorld(targetCell) + Vector3.up * 0f;
 
         yield return SkillVFXSpawner.SpawnProjectile(
             SkillVFXLibrary.Instance.fireballProjectile,
             SkillVFXLibrary.Instance.fireballExplosion,
             startPos,
             endPos,
-            speed: 10f
+            10f,
+            4f
         );
 
         foreach (var pos in GetAreaCells(targetCell, aoeRadius))

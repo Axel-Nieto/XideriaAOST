@@ -56,7 +56,7 @@ public class FireExplosionSkill : SkillBase
             SkillVFXLibrary.Instance.fireExplosion,
             grid,
             user.GridPosition,
-            Vector3.up * 0.05f
+            Vector3.up * 2f
         );
 
         Vector2Int center = user.GridPosition;

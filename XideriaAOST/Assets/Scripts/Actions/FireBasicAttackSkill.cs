@@ -4,7 +4,7 @@ using UnityEngine;
 public class FireBasicAttackSkill : SkillBase
 {
     [SerializeField]
-    private Vector3 slashOffset = new Vector3(-1.5f, -2.5f, 0f);
+    private Vector3 slashOffset = new Vector3(0f, -2f, 0f);
 
     [SerializeField]
     private float slashHitDelay = 0.8f;
