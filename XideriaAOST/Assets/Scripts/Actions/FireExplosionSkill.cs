@@ -9,6 +9,8 @@ public class FireExplosionSkill : SkillBase
     private readonly int aoeRadius;
     public override int AreaRadius => aoeRadius;
 
+    private readonly float explosionHitDelay = 1.2f;
+
     public FireExplosionSkill()
         : base(
             name: "Explosión de Fuego",
@@ -60,6 +62,8 @@ public class FireExplosionSkill : SkillBase
         );
 
         Vector2Int center = user.GridPosition;
+
+        yield return new WaitForSeconds(explosionHitDelay);
 
         foreach (var pos in GetAreaCells(center, aoeRadius))
         {

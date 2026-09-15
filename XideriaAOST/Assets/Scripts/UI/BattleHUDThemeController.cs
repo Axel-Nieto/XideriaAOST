@@ -117,17 +117,13 @@ public class BattleHUDThemeController : MonoBehaviour
         }
     }
 
-    public void SetHelmetTheme(
-    HelmetType helmetType,
-    bool animate = true)
+    public void SetHelmetTheme(HelmetType helmetType, bool animate = true)
     {
         HelmetUITheme newTheme = GetTheme(helmetType);
 
         if (newTheme == null)
         {
-            Debug.LogWarning(
-                $"No existe UI Theme para {helmetType}"
-            );
+            Debug.LogWarning($"No existe UI Theme para {helmetType}");
             return;
         }
 
@@ -141,55 +137,47 @@ public class BattleHUDThemeController : MonoBehaviour
         if (helmetType == currentHelmetType)
             return;
 
+        HelmetType previousHelmetType = currentHelmetType;
+
+        currentHelmetType = helmetType;
+
         if (transitionRoutine != null)
             StopCoroutine(transitionRoutine);
 
-        transitionRoutine =
-            StartCoroutine(
-                ChangeThemeRoutine(
-                    newTheme,
-                    helmetType
-                )
-            );
+        transitionRoutine = StartCoroutine(
+            ChangeThemeRoutine(
+                newTheme,
+                previousHelmetType
+            )
+        );
     }
 
     private IEnumerator ChangeThemeRoutine(
     HelmetUITheme newTheme,
-    HelmetType newHelmetType)
+    HelmetType previousHelmetType)
     {
-        HelmetUITheme currentTheme =
-            GetTheme(currentHelmetType);
+        HelmetUITheme previousTheme = GetTheme(previousHelmetType);
 
         Color oldColor =
-            currentTheme != null
-                ? currentTheme.color
+            previousTheme != null
+                ? previousTheme.color
                 : Color.white;
 
-        // Preparamos los dos colores
         SetActualColor(oldColor);
         SetNextColor(newTheme.color);
 
-        // Barrido de entrada invertido
-        yield return AnimateGrad(
-            hiddenGrad,
-            normalGrad
-        );
+        // Primera pasada
+        yield return AnimateGrad(hiddenGrad, normalGrad);
 
-        // Cuando ya está completamente mostrado el nuevo color
+        // Cambiamos sprites/estado visual
         ApplySprites(newTheme);
 
         SetActualColor(newTheme.color);
-
-        // Mantenemos el nuevo como destino también
         SetNextColor(newTheme.color);
 
-        // Regresamos el barrido
-        yield return AnimateGrad(
-            normalGrad,
-            hiddenGrad
-        );
+        // Segunda pasada
+        yield return AnimateGrad(normalGrad, hiddenGrad);
 
-        currentHelmetType = newHelmetType;
         transitionRoutine = null;
     }
 

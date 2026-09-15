@@ -4,10 +4,10 @@ using UnityEngine;
 public class WaterBasicSkill : SkillBase
 {
     [SerializeField]
-    private Vector3 slashOffset = new Vector3(0f, 1.2f, 0f);
+    private Vector3 slashOffset = new Vector3(0f, 1f, 0f);
 
     [SerializeField]
-    private float slashHitDelay = 0.25f;
+    private float slashHitDelay = 1.2f;
 
     private readonly int damage = 3;
     private readonly int pushDistance = 1;

@@ -8,6 +8,8 @@ public class FireballSkill : SkillBase
     private readonly int aoeRadius;
     public override int AreaRadius => aoeRadius;
 
+    private readonly float meteorHitDelay = 0.3f;
+
     public FireballSkill()
         : base(
             name: "Bola de Fuego",
@@ -46,7 +48,10 @@ public class FireballSkill : SkillBase
         return true;
     }
 
-    public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
+    public override IEnumerator Execute(
+    Character user,
+    Vector2Int targetCell,
+    GridSystem grid)
     {
         user.FaceCell(targetCell);
 
@@ -54,13 +59,16 @@ public class FireballSkill : SkillBase
         user.StartCooldown(this);
 
         CharacterAnimationController anim =
-        user.GetComponentInChildren<CharacterAnimationController>();
+            user.GetComponentInChildren<CharacterAnimationController>();
 
         if (anim != null)
             yield return anim.PlayAttackUntilHitFrame();
 
-        Vector3 startPos = grid.GridToWorld(user.GridPosition) + Vector3.up * 3f;
-        Vector3 endPos = grid.GridToWorld(targetCell) + Vector3.up * 0f;
+        Vector3 startPos =
+            grid.GridToWorld(user.GridPosition) + Vector3.up * 3f;
+
+        Vector3 endPos =
+            grid.GridToWorld(targetCell);
 
         yield return SkillVFXSpawner.SpawnProjectile(
             SkillVFXLibrary.Instance.fireballProjectile,
@@ -70,6 +78,8 @@ public class FireballSkill : SkillBase
             10f,
             4f
         );
+
+        yield return new WaitForSeconds(1.5f);
 
         foreach (var pos in GetAreaCells(targetCell, aoeRadius))
         {
@@ -81,9 +91,16 @@ public class FireballSkill : SkillBase
             if (target == null || target.IsPlayer == user.IsPlayer)
                 continue;
 
-            int finalDamage = Mathf.Max(1, damage + user.Stats.Attack - target.Stats.Defense);
+            int finalDamage = Mathf.Max(
+                1,
+                damage + user.Stats.Attack - target.Stats.Defense
+            );
 
-            target.TakeDamage(finalDamage, DamageType.Fire, user);
+            target.TakeDamage(
+                finalDamage,
+                DamageType.Fire,
+                user
+            );
         }
 
         if (anim != null)
