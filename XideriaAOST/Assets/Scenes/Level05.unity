@@ -21402,6 +21402,63 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 8c0fbdc922b20c94884d87b578f8bf61, type: 3}
   m_PrefabInstance: {fileID: 1915127124}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &797769707
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 797769709}
+  - component: {fileID: 797769708}
+  m_Layer: 0
+  m_Name: SkillVfxLibrary
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &797769708
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 797769707}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87913be9ae95c6748b076b1ae47f216d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SkillVFXLibrary
+  basicSlashNormal: {fileID: 751278366428672696, guid: 2182b13ce51422543901c35b580a00cf, type: 3}
+  basicSlashFire: {fileID: 1422044612133859029, guid: 7b5969d35fc593c43a141d944b8650f9, type: 3}
+  basicSlashWater: {fileID: 6652428419723858117, guid: 1682343445176ef4ebd6dc9cdd502a16, type: 3}
+  fireballProjectile: {fileID: 4402196241183793578, guid: d632032a79d7cd84786ba48158e61421, type: 3}
+  fireballExplosion: {fileID: 4402196241183793578, guid: d632032a79d7cd84786ba48158e61421, type: 3}
+  flameDashTrail: {fileID: 287017809976729531, guid: 34ba863327db2b842bdb4ccab5c9d43a, type: 3}
+  flameDashImpact: {fileID: 287017809976729531, guid: 34ba863327db2b842bdb4ccab5c9d43a, type: 3}
+  fireExplosion: {fileID: 6273277357490574891, guid: 402784ead56172440af677f3935bf7c4, type: 3}
+  waterHeal: {fileID: 3567885193149749750, guid: c7c58c0e2cadda647b360b46fdd3bbd0, type: 3}
+  waterWave: {fileID: 3628217786026338439, guid: 287558cde0880064099199e62865c4fe, type: 3}
+  waterPrison: {fileID: 5362749153085598053, guid: cdda4d600eadcd74abbaefa3111cfb68, type: 3}
+  poisonSpit: {fileID: 1600298896269730984, guid: 32daef941d6fc744b9c0bcfda2962868, type: 3}
+  larvaBite: {fileID: 8310159368324287946, guid: 0915bc8684df4584b8c4c014c4c4b169, type: 3}
+--- !u!4 &797769709
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 797769707}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.2, y: 2.07342, z: 0.2227}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &808646509 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 8c0fbdc922b20c94884d87b578f8bf61, type: 3}
@@ -33694,63 +33751,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: cadb4db07376b0140aae3ee4b1b66742, type: 3}
   m_PrefabInstance: {fileID: 1059220053}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1170495682
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1170495684}
-  - component: {fileID: 1170495683}
-  m_Layer: 0
-  m_Name: SkillVfxLibrary
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1170495683
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1170495682}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 87913be9ae95c6748b076b1ae47f216d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SkillVFXLibrary
-  basicSlashNormal: {fileID: 751278366428672696, guid: 2182b13ce51422543901c35b580a00cf, type: 3}
-  basicSlashFire: {fileID: 1422044612133859029, guid: 7b5969d35fc593c43a141d944b8650f9, type: 3}
-  basicSlashWater: {fileID: 6652428419723858117, guid: 1682343445176ef4ebd6dc9cdd502a16, type: 3}
-  fireballProjectile: {fileID: 4402196241183793578, guid: d632032a79d7cd84786ba48158e61421, type: 3}
-  fireballExplosion: {fileID: 4402196241183793578, guid: d632032a79d7cd84786ba48158e61421, type: 3}
-  flameDashTrail: {fileID: 287017809976729531, guid: 34ba863327db2b842bdb4ccab5c9d43a, type: 3}
-  flameDashImpact: {fileID: 287017809976729531, guid: 34ba863327db2b842bdb4ccab5c9d43a, type: 3}
-  fireExplosion: {fileID: 6273277357490574891, guid: 402784ead56172440af677f3935bf7c4, type: 3}
-  waterHeal: {fileID: 3567885193149749750, guid: c7c58c0e2cadda647b360b46fdd3bbd0, type: 3}
-  waterWave: {fileID: 3628217786026338439, guid: 287558cde0880064099199e62865c4fe, type: 3}
-  waterPrison: {fileID: 5362749153085598053, guid: cdda4d600eadcd74abbaefa3111cfb68, type: 3}
-  poisonSpit: {fileID: 105154628130394105, guid: 92a101e23983adb4fac1517ef341d141, type: 3}
-  larvaBite: {fileID: 0}
---- !u!4 &1170495684
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1170495682}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.2, y: 2.07342, z: 0.2227}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1180627917
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -41199,5 +41199,5 @@ SceneRoots:
   - {fileID: 173716338}
   - {fileID: 825521531}
   - {fileID: 622027026}
-  - {fileID: 1170495684}
   - {fileID: 844240968}
+  - {fileID: 797769709}

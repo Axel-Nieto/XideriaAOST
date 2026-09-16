@@ -18463,63 +18463,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b45787f980a856649b64f899910223c8, type: 3}
---- !u!1 &963154157
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 963154159}
-  - component: {fileID: 963154158}
-  m_Layer: 0
-  m_Name: SkillVfxLibrary
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &963154158
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 963154157}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 87913be9ae95c6748b076b1ae47f216d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SkillVFXLibrary
-  basicSlashNormal: {fileID: 751278366428672696, guid: 2182b13ce51422543901c35b580a00cf, type: 3}
-  basicSlashFire: {fileID: 1422044612133859029, guid: 7b5969d35fc593c43a141d944b8650f9, type: 3}
-  basicSlashWater: {fileID: 6652428419723858117, guid: 1682343445176ef4ebd6dc9cdd502a16, type: 3}
-  fireballProjectile: {fileID: 4402196241183793578, guid: d632032a79d7cd84786ba48158e61421, type: 3}
-  fireballExplosion: {fileID: 4402196241183793578, guid: d632032a79d7cd84786ba48158e61421, type: 3}
-  flameDashTrail: {fileID: 287017809976729531, guid: 34ba863327db2b842bdb4ccab5c9d43a, type: 3}
-  flameDashImpact: {fileID: 287017809976729531, guid: 34ba863327db2b842bdb4ccab5c9d43a, type: 3}
-  fireExplosion: {fileID: 6273277357490574891, guid: 402784ead56172440af677f3935bf7c4, type: 3}
-  waterHeal: {fileID: 3567885193149749750, guid: c7c58c0e2cadda647b360b46fdd3bbd0, type: 3}
-  waterWave: {fileID: 3628217786026338439, guid: 287558cde0880064099199e62865c4fe, type: 3}
-  waterPrison: {fileID: 5362749153085598053, guid: cdda4d600eadcd74abbaefa3111cfb68, type: 3}
-  poisonSpit: {fileID: 105154628130394105, guid: 92a101e23983adb4fac1517ef341d141, type: 3}
-  larvaBite: {fileID: 0}
---- !u!4 &963154159
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 963154157}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.2, y: 2.07342, z: 0.2227}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &978601328 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e67318849fa4f0744854be9cce0f56ce, type: 3}
@@ -30289,6 +30232,63 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: a1828f9a784ed0148a472157deaa8210, type: 3}
   m_PrefabInstance: {fileID: 1480609011}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1865070393
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1865070395}
+  - component: {fileID: 1865070394}
+  m_Layer: 0
+  m_Name: SkillVfxLibrary
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1865070394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1865070393}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87913be9ae95c6748b076b1ae47f216d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SkillVFXLibrary
+  basicSlashNormal: {fileID: 751278366428672696, guid: 2182b13ce51422543901c35b580a00cf, type: 3}
+  basicSlashFire: {fileID: 1422044612133859029, guid: 7b5969d35fc593c43a141d944b8650f9, type: 3}
+  basicSlashWater: {fileID: 6652428419723858117, guid: 1682343445176ef4ebd6dc9cdd502a16, type: 3}
+  fireballProjectile: {fileID: 4402196241183793578, guid: d632032a79d7cd84786ba48158e61421, type: 3}
+  fireballExplosion: {fileID: 4402196241183793578, guid: d632032a79d7cd84786ba48158e61421, type: 3}
+  flameDashTrail: {fileID: 287017809976729531, guid: 34ba863327db2b842bdb4ccab5c9d43a, type: 3}
+  flameDashImpact: {fileID: 287017809976729531, guid: 34ba863327db2b842bdb4ccab5c9d43a, type: 3}
+  fireExplosion: {fileID: 6273277357490574891, guid: 402784ead56172440af677f3935bf7c4, type: 3}
+  waterHeal: {fileID: 3567885193149749750, guid: c7c58c0e2cadda647b360b46fdd3bbd0, type: 3}
+  waterWave: {fileID: 3628217786026338439, guid: 287558cde0880064099199e62865c4fe, type: 3}
+  waterPrison: {fileID: 5362749153085598053, guid: cdda4d600eadcd74abbaefa3111cfb68, type: 3}
+  poisonSpit: {fileID: 1600298896269730984, guid: 32daef941d6fc744b9c0bcfda2962868, type: 3}
+  larvaBite: {fileID: 8310159368324287946, guid: 0915bc8684df4584b8c4c014c4c4b169, type: 3}
+--- !u!4 &1865070395
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1865070393}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.2, y: 2.07342, z: 0.2227}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1871604586
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -30990,7 +30990,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5307510441227925589, guid: ce4a301a3a0f76f40a08e84e9aa7d545, type: 3}
       propertyPath: visualOffset.y
-      value: 0.6
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5307510441227925589, guid: ce4a301a3a0f76f40a08e84e9aa7d545, type: 3}
       propertyPath: visualOffset.z
@@ -33527,4 +33527,4 @@ SceneRoots:
   - {fileID: 1056338867}
   - {fileID: 2106360771}
   - {fileID: 167310109}
-  - {fileID: 963154159}
+  - {fileID: 1865070395}
