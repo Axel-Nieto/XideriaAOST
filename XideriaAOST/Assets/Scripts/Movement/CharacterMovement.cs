@@ -24,7 +24,6 @@ public class CharacterMovement : MonoBehaviour
     {
         if (_character.HasStatusEffect<RootEffect>())
         {
-            Debug.Log($"{_character.name} está inmovilizado.");
             yield break;
         }
 
@@ -47,7 +46,6 @@ public class CharacterMovement : MonoBehaviour
     {
         if (_grid == null)
         {
-            Debug.LogError("GridSystem es NULL en CharacterMovement");
             yield break;
         }
 
@@ -173,14 +171,24 @@ public class CharacterMovement : MonoBehaviour
 
         if (string.IsNullOrWhiteSpace(targetScene))
         {
-            Debug.LogWarning(
-                $"La celda {position} no tiene Target Scene Name configurado."
-            );
-
             return;
         }
 
-        _character.SavePlayerSession();
+        bool isReturningToLobby =
+            string.Equals(
+                targetScene,
+                "Lobby",
+                System.StringComparison.OrdinalIgnoreCase
+            );
+
+        if (isReturningToLobby)
+        {
+            PlayerSessionData.Instance?.ResetSession();
+        }
+        else
+        {
+            _character.SavePlayerSession();
+        }
 
         SceneTransitionManager.Instance.LoadScene(targetScene);
     }

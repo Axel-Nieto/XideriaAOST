@@ -55,9 +55,6 @@ public class Character : MonoBehaviour
         if (IsPlayer)
         {
             LoadPlayerSession();
-
-            if (EquippedHelmet != null)
-                GetComponent<CharacterColorByHelmet>()?.ApplyHelmetColor(EquippedHelmet);
         }
     }
 
@@ -299,7 +296,6 @@ public class Character : MonoBehaviour
             }
         }
         GetComponent<CharacterColorByHelmet>()?.ApplyHelmetColor(newHelmet);
-        Debug.Log($"{name} equipó {newHelmet.Name}");
     }
 
     public void StartTurn()
@@ -452,31 +448,14 @@ public class Character : MonoBehaviour
         {
             session.forceNewRun = false;
 
-            EquippedHelmet = HelmetFactory.CreateDefaultHelmet();
-
-            if (currentHelmetVisual != null)
-            {
-                Destroy(currentHelmetVisual);
-                currentHelmetVisual = null;
-            }
-
-            GetComponent<CharacterColorByHelmet>()?.ApplyHelmetColor(null);
+            UnequipHelmet();
 
             return;
         }
 
         if (!session.hasSavedData)
         {
-            EquippedHelmet = HelmetFactory.CreateDefaultHelmet();
-
-            if (currentHelmetVisual != null)
-            {
-                Destroy(currentHelmetVisual);
-                currentHelmetVisual = null;
-            }
-
-            GetComponent<CharacterColorByHelmet>()?.ApplyHelmetColor(null);
-
+            UnequipHelmet();
             return;
         }
 
@@ -492,21 +471,30 @@ public class Character : MonoBehaviour
                 _ => HelmetFactory.CreateDefaultHelmet()
             };
 
-            HelmetPickup pickup = FindHelmetPickupByType(session.equippedHelmetType);
+            HelmetPickup pickup =
+                FindHelmetPickupByType(session.equippedHelmetType);
 
             if (pickup != null)
             {
-                helmet.HelmetVisualPrefab = pickup.GetHelmet().HelmetVisualPrefab;
+                helmet.HelmetVisualPrefab =
+                    pickup.GetHelmet().HelmetVisualPrefab;
             }
 
             EquipHelmet(helmet);
-            GetComponent<CharacterColorByHelmet>()?.ApplyHelmetColor(helmet);
+        }
+        else
+        {
+            UnequipHelmet();
         }
 
         foreach (var skill in GetActiveSkills())
         {
-            if (session.skillCooldowns.TryGetValue(skill.Name, out int cooldown))
+            if (session.skillCooldowns.TryGetValue(
+                skill.Name,
+                out int cooldown))
+            {
                 SetSkillCooldown(skill, cooldown);
+            }
         }
     }
 
@@ -536,10 +524,14 @@ public class Character : MonoBehaviour
         session.currentHP = Stats.CurrentHP;
         session.currentEnergy = Stats.CurrentEnergy;
 
-        session.hasHelmet = EquippedHelmet != null;
+        session.hasHelmet =
+            EquippedHelmet != null &&
+            EquippedHelmet.Type != HelmetType.Default;
 
-        if (EquippedHelmet != null)
-            session.equippedHelmetType = EquippedHelmet.Type;
+        session.equippedHelmetType =
+            session.hasHelmet
+                ? EquippedHelmet.Type
+                : HelmetType.Default;
 
         session.skillCooldowns.Clear();
 
@@ -549,4 +541,19 @@ public class Character : MonoBehaviour
         }
     }
 
+
+    public void UnequipHelmet()
+    {
+        EquippedHelmet = HelmetFactory.CreateDefaultHelmet();
+
+        if (currentHelmetVisual != null)
+        {
+            Destroy(currentHelmetVisual);
+            currentHelmetVisual = null;
+        }
+
+        helmetPassives.Clear();
+
+        GetComponent<CharacterColorByHelmet>()?.ApplyHelmetColor(null);
+    }
 }
