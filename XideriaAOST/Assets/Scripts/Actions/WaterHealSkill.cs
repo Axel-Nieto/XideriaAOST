@@ -48,7 +48,7 @@ public class WaterHealSkill : SkillBase
             yield return anim.PlayCastUntilHitFrame();
 
 
-        SkillVFXSpawner.SpawnAttached(SkillVFXLibrary.Instance.waterHeal, user.transform, Vector3.up * 0.5f);
+        SkillVFXSpawner.SpawnAttached(SkillVFXLibrary.Instance.waterHeal, user.transform, Vector3.up * 1.5f);
 
         user.Heal(healAmount);
 

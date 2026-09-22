@@ -39,4 +39,9 @@ public class SkillVFXLibrary : MonoBehaviour
             _ => basicSlashNormal
         };
     }
+
+    public GameObject GetLarvaBite()
+    {
+        return larvaBite;
+    }
 }

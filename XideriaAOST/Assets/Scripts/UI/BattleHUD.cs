@@ -42,6 +42,10 @@ public class BattleHUD : MonoBehaviour
     [Header("Theme Controller")]
     [SerializeField] private BattleHUDThemeController themeController;
 
+    [Header("Helmet Charges")]
+    [SerializeField] private GameObject helmetChargesBadge;
+    [SerializeField] private TextMeshProUGUI helmetChargesText;
+
     private Character currentCharacter;
     private int selectedSkillIndex = -1;
 
@@ -79,6 +83,7 @@ public class BattleHUD : MonoBehaviour
         }
 
         RefreshHUDTheme();
+        RefreshHelmetCharges();
 
         RefreshCharacterPanel();
         RefreshStatusIcons();
@@ -379,5 +384,26 @@ public class BattleHUD : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
+    }
+
+    private void RefreshHelmetCharges()
+    {
+        if (helmetChargesBadge == null ||
+            helmetChargesText == null)
+            return;
+
+        if (currentCharacter == null ||
+            !currentCharacter.IsPlayer ||
+            currentCharacter.EquippedHelmet == null ||
+            currentCharacter.EquippedHelmet.Type == HelmetType.Default)
+        {
+            helmetChargesBadge.SetActive(false);
+            return;
+        }
+
+        helmetChargesBadge.SetActive(true);
+
+        helmetChargesText.text =
+            currentCharacter.HelmetCharges.ToString();
     }
 }

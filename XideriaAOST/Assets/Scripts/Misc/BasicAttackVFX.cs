@@ -24,6 +24,7 @@ public static class BasicAttackVFX
             destroyDelay: 3f
         );
 
-        yield return new WaitForSeconds(hitDelay);
+        if (hitDelay > 0f)
+            yield return new WaitForSeconds(hitDelay);
     }
 }

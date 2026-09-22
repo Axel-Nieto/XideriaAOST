@@ -26,6 +26,9 @@ public class CharacterAnimationController : MonoBehaviour
         attackHitFrameReached = false;
         attackAnimationFinished = false;
 
+        Debug.Log("CAST: inicio");
+
+
         animator.SetTrigger("Physical Attack");
 
         while (!attackHitFrameReached)
@@ -69,17 +72,25 @@ public class CharacterAnimationController : MonoBehaviour
 
     public IEnumerator WaitCastFinished()
     {
+        Debug.Log("CAST: esperando fin de animación");
+
         while (!castAnimationFinished)
             yield return null;
+
+        Debug.Log("CAST: animación terminada");
     }
 
     public void OnCastHitFrame()
     {
+        Debug.Log("CAST EVENT: OnCastHitFrame");
+
         castHitFrameReached = true;
     }
 
     public void OnCastAnimationFinished()
     {
+        Debug.Log("CAST EVENT: OnCastAnimationFinished");
+
         castAnimationFinished = true;
     }
 

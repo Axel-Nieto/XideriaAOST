@@ -33,10 +33,13 @@ public class CharacterColorByHelmet : MonoBehaviour
         }
     }
 
+
     private void SetColor(Color color)
     {
         if (teteMaterial == null)
+        {
             return;
+        }
 
         teteMaterial.SetColor(colorPropertyName, color);
     }

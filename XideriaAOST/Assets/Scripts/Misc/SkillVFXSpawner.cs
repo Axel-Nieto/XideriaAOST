@@ -187,7 +187,7 @@ public static class SkillVFXSpawner
             prefab.transform.rotation
         );
 
-        instance.transform.localScale = prefab.transform.localScale * 4f;
+        //instance.transform.localScale = prefab.transform.localScale * 4f;
 
         Object.Destroy(instance, destroyDelay);
 
