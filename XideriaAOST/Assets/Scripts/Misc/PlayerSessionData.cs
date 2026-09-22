@@ -16,6 +16,7 @@ public class PlayerSessionData : MonoBehaviour
     public Dictionary<string, int> skillCooldowns = new();
 
     public bool forceNewRun = false;
+    public int equippedHelmetCharges = 0;
 
     private void Awake()
     {
@@ -35,6 +36,7 @@ public class PlayerSessionData : MonoBehaviour
         forceNewRun = true;
 
         hasHelmet = false;
+        equippedHelmetCharges = 0;
         equippedHelmetType = HelmetType.Default;
 
         skillCooldowns.Clear();

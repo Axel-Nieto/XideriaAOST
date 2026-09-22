@@ -33,6 +33,7 @@ public class GridInputHandler : MonoBehaviour
     private bool isMoving = false;
     private bool isCharacterSelected = false;
     private bool isPlayerTurn = false;
+    private bool isHelmetInventoryOpen = false;
     private ActionMode currentMode = ActionMode.Move;
     private int selectedSkillIndex = 0;
     private HelmetPickup hoveredHelmet;
@@ -71,6 +72,9 @@ public class GridInputHandler : MonoBehaviour
             return;
 
         if (!isPlayerTurn) return;
+
+        if (isHelmetInventoryOpen)
+            return;
 
         if (Keyboard.current.spaceKey.wasPressedThisFrame && !isMoving)
         {
@@ -565,6 +569,48 @@ public class GridInputHandler : MonoBehaviour
         return null;
     }
 
+    public bool CanOpenHelmetInventory()
+    {
+        return isPlayerTurn &&
+               !isMoving &&
+               !GameSession.IsGameOver;
+    }
+
+    public void SetHelmetInventoryOpen(bool isOpen)
+    {
+        isHelmetInventoryOpen = isOpen;
+
+        if (isOpen)
+        {
+            hoveredHelmet = null;
+            helmetHoverUI?.Hide();
+
+            ClearTiles();
+            ClearRangeTiles();
+            ClearAoeTiles();
+
+            battleHUD.SetSelectedSkill(-1);
+
+            currentMode = ActionMode.Move;
+        }
+        else
+        {
+            if (isPlayerTurn &&
+                isCharacterSelected &&
+                selectedCharacter != null)
+            {
+                UpdateMovementRange();
+
+                bool explorationMode =
+                    gameStateManager != null &&
+                    gameStateManager.IsExplorationMode;
+
+                if (!explorationMode)
+                    DrawRangeTiles(movementRangeTilePrefab);
+            }
+        }
+    }
+
     private IEnumerator RefreshHudNextFrame(Character character)
     {
         isPlayerTurn = character.IsPlayer;
@@ -704,6 +750,30 @@ public class GridInputHandler : MonoBehaviour
 
         HelmetData helmetData = helmet.GetHelmet();
 
+        if (helmetData == null)
+            yield break;
+
+        if (HelmetInventoryData.Instance == null)
+        {
+            Debug.LogError(
+                "[HELMET PICKUP] HelmetInventoryData.Instance es NULL."
+            );
+
+            yield break;
+        }
+
+        bool stored =
+            HelmetInventoryData.Instance.AddHelmet(helmetData.Type);
+
+        if (!stored)
+        {
+            Debug.Log(
+                $"[HELMET PICKUP] No se pudo almacenar {helmetData.Name}."
+            );
+
+            yield break;
+        }
+
         helmetHoverUI.Hide();
 
         HelmetPickupAnimator pickupAnimator =
@@ -711,8 +781,6 @@ public class GridInputHandler : MonoBehaviour
 
         if (pickupAnimator != null)
             yield return pickupAnimator.PlayPickup();
-
-        selectedCharacter.EquipHelmet(helmetData);
 
         Destroy(helmet.gameObject);
 
