@@ -1693,7 +1693,7 @@ MonoBehaviour:
   - position: {x: 15, y: 11}
     type: 3
     targetScenes: []
-  - position: {x: 13, y: 1112}
+  - position: {x: 13, y: 12}
     type: 3
     targetScenes: []
   - position: {x: 14, y: 12}
@@ -25602,7 +25602,7 @@ MonoBehaviour:
   basicSlashWater: {fileID: 6652428419723858117, guid: 1682343445176ef4ebd6dc9cdd502a16, type: 3}
   fireballProjectile: {fileID: 4402196241183793578, guid: d632032a79d7cd84786ba48158e61421, type: 3}
   fireballExplosion: {fileID: 4402196241183793578, guid: d632032a79d7cd84786ba48158e61421, type: 3}
-  flameDashTrail: {fileID: 287017809976729531, guid: 34ba863327db2b842bdb4ccab5c9d43a, type: 3}
+  flameDashTrail: {fileID: 287017809976729531, guid: 64d96161a0c20684094608770e33cd8d, type: 3}
   flameDashImpact: {fileID: 287017809976729531, guid: 34ba863327db2b842bdb4ccab5c9d43a, type: 3}
   fireExplosion: {fileID: 6273277357490574891, guid: 402784ead56172440af677f3935bf7c4, type: 3}
   waterHeal: {fileID: 3567885193149749750, guid: c7c58c0e2cadda647b360b46fdd3bbd0, type: 3}
