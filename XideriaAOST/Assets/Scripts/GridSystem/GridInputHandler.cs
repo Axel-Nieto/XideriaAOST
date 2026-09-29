@@ -21,6 +21,8 @@ public class GridInputHandler : MonoBehaviour
     [SerializeField] private BattleHUD battleHUD;
     [SerializeField] private CharacterInfoHUD characterInfoHUD;
     [SerializeField] private GameObject dangerRangeTilePrefab;
+    [SerializeField] private EnemyHoverUI enemyHoverUI;
+    [SerializeField] private TileObjectPool tilePool;
 
     private List<GameObject> aoeTiles = new();
     private Character selectedCharacter;
@@ -51,9 +53,22 @@ public class GridInputHandler : MonoBehaviour
 
     private void Start()
     {
-        selectedCharacter = null;
+        selectedCharacter = playerCharacter;
+        isCharacterSelected = playerCharacter != null;
+        currentMode = ActionMode.Move;
+
         _pathfinding = new AStarPathfinding(gridSystem);
         _rangeCalculator = new MovementRangeCalculator(gridSystem);
+
+        if (playerCharacter != null)
+        {
+            selectedIndicator =
+                playerCharacter.GetComponentInChildren<CharacterPositionIndicator>();
+
+            selectedIndicator?.SetSelected(true);
+
+            battleHUD.ShowCharacter(playerCharacter);
+        }
     }
 
     private void OnEnable()
@@ -70,6 +85,8 @@ public class GridInputHandler : MonoBehaviour
     {
         if (GameSession.IsGameOver)
             return;
+
+        UpdateEnemyHover();
 
         if (!isPlayerTurn) return;
 
@@ -137,21 +154,6 @@ public class GridInputHandler : MonoBehaviour
                 ClearAoeTiles();
                 return;
             }
-
-            if (currentMode == ActionMode.Move)
-            {
-                selectedCharacter = null;
-                isCharacterSelected = false;
-                currentMode = ActionMode.None;
-
-                selectedIndicator?.SetSelected(false);
-                selectedIndicator = null;
-
-                ClearTiles();
-                ClearRangeTiles();
-                battleHUD.Clear();
-                return;
-            }
         }
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
@@ -169,11 +171,11 @@ public class GridInputHandler : MonoBehaviour
 
         if (Keyboard.current.escapeKey.wasPressedThisFrame)
         {
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-    Application.Quit();
-#endif
+            if (PlayerSessionData.Instance != null)
+                PlayerSessionData.Instance.ResetSession();
+
+            if (SceneTransitionManager.Instance != null)
+                SceneTransitionManager.Instance.LoadScene("Inicio");
         }
 
         if (!isCharacterSelected || selectedCharacter == null)
@@ -302,36 +304,6 @@ public class GridInputHandler : MonoBehaviour
 
         Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
 
-        if (!isCharacterSelected)
-        {
-            if (Physics.Raycast(ray, out RaycastHit hitChar, 100f))
-            {
-                var character = hitChar.collider.GetComponentInParent<Character>();
-
-                if (character != null)
-                {
-                    battleHUD.ShowCharacter(character);
-
-                    if (character.IsPlayer && isPlayerTurn)
-                    {
-                        ClearTiles();
-                        ClearRangeTiles();
-                        ClearAoeTiles();
-
-                        selectedCharacter = character;
-                        isCharacterSelected = true;
-                        currentMode = ActionMode.Move;
-
-                        selectedIndicator?.SetSelected(false);
-                        selectedIndicator = selectedCharacter.GetComponentInChildren<CharacterPositionIndicator>();
-                        selectedIndicator?.SetSelected(true);
-                    }
-
-                    return;
-                }
-            }
-        }
-
         if (!isCharacterSelected || selectedCharacter == null)
             return;
 
@@ -341,7 +313,6 @@ public class GridInputHandler : MonoBehaviour
 
             if (skill == null)
             {
-                CancelSelection();
                 return;
             }
 
@@ -356,7 +327,6 @@ public class GridInputHandler : MonoBehaviour
 
         if (!reachableCells.Contains(targetPos))
         {
-            CancelSelection();
             return;
         }
 
@@ -418,13 +388,12 @@ public class GridInputHandler : MonoBehaviour
 
             if (skill == null)
             {
-                CancelSelection();
                 return;
             }
 
             if (!skill.CanUse(selectedCharacter, targetPos, gridSystem))
             {
-                CancelSelection();
+                battleHUD.FlashSkillError(selectedSkillIndex);
                 return;
             }
 
@@ -653,22 +622,55 @@ public class GridInputHandler : MonoBehaviour
             currentPath.Clear();
             ClearTiles();
         }
-        else
-        {
-            selectedCharacter = null;
-            isCharacterSelected = false;
-            currentMode = ActionMode.Move;
-
-            selectedIndicator?.SetSelected(false);
-            selectedIndicator = null;
-        }
 
         battleHUD.SetPlayerTurn(isPlayerTurn);
 
         yield return null;
 
-        battleHUD.ShowCharacter(character);
+        battleHUD.ShowCharacter(playerCharacter);
         battleHUD.SetSelectedSkill(-1);
+    }
+
+    private void UpdateEnemyHover()
+    {
+        if (enemyHoverUI == null)
+        {
+            Debug.LogError("[ENEMY HOVER] enemyHoverUI es NULL");
+            return;
+        }
+
+        Ray ray =
+            mainCamera.ScreenPointToRay(
+                Mouse.current.position.ReadValue()
+            );
+
+        RaycastHit[] hits =
+            Physics.RaycastAll(ray, 100f);
+
+        Character hoveredEnemy = null;
+
+        foreach (RaycastHit hit in hits)
+        {
+            Character character =
+                hit.collider.GetComponentInParent<Character>();
+
+            if (character == null)
+                continue;
+
+            if (character.IsPlayer)
+                continue;
+
+            hoveredEnemy = character;
+            break;
+        }
+
+        if (hoveredEnemy == null)
+        {
+            enemyHoverUI.Hide();
+            return;
+        }
+
+        enemyHoverUI.Show(hoveredEnemy);
     }
 
     public void SelectSkillFromUI(int index)
@@ -813,14 +815,26 @@ public class GridInputHandler : MonoBehaviour
 
     private void UpdatePathPreview()
     {
-        if (selectedCharacter == null) return;
-
-        Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-
-        if (!Physics.Raycast(ray, out RaycastHit hit, 100f, gridLayer))
+        if (selectedCharacter == null)
             return;
 
-        Vector2Int targetGridPos = gridSystem.WorldToGrid(hit.point);
+        Ray ray =
+            mainCamera.ScreenPointToRay(
+                Mouse.current.position.ReadValue()
+            );
+
+        if (!Physics.Raycast(
+                ray,
+                out RaycastHit hit,
+                100f,
+                gridLayer))
+        {
+            currentPath.Clear();
+            return;
+        }
+
+        Vector2Int targetGridPos =
+            gridSystem.WorldToGrid(hit.point);
 
         if (!reachableCells.Contains(targetGridPos))
         {
@@ -840,10 +854,40 @@ public class GridInputHandler : MonoBehaviour
             return;
         }
 
-        currentPath = _pathfinding.FindPath(
-            selectedCharacter.GridPosition,
-            targetGridPos
-        );
+        List<Vector2Int> path =
+            _pathfinding.FindPath(
+                selectedCharacter.GridPosition,
+                targetGridPos
+            );
+
+        if (path == null || path.Count <= 1)
+        {
+            currentPath.Clear();
+            return;
+        }
+
+        path.RemoveAt(0);
+
+        bool explorationMode =
+            gameStateManager != null &&
+            gameStateManager.IsExplorationMode;
+
+        if (!explorationMode)
+        {
+            int movementCost =
+                selectedCharacter.GetMovementCostPerCell();
+
+            int maxSteps =
+                selectedCharacter.Stats.CurrentEnergy /
+                movementCost;
+
+            if (path.Count > maxSteps)
+            {
+                path = path.GetRange(0, maxSteps);
+            }
+        }
+
+        currentPath = path;
     }
 
     private void UpdateDangerousPreviewCells()
@@ -886,7 +930,9 @@ public class GridInputHandler : MonoBehaviour
     private void ClearAoeTiles()
     {
         foreach (var tile in aoeTiles)
-            Destroy(tile);
+        {
+            tilePool.Release(tile);
+        }
 
         aoeTiles.Clear();
     }
@@ -895,7 +941,7 @@ public class GridInputHandler : MonoBehaviour
     {
         foreach (var tile in activeTiles)
         {
-            Destroy(tile);
+            tilePool.Release(tile);
         }
 
         activeTiles.Clear();
@@ -904,7 +950,9 @@ public class GridInputHandler : MonoBehaviour
     private void ClearRangeTiles()
     {
         foreach (var tile in rangeTiles)
-            Destroy(tile);
+        {
+            tilePool.Release(tile);
+        }
 
         rangeTiles.Clear();
     }
@@ -921,7 +969,11 @@ public class GridInputHandler : MonoBehaviour
             Vector3 worldPos = gridSystem.GridToWorld(step);
             worldPos += pathTileOffset;
 
-            GameObject tile = Instantiate(pathTilePrefab, worldPos, Quaternion.Euler(90, 0, 0));
+            GameObject tile = tilePool.Get(
+                pathTilePrefab,
+                worldPos,
+                Quaternion.Euler(90, 0, 0)
+            );
 
             activeTiles.Add(tile);
         }
@@ -941,7 +993,7 @@ public class GridInputHandler : MonoBehaviour
             Vector3 worldPos = gridSystem.GridToWorld(cell);
             worldPos += pathTileOffset;
 
-            var tile = Instantiate(
+            GameObject tile = tilePool.Get(
                 tilePrefab,
                 worldPos,
                 Quaternion.Euler(90, 0, 0)
@@ -955,7 +1007,7 @@ public class GridInputHandler : MonoBehaviour
             Vector3 worldPos = gridSystem.GridToWorld(cell);
             worldPos += pathTileOffset;
 
-            var tile = Instantiate(
+            GameObject tile = tilePool.Get(
                 dangerRangeTilePrefab,
                 worldPos,
                 Quaternion.Euler(90, 0, 0)
@@ -977,14 +1029,19 @@ public class GridInputHandler : MonoBehaviour
         if (skill == null)
             return;
 
-        Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        Ray ray =
+            mainCamera.ScreenPointToRay(
+                Mouse.current.position.ReadValue()
+            );
 
         if (!Physics.Raycast(ray, out RaycastHit hit, 100f, gridLayer))
             return;
 
         Vector2Int targetPos = gridSystem.WorldToGrid(hit.point);
 
-        foreach (var cell in skill.GetPreviewCells(selectedCharacter.GridPosition, targetPos))
+        foreach (var cell in skill.GetPreviewCells(
+            selectedCharacter.GridPosition,
+            targetPos))
         {
             if (!gridSystem.IsValidCell(cell))
                 continue;
@@ -992,7 +1049,7 @@ public class GridInputHandler : MonoBehaviour
             Vector3 worldPos = gridSystem.GridToWorld(cell);
             worldPos += pathTileOffset;
 
-            var tile = Instantiate(
+            GameObject tile = tilePool.Get(
                 aoeTilePrefab,
                 worldPos,
                 Quaternion.Euler(90, 0, 0)
@@ -1019,7 +1076,7 @@ public class GridInputHandler : MonoBehaviour
             Vector3 worldPos = gridSystem.GridToWorld(cell);
             worldPos += pathTileOffset;
 
-            var tile = Instantiate(
+            GameObject tile = tilePool.Get(
                 aoeTilePrefab,
                 worldPos,
                 Quaternion.Euler(90, 0, 0)

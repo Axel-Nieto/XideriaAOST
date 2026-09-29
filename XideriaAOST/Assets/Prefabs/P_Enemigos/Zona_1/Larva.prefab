@@ -59,7 +59,7 @@ MonoBehaviour:
     defense: 2
     maxHP: 12
     maxEnergy: 10
-    energyRegen: 6
+    energyRegen: 5
   visualSpawnOffset: {x: -0.3, y: 0.1, z: -0.3}
   isPlayer: 0
   helmetSocket: {fileID: 0}
@@ -245,6 +245,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterAnimationController
   animator: {fileID: 6961203083926737241}
+  referenceWalkSpeed: 3
+  minWalkAnimationSpeed: 0.5
+  maxWalkAnimationSpeed: 2
 --- !u!4 &2079651333364582620 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 667809825730904764, guid: 4b42b6b28f207a74c81954448e985113, type: 3}

@@ -22,11 +22,6 @@ public class HelmetInventoryUI : MonoBehaviour
             helmetSlots =
                 inventoryPanel.GetComponentsInChildren<HelmetSlotUI>(true);
 
-            foreach (HelmetSlotUI slot in helmetSlots)
-            {
-                slot.Initialize(playerCharacter);
-            }
-
             inventoryPanel.SetActive(false);
         }
 
@@ -58,9 +53,15 @@ public class HelmetInventoryUI : MonoBehaviour
     public void Open()
     {
         if (gridInputHandler == null)
+            gridInputHandler = FindFirstObjectByType<GridInputHandler>();
+
+        if (gridInputHandler == null)
             return;
 
         if (!gridInputHandler.CanOpenHelmetInventory())
+            return;
+
+        if (!EnsurePlayerCharacter())
             return;
 
         IsOpen = true;
@@ -117,5 +118,45 @@ public class HelmetInventoryUI : MonoBehaviour
         battleHUD?.Refresh();
 
         Close();
+    }
+
+    private bool EnsurePlayerCharacter()
+    {
+        if (playerCharacter == null)
+        {
+            Character[] characters =
+                FindObjectsByType<Character>(
+                    FindObjectsSortMode.None
+                );
+
+            foreach (Character character in characters)
+            {
+                if (character != null && character.IsPlayer)
+                {
+                    playerCharacter = character;
+                    break;
+                }
+            }
+        }
+
+        if (playerCharacter == null)
+        {
+            Debug.LogError(
+                "[HELMET INVENTORY] No se encontró al Player Character."
+            );
+
+            return false;
+        }
+
+        if (helmetSlots != null)
+        {
+            foreach (HelmetSlotUI slot in helmetSlots)
+            {
+                if (slot != null)
+                    slot.Initialize(playerCharacter);
+            }
+        }
+
+        return true;
     }
 }
