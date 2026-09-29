@@ -89,6 +89,9 @@ public class Character : MonoBehaviour
         if (character != this)
             return;
 
+        if (isDying || !Stats.IsAlive)
+            return;
+
         if (IsPlayer)
         {
             ProcessHelmetCharges();
@@ -129,6 +132,9 @@ public class Character : MonoBehaviour
 
     public void TakeDamage(int amount, DamageType damageType)
     {
+        if (isDying || !Stats.IsAlive)
+            return;
+
         foreach (var passive in GetPassiveEffects())
         {
             amount = passive.ModifyIncomingDamage(
@@ -219,22 +225,29 @@ public class Character : MonoBehaviour
 
     private void Die()
     {
+        if (isDying)
+            return;
+
+        isDying = true;
+
         StartCoroutine(DieRoutine());
     }
 
     private IEnumerator DieRoutine()
     {
-        isDying = true;
-        if (!IsPlayer && GetComponentInChildren<CharacterAnimationController>())
+        if (!IsPlayer &&
+            GetComponentInChildren<CharacterAnimationController>())
         {
             GetComponentInChildren<CharacterAnimationController>()?.PlayDeath();
 
             yield return new WaitForSeconds(3f);
-
         }
-        if (!isPlayer) GetComponent<EnemyLootDropper>()?.TryDrop(this);
-        
+
+        if (!isPlayer)
+            GetComponent<EnemyLootDropper>()?.TryDrop(this);
+
         _grid.UnregisterCharacter(GridPosition);
+
         gameObject.SetActive(false);
     }
 
@@ -387,9 +400,15 @@ public class Character : MonoBehaviour
     {
         for (int i = statusEffects.Count - 1; i >= 0; i--)
         {
+            if (isDying || !Stats.IsAlive)
+                break;
+
             var effect = statusEffects[i];
 
             effect.OnTurnStart(this);
+
+            if (isDying || !Stats.IsAlive)
+                break;
 
             if (effect.IsFinished)
             {

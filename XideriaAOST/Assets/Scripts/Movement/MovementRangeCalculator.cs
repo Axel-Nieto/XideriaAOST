@@ -10,12 +10,15 @@ public class MovementRangeCalculator
         _grid = grid;
     }
 
-    public HashSet<Vector2Int> GetReachableCells(Vector2Int start, int maxCost)
+    public HashSet<Vector2Int> GetReachableCells(
+    Vector2Int start,
+    int maxCost)
     {
         var visited = new HashSet<Vector2Int>();
         var costSoFar = new Dictionary<Vector2Int, int>();
 
         Queue<Vector2Int> queue = new();
+
         queue.Enqueue(start);
 
         costSoFar[start] = 0;
@@ -23,31 +26,50 @@ public class MovementRangeCalculator
 
         while (queue.Count > 0)
         {
-            var current = queue.Dequeue();
+            Vector2Int current = queue.Dequeue();
 
-            foreach (var dir in GetDirections())
+            foreach (Vector2Int dir in GetDirections())
             {
-                var next = current + dir;
+                Vector2Int next = current + dir;
 
                 if (!_grid.IsValidCell(next))
+                    continue;
+
+                GridCell nextCell = _grid.GetCell(next);
+
+                if (nextCell == null)
+                    continue;
+
+                // El rango de movimiento normal no puede
+                // expandirse a través de una celda Void.
+                if (nextCell.Type == CellType.Void)
                     continue;
 
                 if (_grid.IsBlockedForMovement(next))
                     continue;
 
-                int newCost = costSoFar[current] + 1;
+                int newCost =
+                    costSoFar[current] + 1;
 
                 if (newCost > maxCost)
                     continue;
 
-                if (!costSoFar.ContainsKey(next) || newCost < costSoFar[next])
+                if (costSoFar.TryGetValue(
+                        next,
+                        out int previousCost) &&
+                    previousCost <= newCost)
                 {
-                    costSoFar[next] = newCost;
-                    visited.Add(next);
-                    queue.Enqueue(next);
+                    continue;
                 }
+
+                costSoFar[next] = newCost;
+
+                visited.Add(next);
+                queue.Enqueue(next);
             }
         }
+
+        visited.Remove(start);
 
         return visited;
     }
