@@ -22,6 +22,7 @@ public class GridInputHandler : MonoBehaviour
     [SerializeField] private CharacterInfoHUD characterInfoHUD;
     [SerializeField] private GameObject dangerRangeTilePrefab;
     [SerializeField] private EnemyHoverUI enemyHoverUI;
+    [SerializeField] private TileObjectPool tilePool;
 
     private List<GameObject> aoeTiles = new();
     private Character selectedCharacter;
@@ -170,11 +171,11 @@ public class GridInputHandler : MonoBehaviour
 
         if (Keyboard.current.escapeKey.wasPressedThisFrame)
         {
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-    Application.Quit();
-#endif
+            if (PlayerSessionData.Instance != null)
+                PlayerSessionData.Instance.ResetSession();
+
+            if (SceneTransitionManager.Instance != null)
+                SceneTransitionManager.Instance.LoadScene("Inicio");
         }
 
         if (!isCharacterSelected || selectedCharacter == null)
@@ -929,7 +930,9 @@ public class GridInputHandler : MonoBehaviour
     private void ClearAoeTiles()
     {
         foreach (var tile in aoeTiles)
-            Destroy(tile);
+        {
+            tilePool.Release(tile);
+        }
 
         aoeTiles.Clear();
     }
@@ -938,7 +941,7 @@ public class GridInputHandler : MonoBehaviour
     {
         foreach (var tile in activeTiles)
         {
-            Destroy(tile);
+            tilePool.Release(tile);
         }
 
         activeTiles.Clear();
@@ -947,7 +950,9 @@ public class GridInputHandler : MonoBehaviour
     private void ClearRangeTiles()
     {
         foreach (var tile in rangeTiles)
-            Destroy(tile);
+        {
+            tilePool.Release(tile);
+        }
 
         rangeTiles.Clear();
     }
@@ -964,7 +969,11 @@ public class GridInputHandler : MonoBehaviour
             Vector3 worldPos = gridSystem.GridToWorld(step);
             worldPos += pathTileOffset;
 
-            GameObject tile = Instantiate(pathTilePrefab, worldPos, Quaternion.Euler(90, 0, 0));
+            GameObject tile = tilePool.Get(
+                pathTilePrefab,
+                worldPos,
+                Quaternion.Euler(90, 0, 0)
+            );
 
             activeTiles.Add(tile);
         }
@@ -984,7 +993,7 @@ public class GridInputHandler : MonoBehaviour
             Vector3 worldPos = gridSystem.GridToWorld(cell);
             worldPos += pathTileOffset;
 
-            var tile = Instantiate(
+            GameObject tile = tilePool.Get(
                 tilePrefab,
                 worldPos,
                 Quaternion.Euler(90, 0, 0)
@@ -998,7 +1007,7 @@ public class GridInputHandler : MonoBehaviour
             Vector3 worldPos = gridSystem.GridToWorld(cell);
             worldPos += pathTileOffset;
 
-            var tile = Instantiate(
+            GameObject tile = tilePool.Get(
                 dangerRangeTilePrefab,
                 worldPos,
                 Quaternion.Euler(90, 0, 0)
@@ -1020,14 +1029,19 @@ public class GridInputHandler : MonoBehaviour
         if (skill == null)
             return;
 
-        Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        Ray ray =
+            mainCamera.ScreenPointToRay(
+                Mouse.current.position.ReadValue()
+            );
 
         if (!Physics.Raycast(ray, out RaycastHit hit, 100f, gridLayer))
             return;
 
         Vector2Int targetPos = gridSystem.WorldToGrid(hit.point);
 
-        foreach (var cell in skill.GetPreviewCells(selectedCharacter.GridPosition, targetPos))
+        foreach (var cell in skill.GetPreviewCells(
+            selectedCharacter.GridPosition,
+            targetPos))
         {
             if (!gridSystem.IsValidCell(cell))
                 continue;
@@ -1035,7 +1049,7 @@ public class GridInputHandler : MonoBehaviour
             Vector3 worldPos = gridSystem.GridToWorld(cell);
             worldPos += pathTileOffset;
 
-            var tile = Instantiate(
+            GameObject tile = tilePool.Get(
                 aoeTilePrefab,
                 worldPos,
                 Quaternion.Euler(90, 0, 0)
@@ -1062,7 +1076,7 @@ public class GridInputHandler : MonoBehaviour
             Vector3 worldPos = gridSystem.GridToWorld(cell);
             worldPos += pathTileOffset;
 
-            var tile = Instantiate(
+            GameObject tile = tilePool.Get(
                 aoeTilePrefab,
                 worldPos,
                 Quaternion.Euler(90, 0, 0)
