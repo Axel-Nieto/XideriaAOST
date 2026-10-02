@@ -15,6 +15,11 @@ public abstract class PassiveEffect
         return damage;
     }
 
+    public virtual bool BlocksPush(Character owner)
+    {
+        return false;
+    }
+
     public virtual void OnTurnStart(Character owner)
     {
     }

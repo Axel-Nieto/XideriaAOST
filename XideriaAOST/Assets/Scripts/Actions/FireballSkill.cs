@@ -81,6 +81,8 @@ public class FireballSkill : SkillBase
 
         yield return new WaitForSeconds(1.5f);
 
+        HashSet<Character> targets = new();
+
         foreach (var pos in GetAreaCells(targetCell, aoeRadius))
         {
             if (!grid.IsValidCell(pos))
@@ -88,9 +90,20 @@ public class FireballSkill : SkillBase
 
             Character target = grid.GetCharacterAt(pos);
 
-            if (target == null || target.IsPlayer == user.IsPlayer)
+            if (target == null)
                 continue;
 
+            if (target == user)
+                continue;
+
+            if (target.IsPlayer == user.IsPlayer)
+                continue;
+
+            targets.Add(target);
+        }
+
+        foreach (Character target in targets)
+        {
             int finalDamage = Mathf.Max(
                 1,
                 damage + user.Stats.Attack - target.Stats.Defense

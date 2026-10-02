@@ -12612,7 +12612,6 @@ MonoBehaviour:
   dangerRangeTilePrefab: {fileID: 9059845278185196461, guid: d176b237af4c5c74da3539706f5c6888, type: 3}
   enemyHoverUI: {fileID: 902630827}
   tilePool: {fileID: 1829486870}
-  helmetHoverUI: {fileID: 2028227239}
 --- !u!4 &378317404
 Transform:
   m_ObjectHideFlags: 0
@@ -21305,7 +21304,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &811026970
 RectTransform:
   m_ObjectHideFlags: 0
@@ -21721,7 +21720,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &829602824
 RectTransform:
   m_ObjectHideFlags: 0
@@ -21845,7 +21844,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &834265590
 RectTransform:
   m_ObjectHideFlags: 0
@@ -22438,7 +22437,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &922123744
 RectTransform:
   m_ObjectHideFlags: 0
@@ -24122,7 +24121,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1099505449
 RectTransform:
   m_ObjectHideFlags: 0
@@ -30416,7 +30415,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1182143808
 RectTransform:
   m_ObjectHideFlags: 0
@@ -30743,7 +30742,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1212056766
 RectTransform:
   m_ObjectHideFlags: 0
@@ -30818,7 +30817,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1213955372
 RectTransform:
   m_ObjectHideFlags: 0
@@ -32038,6 +32037,8 @@ MonoBehaviour:
     maxHP: 20
     maxEnergy: 13
     energyRegen: 7
+  gridWidth: 1
+  gridHeight: 1
   visualSpawnOffset: {x: -0.3, y: 0.3, z: -0.3}
   isPlayer: 1
   helmetSocket: {fileID: 1082735768}
@@ -32291,7 +32292,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1431804060
 RectTransform:
   m_ObjectHideFlags: 0
@@ -39206,7 +39207,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1777394293
 RectTransform:
   m_ObjectHideFlags: 0
@@ -39798,7 +39799,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1819108004
 RectTransform:
   m_ObjectHideFlags: 0
@@ -40055,7 +40056,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1842197765
 RectTransform:
   m_ObjectHideFlags: 0

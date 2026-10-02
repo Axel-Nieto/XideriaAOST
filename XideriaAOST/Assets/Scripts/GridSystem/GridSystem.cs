@@ -160,6 +160,39 @@ public class GridSystem : MonoBehaviour
             : null;
     }
 
+    public void RegisterCharacter(Character character)
+    {
+        if (character == null)
+            return;
+
+        foreach (Vector2Int pos in character.GetOccupiedCells())
+        {
+            if (!IsValidCell(pos))
+                continue;
+
+            _characters[pos] = character;
+        }
+    }
+
+    public void UnregisterCharacter(Character character)
+    {
+        if (character == null)
+            return;
+
+        List<Vector2Int> positionsToRemove = new();
+
+        foreach (var pair in _characters)
+        {
+            if (pair.Value == character)
+                positionsToRemove.Add(pair.Key);
+        }
+
+        foreach (Vector2Int pos in positionsToRemove)
+        {
+            _characters.Remove(pos);
+        }
+    }
+
 
     public Vector2Int WorldToGrid(Vector3 worldPos)
     {
@@ -199,6 +232,28 @@ public class GridSystem : MonoBehaviour
         }
 
         activeSpecialCellVisuals.Clear();
+    }
+
+    public Vector3 GridToWorld(
+    Vector2Int gridPos,
+    Character character)
+    {
+        Vector3 basePosition = GridToWorld(gridPos);
+
+        if (character == null)
+            return basePosition;
+
+        float offsetX =
+            (character.GridWidth - 1) * cellSize * 0.5f;
+
+        float offsetZ =
+            (character.GridHeight - 1) * cellSize * 0.5f;
+
+        return basePosition + new Vector3(
+            offsetX,
+            0f,
+            offsetZ
+        );
     }
 
     public void SetSpecialCellsVisible(bool visible)
@@ -265,6 +320,39 @@ public class GridSystem : MonoBehaviour
         }
 
         return null;
+    }
+
+    public bool CanCharacterOccupy(
+    Character character,
+    Vector2Int origin,
+    bool ignoreSelf = true)
+    {
+        if (character == null)
+            return false;
+
+        foreach (Vector2Int pos in character.GetOccupiedCells(origin))
+        {
+            if (!IsValidCell(pos))
+                return false;
+
+            if (!IsWalkable(pos))
+                return false;
+
+            if (HasHelmetAt(pos))
+                return false;
+
+            Character occupant = GetCharacterAt(pos);
+
+            if (occupant != null)
+            {
+                if (ignoreSelf && occupant == character)
+                    continue;
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private void OnDrawGizmos()

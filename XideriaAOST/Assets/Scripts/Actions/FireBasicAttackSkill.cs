@@ -25,7 +25,10 @@ public class FireBasicAttackSkill : SkillBase
     {
     }
 
-    public override bool CanUse(Character user, Vector2Int targetCell, GridSystem grid)
+    public override bool CanUse(
+    Character user,
+    Vector2Int targetCell,
+    GridSystem grid)
     {
         if (user == null || grid == null)
             return false;
@@ -36,15 +39,15 @@ public class FireBasicAttackSkill : SkillBase
         if (!grid.IsValidCell(targetCell))
             return false;
 
-        if (!IsInRange(user.GridPosition, targetCell))
-            return false;
-
         Character target = grid.GetCharacterAt(targetCell);
 
         if (target == null)
             return false;
 
         if (target.IsPlayer == user.IsPlayer)
+            return false;
+
+        if (!IsInRange(user, target))
             return false;
 
         if (user.IsSkillOnCooldown(this))

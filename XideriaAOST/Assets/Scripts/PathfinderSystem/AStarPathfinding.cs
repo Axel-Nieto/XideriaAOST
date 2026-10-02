@@ -24,7 +24,11 @@ public class AStarPathfinding
         }
     }
 
-    public List<Vector2Int> FindPath(Vector2Int start, Vector2Int end, bool avoidUnsafeCells = false)
+    public List<Vector2Int> FindPath(
+    Vector2Int start,
+    Vector2Int end,
+    Character character = null,
+    bool avoidUnsafeCells = false)
     {
         var openSet = new List<PathNode>();
         var closedSet = new HashSet<Vector2Int>();
@@ -54,14 +58,33 @@ public class AStarPathfinding
                 if (closedSet.Contains(neighborPos))
                     continue;
 
-                if (!_grid.IsWalkable(neighborPos))
-                    continue;
+                if (character != null)
+                {
+                    if (!_grid.CanCharacterOccupy(
+                        character,
+                        neighborPos,
+                        ignoreSelf: true))
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (!_grid.IsWalkable(neighborPos))
+                        continue;
 
-                if (avoidUnsafeCells && !_grid.IsSafeForAI(neighborPos))
-                    continue;
+                    if (_grid.IsBlockedForMovement(neighborPos) &&
+                        neighborPos != end)
+                    {
+                        continue;
+                    }
+                }
 
-                if (_grid.IsBlockedForMovement(neighborPos) && neighborPos != end)
-                    continue;
+                if (avoidUnsafeCells)
+                {
+                    if (!IsFootprintSafe(character, neighborPos))
+                        continue;
+                }
 
                 int newCost = current.GCost + GetCellCost(neighborPos);
 
@@ -84,6 +107,23 @@ public class AStarPathfinding
         }
 
         return null;
+    }
+
+    private bool IsFootprintSafe(
+    Character character,
+    Vector2Int origin)
+    {
+        if (character == null)
+            return _grid.IsSafeForAI(origin);
+
+        foreach (Vector2Int cell in
+                 character.GetOccupiedCells(origin))
+        {
+            if (!_grid.IsSafeForAI(cell))
+                return false;
+        }
+
+        return true;
     }
 
     private List<Vector2Int> GetNeighbors(Vector2Int pos)

@@ -38,7 +38,13 @@ public class WaterWaveSkill : SkillBase
         if (direction == Vector2Int.zero)
             return false;
 
-        List<Vector2Int> movementPath = BuildMovementPath(user.GridPosition, direction, grid);
+        List<Vector2Int> movementPath =
+            BuildMovementPath(
+                user,
+                user.GridPosition,
+                direction,
+                grid
+            );
 
         return movementPath.Count > 0;
     }
@@ -52,11 +58,13 @@ public class WaterWaveSkill : SkillBase
         if (direction == Vector2Int.zero)
             yield break;
 
-        List<Vector2Int> movementPath = BuildMovementPath(
-            originalPosition,
-            direction,
-            grid
-        );
+        List<Vector2Int> movementPath =
+            BuildMovementPath(
+                user,
+                originalPosition,
+                direction,
+                grid
+            );
 
         if (movementPath.Count == 0)
             yield break;
@@ -80,23 +88,48 @@ public class WaterWaveSkill : SkillBase
 
         yield return user.Movement.MoveAlongRoutine(movementPath);
 
-        foreach (var pos in GetWaveCells(originalPosition, direction))
+        HashSet<Character> targets = new();
+
+        foreach (var pos in GetWaveCells(
+            originalPosition,
+            direction))
         {
             if (!grid.IsValidCell(pos))
                 continue;
 
             Character target = grid.GetCharacterAt(pos);
 
-            if (target == null || target.IsPlayer == user.IsPlayer)
+            if (target == null)
                 continue;
 
+            if (target == user)
+                continue;
+
+            if (target.IsPlayer == user.IsPlayer)
+                continue;
+
+            targets.Add(target);
+        }
+
+        foreach (Character target in targets)
+        {
             int finalDamage = Mathf.Max(
                 1,
                 damage + user.Stats.Attack - target.Stats.Defense
             );
 
-            target.TakeDamage(finalDamage, DamageType.Water, user);
-            target.ApplyStatusEffect(new SlowEffect(slowDuration));
+            target.TakeDamage(
+                finalDamage,
+                DamageType.Water,
+                user
+            );
+
+            if (target.Stats.IsAlive && !target.IsDying)
+            {
+                target.ApplyStatusEffect(
+                    new SlowEffect(slowDuration)
+                );
+            }
         }
 
         yield return null;
@@ -111,18 +144,25 @@ public class WaterWaveSkill : SkillBase
     }
 
     private List<Vector2Int> BuildMovementPath(
-        Vector2Int origin,
-        Vector2Int direction,
-        GridSystem grid)
+    Character user,
+    Vector2Int origin,
+    Vector2Int direction,
+    GridSystem grid)
     {
         List<Vector2Int> path = new();
 
         for (int i = 1; i <= MaxRange; i++)
         {
-            Vector2Int next = origin + direction * i;
+            Vector2Int next =
+                origin + direction * i;
 
-            if (grid.IsBlockedForMovement(next))
+            if (!grid.CanCharacterOccupy(
+                user,
+                next,
+                ignoreSelf: true))
+            {
                 break;
+            }
 
             path.Add(next);
         }
