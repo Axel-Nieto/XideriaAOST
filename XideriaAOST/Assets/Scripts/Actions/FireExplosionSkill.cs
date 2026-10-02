@@ -65,17 +65,46 @@ public class FireExplosionSkill : SkillBase
 
         yield return new WaitForSeconds(explosionHitDelay);
 
+        HashSet<Character> targets = new();
+
         foreach (var pos in GetAreaCells(center, aoeRadius))
         {
-            Character target = grid.GetCharacterAt(pos);
-
-            if (target == null || target == user || target.IsPlayer == user.IsPlayer)
+            if (!grid.IsValidCell(pos))
                 continue;
 
-            int finalDamage = Mathf.Max(1, damage + user.Stats.Attack - target.Stats.Defense);
+            Character target = grid.GetCharacterAt(pos);
 
-            target.TakeDamage(finalDamage, DamageType.Fire, user);
-            target.ApplyStatusEffect(new BurnEffect(2, 4));
+            if (target == null)
+                continue;
+
+            if (target == user)
+                continue;
+
+            if (target.IsPlayer == user.IsPlayer)
+                continue;
+
+            targets.Add(target);
+        }
+
+        foreach (Character target in targets)
+        {
+            int finalDamage = Mathf.Max(
+                1,
+                damage + user.Stats.Attack - target.Stats.Defense
+            );
+
+            target.TakeDamage(
+                finalDamage,
+                DamageType.Fire,
+                user
+            );
+
+            if (target.Stats.IsAlive && !target.IsDying)
+            {
+                target.ApplyStatusEffect(
+                    new BurnEffect(2, 4)
+                );
+            }
         }
 
         if (anim != null)

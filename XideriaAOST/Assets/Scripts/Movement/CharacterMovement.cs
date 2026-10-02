@@ -60,9 +60,9 @@ public class CharacterMovement : MonoBehaviour
 
             _character.FaceCell(step);
 
-            _grid.UnregisterCharacter(_character.GridPosition);
+            _grid.UnregisterCharacter(_character);
 
-            Vector3 targetPos = _grid.GridToWorld(step) + _character.VisualOffset;
+            Vector3 targetPos =_grid.GridToWorld(step, _character) + _character.VisualOffset;
             Vector3 targetFlat = new Vector3(targetPos.x, transform.position.y, targetPos.z);
 
             bool isLastStep = (i == path.Count - 1);
@@ -95,7 +95,7 @@ public class CharacterMovement : MonoBehaviour
 
             _character.SetGridPosition(step);
 
-            _grid.RegisterCharacter(step, _character);
+            _grid.RegisterCharacter(_character);
             _character.ProcessCurrentTerrain();
 
             if (_character.IsPlayer)

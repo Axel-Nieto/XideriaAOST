@@ -44,6 +44,49 @@ public abstract class SkillBase
         return distance >= MinRange && distance <= MaxRange;
     }
 
+    public bool IsInRange(
+    Character user,
+    Vector2Int userPosition,
+    Character target)
+    {
+        if (user == null || target == null)
+            return false;
+
+        int minDistance = int.MaxValue;
+
+        foreach (Vector2Int userCell
+                 in user.GetOccupiedCells(userPosition))
+        {
+            foreach (Vector2Int targetCell
+                     in target.GetOccupiedCells())
+            {
+                int distance =
+                    Mathf.Abs(userCell.x - targetCell.x) +
+                    Mathf.Abs(userCell.y - targetCell.y);
+
+                if (distance < minDistance)
+                    minDistance = distance;
+            }
+        }
+
+        return minDistance >= MinRange &&
+               minDistance <= MaxRange;
+    }
+
+    public bool IsInRange(
+    Character user,
+    Character target)
+    {
+        if (user == null || target == null)
+            return false;
+
+        return IsInRange(
+            user,
+            user.GridPosition,
+            target
+        );
+    }
+
     public abstract bool CanUse(Character user, Vector2Int targetCell, GridSystem grid);
     public abstract IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid);
 
@@ -55,5 +98,32 @@ public abstract class SkillBase
     public virtual string GetTooltipDetails(Character user)
     {
         return "";
+    }
+
+    public virtual bool CanUseFromPosition(
+    Character user,
+    Vector2Int simulatedPosition,
+    Character target,
+    GridSystem grid,
+    int availableEnergy)
+    {
+        if (user == null ||
+            target == null ||
+            grid == null)
+        {
+            return false;
+        }
+
+        if (availableEnergy < EnergyCost)
+            return false;
+
+        if (user.IsSkillOnCooldown(this))
+            return false;
+
+        return IsInRange(
+            user,
+            simulatedPosition,
+            target
+        );
     }
 }

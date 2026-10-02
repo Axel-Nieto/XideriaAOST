@@ -8,6 +8,13 @@ public class Character : MonoBehaviour
     [SerializeField] private Vector2Int startGridPosition;
     [SerializeField] private float modelForwardYOffset = 180f;
     [SerializeField] private CharacterStatsData baseStats;
+    
+    [Header("Grid Footprint")]
+    [SerializeField, Min(1)] private int gridWidth = 1;
+    [SerializeField, Min(1)] private int gridHeight = 1;
+
+    public int GridWidth => gridWidth;
+    public int GridHeight => gridHeight;
     public HelmetData EquippedHelmet { get; private set; }
     public int HelmetCharges { get; private set; }
     public CharacterStats Stats { get; private set; }
@@ -78,10 +85,11 @@ public class Character : MonoBehaviour
 
         GridPosition = startGridPosition;
 
-        transform.position = _grid.GridToWorld(startGridPosition)
-                     + visualSpawnOffset;
+        transform.position =
+            _grid.GridToWorld(startGridPosition, this)
+            + visualSpawnOffset;
 
-        _grid.RegisterCharacter(startGridPosition, this);
+        _grid.RegisterCharacter(this);
     }
 
     private void HandleTurnStarted(Character character)
@@ -246,7 +254,7 @@ public class Character : MonoBehaviour
         if (!isPlayer)
             GetComponent<EnemyLootDropper>()?.TryDrop(this);
 
-        _grid.UnregisterCharacter(GridPosition);
+        _grid.UnregisterCharacter(this);
 
         gameObject.SetActive(false);
     }
@@ -264,9 +272,21 @@ public class Character : MonoBehaviour
         List<PassiveEffect> all = new();
 
         all.AddRange(basePassives);
+        all.AddRange(passiveEffects);
         all.AddRange(helmetPassives);
 
         return all;
+    }
+
+    public bool BlocksPush()
+    {
+        foreach (PassiveEffect passive in GetPassiveEffects())
+        {
+            if (passive.BlocksPush(this))
+                return true;
+        }
+
+        return false;
     }
 
     public IEnumerator ExecuteAction(IAction action)
@@ -452,6 +472,28 @@ public class Character : MonoBehaviour
             return indicator.transform;
 
         return transform;
+    }
+
+    public List<Vector2Int> GetOccupiedCells()
+    {
+        return GetOccupiedCells(GridPosition);
+    }
+
+    public List<Vector2Int> GetOccupiedCells(Vector2Int origin)
+    {
+        List<Vector2Int> cells = new();
+
+        for (int x = 0; x < gridWidth; x++)
+        {
+            for (int y = 0; y < gridHeight; y++)
+            {
+                cells.Add(
+                    origin + new Vector2Int(x, y)
+                );
+            }
+        }
+
+        return cells;
     }
 
     public void SetSkillCooldown(SkillBase skill, int cooldown)

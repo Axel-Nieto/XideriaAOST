@@ -68,7 +68,13 @@ public class HelmetSlotUI : MonoBehaviour
             helmetIcon.sprite = catalogEntry.InventoryIcon;
 
         if (amountText != null)
-            amountText.text = amount.ToString();
+        {
+            int maxAmount = catalogEntry != null
+                ? catalogEntry.MaxStored
+                : 0;
+
+            amountText.text = $"{amount}/{maxAmount}";
+        }
 
         if (button != null)
             button.interactable = amount > 0;

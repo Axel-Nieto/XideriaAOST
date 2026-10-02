@@ -12,7 +12,8 @@ public class MovementRangeCalculator
 
     public HashSet<Vector2Int> GetReachableCells(
     Vector2Int start,
-    int maxCost)
+    int maxCost,
+    Character character = null)
     {
         var visited = new HashSet<Vector2Int>();
         var costSoFar = new Dictionary<Vector2Int, int>();
@@ -32,21 +33,35 @@ public class MovementRangeCalculator
             {
                 Vector2Int next = current + dir;
 
-                if (!_grid.IsValidCell(next))
-                    continue;
+                if (character != null)
+                {
+                    // Para personajes con footprint variable
+                    // se valida el área completa que ocuparían.
+                    if (!_grid.CanCharacterOccupy(
+                        character,
+                        next,
+                        ignoreSelf: true))
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    // Compatibilidad con llamadas antiguas.
+                    if (!_grid.IsValidCell(next))
+                        continue;
 
-                GridCell nextCell = _grid.GetCell(next);
+                    GridCell nextCell = _grid.GetCell(next);
 
-                if (nextCell == null)
-                    continue;
+                    if (nextCell == null)
+                        continue;
 
-                // El rango de movimiento normal no puede
-                // expandirse a través de una celda Void.
-                if (nextCell.Type == CellType.Void)
-                    continue;
+                    if (nextCell.Type == CellType.Void)
+                        continue;
 
-                if (_grid.IsBlockedForMovement(next))
-                    continue;
+                    if (_grid.IsBlockedForMovement(next))
+                        continue;
+                }
 
                 int newCost =
                     costSoFar[current] + 1;

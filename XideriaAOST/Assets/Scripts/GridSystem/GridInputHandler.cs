@@ -38,8 +38,6 @@ public class GridInputHandler : MonoBehaviour
     private bool isHelmetInventoryOpen = false;
     private ActionMode currentMode = ActionMode.Move;
     private int selectedSkillIndex = 0;
-    private HelmetPickup hoveredHelmet;
-    [SerializeField] private HelmetHoverUI helmetHoverUI;
     private CharacterPositionIndicator selectedIndicator;
     private CharacterPositionIndicator turnIndicator;
     private List<GameObject> dangerRangeTiles = new();
@@ -115,16 +113,6 @@ public class GridInputHandler : MonoBehaviour
 
             if (Keyboard.current.rKey.wasPressedThisFrame)
                 SelectSkill(3);
-        }
-
-        UpdateHelmetHover();
-
-        if (Keyboard.current.fKey.wasPressedThisFrame && isCharacterSelected && !isMoving)
-        {
-            if (hoveredHelmet != null)
-            {
-                StartCoroutine(PickupHelmetRoutine(hoveredHelmet));
-            }
         }
 
         if (Mouse.current.rightButton.wasPressedThisFrame)
@@ -260,7 +248,8 @@ public class GridInputHandler : MonoBehaviour
 
         reachableCells = _rangeCalculator.GetReachableCells(
             selectedCharacter.GridPosition,
-            maxSteps
+            maxSteps,
+            selectedCharacter
         );
 
         if (!explorationMode)
@@ -337,7 +326,8 @@ public class GridInputHandler : MonoBehaviour
 
             var path = _pathfinding.FindPath(
                 selectedCharacter.GridPosition,
-                targetPos
+                targetPos,
+                selectedCharacter
             );
 
             if (path == null || path.Count <= 1)
@@ -350,7 +340,8 @@ public class GridInputHandler : MonoBehaviour
 
             path = _pathfinding.FindPath(
                 selectedCharacter.GridPosition,
-                finalDestination
+                finalDestination,
+                selectedCharacter
             );
 
             if (path == null || path.Count <= 1)
@@ -479,6 +470,13 @@ public class GridInputHandler : MonoBehaviour
 
         yield return selectedCharacter.ExecuteAction(action);
 
+        HelmetPickup adjacentHelmet = GetAdjacentHelmet();
+
+        if (adjacentHelmet != null)
+        {
+            yield return PickupHelmetRoutine(adjacentHelmet);
+        }
+
         isMoving = false;
 
         battleHUD.Refresh();
@@ -551,9 +549,6 @@ public class GridInputHandler : MonoBehaviour
 
         if (isOpen)
         {
-            hoveredHelmet = null;
-            helmetHoverUI?.Hide();
-
             ClearTiles();
             ClearRangeTiles();
             ClearAoeTiles();
@@ -704,47 +699,6 @@ public class GridInputHandler : MonoBehaviour
         return false;
     }
 
-    private void UpdateHelmetHover()
-    {
-        hoveredHelmet = null;
-
-        helmetHoverUI.Hide();
-
-        if (!isCharacterSelected || selectedCharacter == null)
-            return;
-
-        Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-
-        if (!Physics.Raycast(ray, out RaycastHit hit, 100f))
-            return;
-
-        HelmetPickup helmet =
-            hit.collider.GetComponentInParent<HelmetPickup>();
-
-        if (helmet == null)
-            return;
-
-        int distance =
-            Mathf.Abs(
-                helmet.GridPosition.x - selectedCharacter.GridPosition.x)
-            +
-            Mathf.Abs(
-                helmet.GridPosition.y - selectedCharacter.GridPosition.y);
-
-        if (distance != 1)
-            return;
-
-        hoveredHelmet = helmet;
-
-        Vector3 screenPos =
-            mainCamera.WorldToScreenPoint(
-                helmet.transform.position + Vector3.up * 2f);
-
-        helmetHoverUI.Show(
-            $"[F] Recoger {helmet.GetHelmet().Name}",
-            screenPos);
-    }
-
     private IEnumerator PickupHelmetRoutine(HelmetPickup helmet)
     {
         if (helmet == null || selectedCharacter == null)
@@ -776,8 +730,6 @@ public class GridInputHandler : MonoBehaviour
             yield break;
         }
 
-        helmetHoverUI.Hide();
-
         HelmetPickupAnimator pickupAnimator =
             helmet.GetComponentInChildren<HelmetPickupAnimator>();
 
@@ -785,8 +737,6 @@ public class GridInputHandler : MonoBehaviour
             yield return pickupAnimator.PlayPickup();
 
         Destroy(helmet.gameObject);
-
-        hoveredHelmet = null;
 
         battleHUD.Refresh();
     }
@@ -798,14 +748,13 @@ public class GridInputHandler : MonoBehaviour
         {
             Vector2Int pos = path[i];
 
-            if (!gridSystem.IsWalkable(pos))
+            if (!gridSystem.CanCharacterOccupy(
+                selectedCharacter,
+                pos,
+                ignoreSelf: true))
+            {
                 continue;
-
-            if (gridSystem.IsOccupied(pos))
-                continue;
-
-            if (IsHelmetAt(pos))
-                continue;
+            }
 
             return pos;
         }
@@ -855,10 +804,11 @@ public class GridInputHandler : MonoBehaviour
         }
 
         List<Vector2Int> path =
-            _pathfinding.FindPath(
-                selectedCharacter.GridPosition,
-                targetGridPos
-            );
+        _pathfinding.FindPath(
+            selectedCharacter.GridPosition,
+            targetGridPos,
+            selectedCharacter
+        );
 
         if (path == null || path.Count <= 1)
         {

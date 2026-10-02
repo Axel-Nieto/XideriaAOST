@@ -28,18 +28,33 @@ public class WaterBasicSkill : SkillBase
     {
     }
 
-    public override bool CanUse(Character user, Vector2Int targetCell, GridSystem grid)
+    public override bool CanUse(
+    Character user,
+    Vector2Int targetCell,
+    GridSystem grid)
     {
-        if (user == null || grid == null) return false;
-        if (!user.Stats.HasEnergy(EnergyCost)) return false;
-        if (!grid.IsValidCell(targetCell)) return false;
-        if (!IsInRange(user.GridPosition, targetCell)) return false;
-        if (user.IsSkillOnCooldown(this)) return false;
+        if (user == null || grid == null)
+            return false;
+
+        if (!user.Stats.HasEnergy(EnergyCost))
+            return false;
+
+        if (!grid.IsValidCell(targetCell))
+            return false;
 
         Character target = grid.GetCharacterAt(targetCell);
 
-        if (target == null) return false;
-        if (target.IsPlayer == user.IsPlayer) return false;
+        if (target == null)
+            return false;
+
+        if (target.IsPlayer == user.IsPlayer)
+            return false;
+
+        if (!IsInRange(user, target))
+            return false;
+
+        if (user.IsSkillOnCooldown(this))
+            return false;
 
         return true;
     }
@@ -84,54 +99,15 @@ public class WaterBasicSkill : SkillBase
         if (!target.Stats.IsAlive || target.IsDying)
             yield break;
 
-        yield return TryPush(
+        yield return PushSystem.Push(
             user,
             target,
-            grid);
+            grid,
+            pushDistance
+        );
 
         if (anim != null)
             yield return anim.WaitAttackFinished();
-    }
-
-    private IEnumerator TryPush(Character user, Character target, GridSystem grid)
-    {
-        Vector2Int direction = target.GridPosition - user.GridPosition;
-
-        if (Mathf.Abs(direction.x) > Mathf.Abs(direction.y))
-            direction = new Vector2Int(direction.x > 0 ? 1 : -1, 0);
-        else
-            direction = new Vector2Int(0, direction.y > 0 ? 1 : -1);
-
-        Vector2Int origin = target.GridPosition;
-        Vector2Int destination = origin + direction * pushDistance;
-
-        if (grid.IsBlockedForMovement(destination))
-            yield break;
-
-        grid.UnregisterCharacter(origin);
-
-        Vector3 startPosition = target.transform.position;
-        Vector3 endPosition = grid.GridToWorld(destination) + target.VisualOffset;
-
-        float pushSpeed = 10f;
-
-        while (Vector3.Distance(target.transform.position, endPosition) > 0.05f)
-        {
-            target.transform.position = Vector3.MoveTowards(
-                target.transform.position,
-                endPosition,
-                pushSpeed * Time.deltaTime
-            );
-
-            yield return null;
-        }
-
-        target.transform.position = endPosition;
-
-        target.SetGridPosition(destination);
-        grid.RegisterCharacter(destination, target);
-
-        target.ProcessCurrentTerrain();
     }
 
     public override string GetTooltipDetails(Character user)

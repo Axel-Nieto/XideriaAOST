@@ -19,18 +19,34 @@ public class BiteSkill : SkillBase
     {
     }
 
-    public override bool CanUse(Character user, Vector2Int targetCell, GridSystem grid)
+    public override bool CanUse(
+    Character user,
+    Vector2Int targetCell,
+    GridSystem grid)
     {
-        if (user == null || grid == null) return false;
-        if (!user.Stats.HasEnergy(EnergyCost)) return false;
-        if (!grid.IsValidCell(targetCell)) return false;
-        if (!IsInRange(user.GridPosition, targetCell)) return false;
-        if (user.IsSkillOnCooldown(this)) return false;
+        if (user == null || grid == null)
+            return false;
 
-        Character target = grid.GetCharacterAt(targetCell);
+        if (!user.Stats.HasEnergy(EnergyCost))
+            return false;
 
-        if (target == null) return false;
-        if (target.IsPlayer == user.IsPlayer) return false;
+        if (!grid.IsValidCell(targetCell))
+            return false;
+
+        if (user.IsSkillOnCooldown(this))
+            return false;
+
+        Character target =
+            grid.GetCharacterAt(targetCell);
+
+        if (target == null)
+            return false;
+
+        if (target.IsPlayer == user.IsPlayer)
+            return false;
+
+        if (!IsInRange(user, target))
+            return false;
 
         return true;
     }

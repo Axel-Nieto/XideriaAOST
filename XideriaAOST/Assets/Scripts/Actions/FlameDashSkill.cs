@@ -47,7 +47,13 @@ public class FlameDashSkill : SkillBase
         if (user.IsSkillOnCooldown(this))
             return false;
 
-        return BuildDashPath(user.GridPosition, targetCell, direction, grid).Count > 0;
+        return BuildDashPath(
+            user,
+            user.GridPosition,
+            targetCell,
+            direction,
+            grid
+        ).Count > 0;
     }
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
@@ -57,7 +63,13 @@ public class FlameDashSkill : SkillBase
         if (direction == Vector2Int.zero)
             yield break;
 
-        List<Vector2Int> path = BuildDashPath(user.GridPosition, targetCell,direction, grid);
+        List<Vector2Int> path = BuildDashPath(
+            user,
+            user.GridPosition,
+            targetCell,
+            direction,
+            grid
+        );
 
         if (path.Count == 0)
             yield break;
@@ -93,22 +105,41 @@ public class FlameDashSkill : SkillBase
             Vector3.up * 0.05f
         );
 
-        foreach (var pos in GetAreaCells(user.GridPosition, aoeRadius))
+        HashSet<Character> targets = new();
+
+        foreach (var pos in GetAreaCells(
+            user.GridPosition,
+            aoeRadius))
         {
             if (!grid.IsValidCell(pos))
                 continue;
 
             Character target = grid.GetCharacterAt(pos);
 
-            if (target == null || target == user || target.IsPlayer == user.IsPlayer)
+            if (target == null)
                 continue;
 
+            if (target == user)
+                continue;
+
+            if (target.IsPlayer == user.IsPlayer)
+                continue;
+
+            targets.Add(target);
+        }
+
+        foreach (Character target in targets)
+        {
             int finalDamage = Mathf.Max(
                 1,
                 damage + user.Stats.Attack - target.Stats.Defense
             );
 
-            target.TakeDamage(finalDamage, DamageType.Fire, user);
+            target.TakeDamage(
+                finalDamage,
+                DamageType.Fire,
+                user
+            );
         }
     }
 
@@ -125,7 +156,12 @@ public class FlameDashSkill : SkillBase
         return Vector2Int.zero;
     }
 
-    private List<Vector2Int> BuildDashPath(Vector2Int origin, Vector2Int targetCell, Vector2Int direction, GridSystem grid)
+    private List<Vector2Int> BuildDashPath(
+    Character user,
+    Vector2Int origin,
+    Vector2Int targetCell,
+    Vector2Int direction,
+    GridSystem grid)
     {
         List<Vector2Int> path = new();
 
@@ -139,8 +175,13 @@ public class FlameDashSkill : SkillBase
         {
             Vector2Int next = origin + direction * i;
 
-            if (grid.IsBlockedForMovement(next))
+            if (!grid.CanCharacterOccupy(
+                user,
+                next,
+                ignoreSelf: true))
+            {
                 break;
+            }
 
             path.Add(next);
         }
