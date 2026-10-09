@@ -730,6 +730,8 @@ public class GridInputHandler : MonoBehaviour
             yield break;
         }
 
+        helmet.MarkAsCollected();
+
         HelmetPickupAnimator pickupAnimator =
             helmet.GetComponentInChildren<HelmetPickupAnimator>();
 
@@ -737,6 +739,10 @@ public class GridInputHandler : MonoBehaviour
             yield return pickupAnimator.PlayPickup();
 
         Destroy(helmet.gameObject);
+
+        yield return null;
+
+        UpdateMovementRange();
 
         battleHUD.Refresh();
     }

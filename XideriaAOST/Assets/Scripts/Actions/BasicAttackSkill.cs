@@ -7,7 +7,7 @@ public class BasicAttackSkill : SkillBase
     private Vector3 slashOffset = new Vector3(0f, 1.2f, 0f);
 
     [SerializeField]
-    private float slashHitDelay = 0.25f;
+    private float slashHitDelay = 1.2f;
 
     public BasicAttackSkill()
         : base(

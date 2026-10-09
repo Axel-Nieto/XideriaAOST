@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using Unity.VisualScripting;
@@ -12,6 +13,16 @@ public class BattleHUD : MonoBehaviour
     [SerializeField] private TextMeshProUGUI hpMaxText;
     [SerializeField] private TextMeshProUGUI energyCurrentText;
     [SerializeField] private TextMeshProUGUI energyMaxText;
+
+    [Header("Low Health Warning")]
+    [SerializeField, Range(0f, 1f)]
+    private float lowHealthThreshold = 0.3f;
+
+    [SerializeField]
+    private float healthBlinkInterval = 0.35f;
+
+    private Coroutine healthBlinkCoroutine;
+    private Color hpNormalColor;
 
     [Header("Status / Passive Icons")]
     [SerializeField] private Transform statusIconContainer;
@@ -64,6 +75,7 @@ public class BattleHUD : MonoBehaviour
         endTurnButton.onClick.AddListener(EndTurn);
 
         HideTooltip();
+        hpNormalColor = hpCurrentText.color;
     }
 
     public void ShowCharacter(Character character)
@@ -97,6 +109,7 @@ public class BattleHUD : MonoBehaviour
         {
             characterPanel.SetActive(false);
             ClearStatusIcons();
+            StopHealthBlink();
             return;
         }
 
@@ -109,6 +122,8 @@ public class BattleHUD : MonoBehaviour
 
         energyCurrentText.text = stats.CurrentEnergy.ToString();
         energyMaxText.text = stats.MaxEnergy.ToString();
+
+        UpdateLowHealthWarning(stats);
     }
 
     public void ShowGenericTooltip(string title, string description)
@@ -283,6 +298,8 @@ public class BattleHUD : MonoBehaviour
         currentCharacter = null;
         selectedSkillIndex = -1;
 
+        StopHealthBlink();
+
         HideTooltip();
         ClearSkills();
     }
@@ -405,5 +422,67 @@ public class BattleHUD : MonoBehaviour
 
         helmetChargesText.text =
             currentCharacter.HelmetCharges.ToString();
+    }
+
+    private void UpdateLowHealthWarning(CharacterStats stats)
+    {
+        if (stats == null || stats.MaxHP <= 0)
+        {
+            StopHealthBlink();
+            return;
+        }
+
+        float healthPercentage =
+            (float)stats.CurrentHP / stats.MaxHP;
+
+        bool isLowHealth =
+            stats.CurrentHP > 0 &&
+            healthPercentage <= lowHealthThreshold;
+
+        if (isLowHealth)
+        {
+            if (healthBlinkCoroutine == null)
+            {
+                healthBlinkCoroutine =
+                    StartCoroutine(HealthBlinkRoutine());
+            }
+        }
+        else
+        {
+            StopHealthBlink();
+        }
+    }
+
+    private IEnumerator HealthBlinkRoutine()
+    {
+        while (true)
+        {
+            hpCurrentText.enabled = false;
+
+            yield return new WaitForSecondsRealtime(
+                healthBlinkInterval
+            );
+
+            hpCurrentText.enabled = true;
+
+            yield return new WaitForSecondsRealtime(
+                healthBlinkInterval
+            );
+        }
+    }
+
+    private void StopHealthBlink()
+    {
+        if (healthBlinkCoroutine != null)
+        {
+            StopCoroutine(healthBlinkCoroutine);
+            healthBlinkCoroutine = null;
+        }
+
+        if (hpCurrentText != null)
+        {
+            hpCurrentText.enabled = true;
+            hpCurrentText.color = hpNormalColor;
+        }
     }
 }

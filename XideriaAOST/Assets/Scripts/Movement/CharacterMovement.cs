@@ -58,7 +58,9 @@ public class CharacterMovement : MonoBehaviour
         {
             Vector2Int step = path[i];
 
-            _character.FaceCell(step);
+            Vector2Int moveDirection = step - _character.GridPosition;
+
+            _character.FaceDirection(moveDirection);
 
             _grid.UnregisterCharacter(_character);
 

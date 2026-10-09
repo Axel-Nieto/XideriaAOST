@@ -116,8 +116,14 @@ public class GridSystem : MonoBehaviour
     {
         HelmetPickup[] helmets = FindObjectsOfType<HelmetPickup>();
 
-        foreach (var helmet in helmets)
+        foreach (HelmetPickup helmet in helmets)
         {
+            if (helmet == null)
+                continue;
+
+            if (helmet.IsCollected)
+                continue;
+
             if (helmet.GridPosition == pos)
                 return true;
         }
@@ -388,6 +394,43 @@ public class GridSystem : MonoBehaviour
             Gizmos.DrawWireCube(
                 worldPos,
                 new Vector3(cellSize, 0.1f, cellSize)
+            );
+
+        }
+        //Borrar luego
+        if (!Application.isPlaying)
+            return;
+
+        foreach (var pair in _characters)
+        {
+            Character character = pair.Value;
+
+            if (character == null)
+                continue;
+
+            // Solo personajes con footprint mayor a 1x1
+            if (character.GridWidth == 1 &&
+                character.GridHeight == 1)
+                continue;
+
+            Vector3 worldPos = GridToWorld(pair.Key);
+
+            Gizmos.color = Color.magenta;
+
+            Gizmos.DrawCube(
+                worldPos + Vector3.up * 1.5f,
+                new Vector3(
+                    cellSize * 0.7f,
+                    0.15f,
+                    cellSize * 0.7f
+                )
+            );
+
+            Gizmos.color = Color.yellow;
+
+            Gizmos.DrawLine(
+                worldPos,
+                worldPos + Vector3.up * 1.5f
             );
         }
     }

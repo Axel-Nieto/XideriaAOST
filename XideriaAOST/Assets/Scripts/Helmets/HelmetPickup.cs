@@ -11,6 +11,15 @@ public class HelmetPickup : MonoBehaviour
 
     public Vector2Int GridPosition { get; private set; }
 
+    private bool _collected;
+
+    public bool IsCollected => _collected;
+
+    public void MarkAsCollected()
+    {
+        _collected = true;
+    }
+
     private void Awake()
     {
         _grid = FindObjectOfType<GridSystem>();

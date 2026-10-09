@@ -8,10 +8,17 @@ public class Character : MonoBehaviour
     [SerializeField] private Vector2Int startGridPosition;
     [SerializeField] private float modelForwardYOffset = 180f;
     [SerializeField] private CharacterStatsData baseStats;
-    
+
+    [Header("Visual")]
+    [SerializeField] private Transform visualRoot;
+
     [Header("Grid Footprint")]
     [SerializeField, Min(1)] private int gridWidth = 1;
     [SerializeField, Min(1)] private int gridHeight = 1;
+
+    [Header("Large Character Rotation")]
+    [SerializeField] private bool rotateModelOnly = false;
+    [SerializeField] private Transform modelTransform;
 
     public int GridWidth => gridWidth;
     public int GridHeight => gridHeight;
@@ -118,24 +125,67 @@ public class Character : MonoBehaviour
 
     public void FaceCell(Vector2Int targetCell)
     {
-        Vector2Int direction = targetCell - GridPosition;
+        Vector2 selfCenter = new Vector2(
+            GridPosition.x + (GridWidth - 1) * 0.5f,
+            GridPosition.y + (GridHeight - 1) * 0.5f
+        );
 
-        if (direction == Vector2Int.zero)
+        Vector2 targetCenter = new Vector2(
+            targetCell.x,
+            targetCell.y
+        );
+
+        Vector2 direction = targetCenter - selfCenter;
+
+        if (direction.sqrMagnitude < 0.001f)
             return;
 
-        FaceDirection(direction);
+        FaceWorldDirection(direction);
+    }
+
+    private void FaceWorldDirection(Vector2 direction)
+    {
+        Vector3 worldDirection =
+            new Vector3(direction.x, 0f, direction.y);
+
+        if (worldDirection.sqrMagnitude < 0.001f)
+            return;
+
+        Quaternion targetRotation =
+            Quaternion.LookRotation(worldDirection) *
+            Quaternion.Euler(0f, modelForwardYOffset, 0f);
+
+        if (rotateModelOnly && modelTransform != null)
+        {
+            modelTransform.rotation = targetRotation;
+
+            Debug.Log(
+                $"[BOSS ROTATION] " +
+                $"Direction: {direction} | " +
+                $"Target Y: {targetRotation.eulerAngles.y:F1} | " +
+                $"Model Y: {modelTransform.eulerAngles.y:F1} | " +
+                $"Local Y: {modelTransform.localEulerAngles.y:F1}"
+            );
+        }
+        else if (visualRoot != null)
+        {
+            visualRoot.rotation = targetRotation;
+        }
+        else
+        {
+            transform.rotation = targetRotation;
+        }
     }
 
     public void FaceDirection(Vector2Int direction)
     {
-        Vector3 worldDirection = new Vector3(direction.x, 0f, direction.y);
-
-        if (worldDirection == Vector3.zero)
+        if (direction == Vector2Int.zero)
             return;
 
-        transform.rotation =
-            Quaternion.LookRotation(worldDirection) *
-            Quaternion.Euler(0f, modelForwardYOffset, 0f);
+        FaceWorldDirection(new Vector2(
+            direction.x,
+            direction.y
+        ));
     }
 
     public void TakeDamage(int amount, DamageType damageType)
@@ -704,6 +754,21 @@ public class Character : MonoBehaviour
         Debug.Log(
             $"[HELMET] {EquippedHelmet.Name}: " +
             $"{HelmetCharges} cargas restantes."
+        );
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+
+        Gizmos.DrawSphere(
+            transform.position + Vector3.up * 1.5f,
+            0.25f
+        );
+
+        Gizmos.DrawLine(
+            transform.position,
+            transform.position + Vector3.up * 1.5f
         );
     }
 }
