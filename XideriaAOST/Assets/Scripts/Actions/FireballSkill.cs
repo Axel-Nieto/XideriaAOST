@@ -14,7 +14,7 @@ public class FireballSkill : SkillBase
         : base(
             name: "Bola de Fuego",
             description: "Lanza una bola de fuego que explota alrededor del objetivo.",
-            energyCost: 5,
+            energyCost: 4,
             cooldown: 2,
             minRange: 2,
             maxRange: 4,
@@ -24,7 +24,7 @@ public class FireballSkill : SkillBase
             ? SkillIconLibrary.Instance.fireball
             : null)
     {
-        damage = 6;
+        damage = 9;
         aoeRadius =3;
     }
 

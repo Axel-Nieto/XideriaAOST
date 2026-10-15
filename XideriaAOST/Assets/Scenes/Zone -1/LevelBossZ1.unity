@@ -11306,11 +11306,11 @@ MonoBehaviour:
   - position: {x: 5, y: 13}
     type: 5
     targetScenes:
-    - Level03
+    - Lobby
   - position: {x: 6, y: 13}
     type: 5
     targetScenes:
-    - Level03
+    - Lobby
   - position: {x: 0, y: 1}
     type: 4
     targetScenes: []
@@ -22486,8 +22486,8 @@ MonoBehaviour:
   modelForwardYOffset: 180
   baseStats:
     attack: 6
-    defense: 3
-    maxHP: 60
+    defense: 2
+    maxHP: 40
     maxEnergy: 8
     energyRegen: 8
   visualRoot: {fileID: 158597649}
@@ -22498,6 +22498,7 @@ MonoBehaviour:
   visualSpawnOffset: {x: -0.2, y: 0.5, z: -0.8}
   isPlayer: 0
   helmetSocket: {fileID: 0}
+  enableVitalImpulse: 1
 --- !u!4 &800724851
 Transform:
   m_ObjectHideFlags: 0
@@ -22541,6 +22542,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FloatingDamageSpawner
   prefab: {fileID: 2426058579530798823, guid: 775bf0a6a9c4b434da73329c501c8e0a, type: 3}
   offset: {x: 0, y: 2, z: 0}
+  energyTextHeight: 0.35
 --- !u!136 &800724854
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -32832,6 +32834,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FloatingDamageSpawner
   prefab: {fileID: 2426058579530798823, guid: 775bf0a6a9c4b434da73329c501c8e0a, type: 3}
   offset: {x: 0, y: 2, z: 0}
+  energyTextHeight: 0.35
 --- !u!114 &1378975412
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32873,6 +32876,7 @@ MonoBehaviour:
   visualSpawnOffset: {x: -0.3, y: 0.3, z: -0.3}
   isPlayer: 1
   helmetSocket: {fileID: 1082735768}
+  enableVitalImpulse: 1
 --- !u!136 &1378975414
 CapsuleCollider:
   m_ObjectHideFlags: 0

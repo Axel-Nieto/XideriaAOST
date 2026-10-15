@@ -13,7 +13,7 @@ public class BasicAttackSkill : SkillBase
         : base(
             name: "Ataque Básico",
             description: "Golpea a un enemigo cercano.",
-            energyCost: 3,
+            energyCost: 2,
             cooldown: 0,
             minRange: 1,
             maxRange: 1,

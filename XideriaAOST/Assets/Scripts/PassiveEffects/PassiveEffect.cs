@@ -23,4 +23,8 @@ public abstract class PassiveEffect
     public virtual void OnTurnStart(Character owner)
     {
     }
+
+    public virtual void OnOtherCharacterDeathCompleted(Character owner, Character deceased)
+    {
+    }
 }

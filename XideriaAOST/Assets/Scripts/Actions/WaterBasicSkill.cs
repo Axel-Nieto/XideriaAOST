@@ -9,14 +9,13 @@ public class WaterBasicSkill : SkillBase
     [SerializeField]
     private float slashHitDelay = 1.2f;
 
-    private readonly int damage = 3;
     private readonly int pushDistance = 1;
 
     public WaterBasicSkill()
         : base(
             name: "Chorro de Agua",
             description: "Dispara agua a distancia y empuja al objetivo.",
-            energyCost: 3,
+            energyCost: 2,
             cooldown: 0,
             minRange: 2,
             maxRange: 4,
@@ -88,7 +87,7 @@ public class WaterBasicSkill : SkillBase
 
         int finalDamage = Mathf.Max(
             1,
-            damage + user.Stats.Attack - target.Stats.Defense
+            user.Stats.Attack - target.Stats.Defense
         );
 
         target.TakeDamage(
@@ -113,8 +112,8 @@ public class WaterBasicSkill : SkillBase
     public override string GetTooltipDetails(Character user)
     {
         int estimatedDamage = user == null
-            ? damage
-            : damage + user.Stats.Attack;
+            ? 0
+            : user.Stats.Attack;
 
         return
             $"Daño: {estimatedDamage}";

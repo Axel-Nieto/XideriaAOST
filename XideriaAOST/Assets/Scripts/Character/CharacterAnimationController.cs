@@ -104,9 +104,93 @@ public class CharacterAnimationController : MonoBehaviour
 
     public void PlayDeath()
     {
-        if (animator == null)
-            return;
+        if (TryGetDeathState(animator, out int layer, out int stateHash))
+            animator.Play(stateHash, layer, 0f);
+    }
 
-        animator.SetTrigger("Death");
+    public static IEnumerator PlayDeathAndWait(Animator deathAnimator, System.Action onCompleted)
+    {
+        if (!TryGetDeathState(deathAnimator, out int layer, out int stateHash))
+        {
+            if (deathAnimator != null)
+                Debug.LogWarning("El enemigo no tiene un estado de muerte compatible; se completara su retirada logica.", deathAnimator);
+
+            onCompleted?.Invoke();
+            yield break;
+        }
+
+        // Enter the terminal state from any pose, without relying on Idle-only transitions.
+        if (deathAnimator.isActiveAndEnabled)
+            deathAnimator.Play(stateHash, layer, 0f);
+
+        // Let the Animator evaluate the requested state before inspecting its progress.
+        yield return null;
+
+        bool enteredDeathState = false;
+        while (deathAnimator != null && deathAnimator.isActiveAndEnabled)
+        {
+            if (deathAnimator.runtimeAnimatorController == null || layer >= deathAnimator.layerCount ||
+                !deathAnimator.HasState(layer, stateHash))
+            {
+                Debug.LogWarning("El controlador cambio durante la muerte; no se puede confirmar su final.", deathAnimator);
+                yield break;
+            }
+
+            AnimatorStateInfo state = deathAnimator.GetCurrentAnimatorStateInfo(layer);
+            if (state.fullPathHash != stateHash)
+            {
+                if (enteredDeathState)
+                {
+                    Debug.LogWarning("La animacion de muerte fue interrumpida; no se otorgara energia anticipadamente.", deathAnimator);
+                    yield break;
+                }
+
+                yield return null;
+                continue;
+            }
+
+            enteredDeathState = true;
+            if (state.loop)
+            {
+                Debug.LogWarning("La animacion de muerte esta configurada en bucle; no se puede confirmar su final.", deathAnimator);
+                yield break;
+            }
+
+            if (state.normalizedTime >= 1f && !deathAnimator.IsInTransition(layer))
+            {
+                onCompleted?.Invoke();
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        Debug.LogWarning("El Animator se desactivo antes de completar la muerte; no se otorgara energia anticipadamente.", deathAnimator);
+    }
+
+    private static bool TryGetDeathState(Animator deathAnimator, out int layer, out int stateHash)
+    {
+        layer = 0;
+        stateHash = 0;
+        if (deathAnimator == null || deathAnimator.runtimeAnimatorController == null)
+            return false;
+
+        for (int index = 0; index < deathAnimator.layerCount; index++)
+        {
+            string prefix = deathAnimator.GetLayerName(index) + ".";
+            int candidate = Animator.StringToHash(prefix + "Death");
+            if (!deathAnimator.HasState(index, candidate))
+            {
+                candidate = Animator.StringToHash(prefix + "Dead_Larva");
+                if (!deathAnimator.HasState(index, candidate))
+                    continue;
+            }
+
+            layer = index;
+            stateHash = candidate;
+            return true;
+        }
+
+        return false;
     }
 }

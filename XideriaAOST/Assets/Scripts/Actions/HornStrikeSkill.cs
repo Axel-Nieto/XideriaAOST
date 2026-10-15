@@ -7,11 +7,11 @@ public class HornStrikeSkill : SkillBase
     private readonly int pushDistance;
 
     public HornStrikeSkill(
-        int damage = 5,
+        int damage = 3,
         int pushDistance = 1)
         : base(
             name: "Cornada",
-            description: "Ataca con los cuernos e impulsa al objetivo hacia atrás.",
+            description: "Ataca con los cuernos e impulsa al objetivo hacia atrï¿½s.",
             energyCost: 3,
             cooldown: 0,
             minRange: 1,
@@ -115,7 +115,7 @@ public class HornStrikeSkill : SkillBase
                 : damage + user.Stats.Attack;
 
         return
-            $"Daño: {estimatedDamage}\n" +
+            $"Daï¿½o: {estimatedDamage}\n" +
             $"Empuje: {pushDistance}";
     }
 }

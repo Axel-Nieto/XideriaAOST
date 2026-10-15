@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class FlameDashSkill : SkillBase
 {
-    private readonly int damage = 4;
+    private readonly int damage = 7;
     private readonly int aoeRadius = 1;
     private readonly float dashSpeed = 14f;
     public override int AreaRadius => aoeRadius;
@@ -13,7 +13,7 @@ public class FlameDashSkill : SkillBase
         : base(
             name: "Dash Llameante",
             description: "Te desplazas hacia una celda y quemas enemigos adyacentes al detenerte.",
-            energyCost: 4,
+            energyCost: 3,
             cooldown: 2,
             minRange: 2,
             maxRange: 8,

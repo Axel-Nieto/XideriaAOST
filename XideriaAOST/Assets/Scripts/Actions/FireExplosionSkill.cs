@@ -25,8 +25,8 @@ public class FireExplosionSkill : SkillBase
             ? SkillIconLibrary.Instance.fireExplosion
             : null)
     {
-        damage = 7;
-        aoeRadius = 2;
+        damage = 18;
+        aoeRadius = 8;
 
         Debug.Log("SkillIconLibrary: " + SkillIconLibrary.Instance);
         Debug.Log("Fire Explosion Icon: " + SkillIconLibrary.Instance?.fireExplosion);
@@ -90,7 +90,7 @@ public class FireExplosionSkill : SkillBase
         {
             int finalDamage = Mathf.Max(
                 1,
-                damage + user.Stats.Attack - target.Stats.Defense
+                damage - target.Stats.Defense
             );
 
             target.TakeDamage(
@@ -133,11 +133,6 @@ public class FireExplosionSkill : SkillBase
 
     public override string GetTooltipDetails(Character user)
     {
-        int estimatedDamage = user == null
-            ? damage
-            : damage + user.Stats.Attack;
-
-        return
-            $"Daño: {estimatedDamage}";
+        return $"Daño: {damage}";
     }
 }

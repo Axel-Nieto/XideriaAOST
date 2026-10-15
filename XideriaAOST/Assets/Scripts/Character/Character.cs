@@ -43,8 +43,13 @@ public class Character : MonoBehaviour
     [SerializeField] private Transform helmetSocket;
     private GameObject currentHelmetVisual;
 
+    [Header("Pasivas iniciales (provisional)")]
+    [SerializeField] private bool enableVitalImpulse = true;
+    public bool VitalImpulseEnabled => IsPlayer && enableVitalImpulse;
+
     public bool IsPlayer => isPlayer;
     private bool isDying;
+    private bool deathCompletedNotified;
     public bool IsDying => isDying;
 
     public SkillBase BasicSkill { get; private set; }
@@ -62,6 +67,7 @@ public class Character : MonoBehaviour
         Movement = GetComponent<CharacterMovement>();
 
         EquippedHelmet = HelmetFactory.CreateDefaultHelmet();
+        InitializeBasePassives();
 
         InitializePosition();
     }
@@ -78,11 +84,45 @@ public class Character : MonoBehaviour
     private void OnEnable()
     {
         GameEvents.OnTurnStarted += HandleTurnStarted;
+        GameEvents.OnCharacterDeathCompleted += HandleCharacterDeathCompleted;
     }
 
     private void OnDisable()
     {
         GameEvents.OnTurnStarted -= HandleTurnStarted;
+        GameEvents.OnCharacterDeathCompleted -= HandleCharacterDeathCompleted;
+    }
+
+    private void InitializeBasePassives()
+    {
+        if (!IsPlayer)
+            return;
+
+        foreach (PassiveEffect passive in basePassives)
+        {
+            if (passive is VitalImpulsePassive)
+                return;
+        }
+
+        basePassives.Add(new VitalImpulsePassive());
+    }
+
+    public Transform GetHeadAnchor()
+    {
+        return helmetSocket;
+    }
+
+    private void HandleCharacterDeathCompleted(Character deceased)
+    {
+        if (deceased == null || deceased == this || deceased.IsPlayer ||
+            Stats == null || !Stats.IsAlive || isDying ||
+            deceased.gameObject.scene != gameObject.scene)
+        {
+            return;
+        }
+
+        foreach (PassiveEffect passive in GetPassiveEffects())
+            passive.OnOtherCharacterDeathCompleted(this, deceased);
     }
 
     private void InitializePosition()
@@ -293,12 +333,12 @@ public class Character : MonoBehaviour
 
     private IEnumerator DieRoutine()
     {
-        if (!IsPlayer &&
-            GetComponentInChildren<CharacterAnimationController>())
+        bool deathSequenceCompleted = IsPlayer;
+        if (!IsPlayer)
         {
-            GetComponentInChildren<CharacterAnimationController>()?.PlayDeath();
-
-            yield return new WaitForSeconds(3f);
+            yield return CharacterAnimationController.PlayDeathAndWait(
+                GetComponentInChildren<Animator>(),
+                () => deathSequenceCompleted = true);
         }
 
         if (!isPlayer)
@@ -306,7 +346,18 @@ public class Character : MonoBehaviour
 
         _grid.UnregisterCharacter(this);
 
-        gameObject.SetActive(false);
+        try
+        {
+            if (deathSequenceCompleted && !deathCompletedNotified)
+            {
+                deathCompletedNotified = true;
+                GameEvents.OnCharacterDeathCompleted?.Invoke(this);
+            }
+        }
+        finally
+        {
+            gameObject.SetActive(false);
+        }
     }
 
     public void AddPassive(PassiveEffect passive)
@@ -324,6 +375,9 @@ public class Character : MonoBehaviour
         all.AddRange(basePassives);
         all.AddRange(passiveEffects);
         all.AddRange(helmetPassives);
+
+        if (!VitalImpulseEnabled)
+            all.RemoveAll(passive => passive is VitalImpulsePassive);
 
         return all;
     }
@@ -501,15 +555,16 @@ public class Character : MonoBehaviour
 
     public void ProcessCurrentTerrain()
     {
-        GridCell cell = _grid.GetCell(GridPosition);
-
-        if (cell == null)
-            return;
-
-        if (cell.Type == CellType.Void)
+        foreach (Vector2Int position in GetOccupiedCells())
         {
-            Debug.Log($"{name} cayó al vacío.");
-            Die();
+            GridCell cell = _grid.GetCell(position);
+
+            if (cell != null && cell.Type == CellType.Void)
+            {
+                Debug.Log($"{name} cayó al vacío.");
+                Die();
+                return;
+            }
         }
     }
 

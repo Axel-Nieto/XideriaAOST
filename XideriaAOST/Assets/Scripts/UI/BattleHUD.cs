@@ -61,6 +61,7 @@ public class BattleHUD : MonoBehaviour
     private int selectedSkillIndex = -1;
 
     private bool themeInitialized = false;
+    private bool displayedVitalImpulseEnabled;
 
     private readonly string[] keys = { "Q", "W", "E", "R" };
 
@@ -76,6 +77,25 @@ public class BattleHUD : MonoBehaviour
 
         HideTooltip();
         hpNormalColor = hpCurrentText.color;
+    }
+
+    private void Update()
+    {
+        if (currentCharacter != null &&
+            displayedVitalImpulseEnabled != currentCharacter.VitalImpulseEnabled)
+        {
+            RefreshStatusIcons();
+        }
+    }
+
+    public bool TryGetEnergyColor(out Color color)
+    {
+        color = default;
+        if (energyCurrentText == null)
+            return false;
+
+        color = energyCurrentText.color;
+        return true;
     }
 
     public void ShowCharacter(Character character)
@@ -351,6 +371,8 @@ public class BattleHUD : MonoBehaviour
 
         if (currentCharacter == null)
             return;
+
+        displayedVitalImpulseEnabled = currentCharacter.VitalImpulseEnabled;
 
         foreach (var effect in currentCharacter.GetStatusEffects())
         {

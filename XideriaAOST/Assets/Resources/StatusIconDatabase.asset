@@ -21,3 +21,4 @@ MonoBehaviour:
   fireResistanceIcon: {fileID: 21300000, guid: 1eaef8b133f3d81449fdd24c6a73a138, type: 3}
   waterResistanceIcon: {fileID: 21300000, guid: 27deb5fb9dac1d74a83337c91b754a9a, type: 3}
   poisonResistanceIcon: {fileID: 21300000, guid: 4bf2bb2d0441eea499d31817df2845b2, type: 3}
+  vitalImpulseIcon: {fileID: 21300000, guid: 988a20ef9975eea45a5ad26326bbf619, type: 3}

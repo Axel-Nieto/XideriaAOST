@@ -44,6 +44,32 @@ public class GridInputHandler : MonoBehaviour
     private HashSet<Vector2Int> dangerousPreviewCells = new();
     private GameStateManager gameStateManager;
 
+    private const float SkillRangeStateCheckInterval = 0.1f;
+    private bool skillRangeDirty = true;
+    private Character cachedSkillCharacter;
+    private SkillBase cachedSkill;
+    private GridSystem cachedSkillGrid;
+    private Vector2Int cachedSkillOrigin;
+    private int cachedSkillWidth;
+    private int cachedSkillHeight;
+    private int cachedSkillEnergy;
+    private int cachedSkillCooldown;
+    private float nextSkillRangeStateCheck;
+    private readonly List<int> skillRangeWorldState = new();
+    private readonly List<int> pendingSkillRangeWorldState = new();
+
+    private bool movementRangeDirty = true;
+    private Character cachedMovementCharacter;
+    private GridSystem cachedMovementGrid;
+    private Vector2Int cachedMovementOrigin;
+    private int cachedMovementWidth;
+    private int cachedMovementHeight;
+    private int cachedMovementMaxSteps;
+    private bool cachedMovementExplorationMode;
+    private float nextMovementRangeStateCheck;
+    private readonly List<int> movementRangeWorldState = new();
+    private readonly Dictionary<Vector2Int, List<Vector2Int>> movementPaths = new();
+
     private void Awake()
     {
         gameStateManager = FindFirstObjectByType<GameStateManager>();
@@ -71,12 +97,37 @@ public class GridInputHandler : MonoBehaviour
 
     private void OnEnable()
     {
+        skillRangeDirty = true;
+        movementRangeDirty = true;
         GameEvents.OnTurnStarted += OnTurnStarted;
+        GameEvents.OnEnergyRecovered += OnEnergyRecovered;
     }
 
     private void OnDisable()
     {
         GameEvents.OnTurnStarted -= OnTurnStarted;
+        GameEvents.OnEnergyRecovered -= OnEnergyRecovered;
+    }
+
+    private void OnEnergyRecovered(Character character, int amount)
+    {
+        if (character != playerCharacter || amount <= 0)
+            return;
+
+        skillRangeDirty = true;
+        movementRangeDirty = true;
+
+        var spawner = character.GetComponent<FloatingDamageSpawner>();
+        if (spawner == null || battleHUD == null || !battleHUD.TryGetEnergyColor(out Color color))
+        {
+            Debug.LogWarning("No se puede mostrar Impulso Vital: falta el texto flotante o el color de energía del HUD.", this);
+        }
+        else
+        {
+            spawner.ShowEnergyRecovery(amount, color, character.GetHeadAnchor());
+        }
+
+        battleHUD?.Refresh();
     }
 
     private void Update()
@@ -123,6 +174,7 @@ public class GridInputHandler : MonoBehaviour
             if (currentMode == ActionMode.SelfSkillConfirm)
             {
                 currentMode = ActionMode.Move;
+                movementRangeDirty = true;
 
                 battleHUD.SetSelectedSkill(-1);
 
@@ -136,6 +188,7 @@ public class GridInputHandler : MonoBehaviour
             if (currentMode == ActionMode.BasicAttack)
             {
                 currentMode = ActionMode.Move;
+                movementRangeDirty = true;
 
                 battleHUD.SetSelectedSkill(-1);
                 ClearTiles();
@@ -200,8 +253,8 @@ public class GridInputHandler : MonoBehaviour
         }
         else if (currentMode == ActionMode.BasicAttack)
         {
-            UpdateBasicAttackRange();
-            DrawRangeTiles(skillRangeTilePrefab);
+            if (UpdateBasicAttackRange())
+                DrawRangeTiles(skillRangeTilePrefab);
 
             currentPath.Clear();
             ClearTiles();
@@ -221,13 +274,25 @@ public class GridInputHandler : MonoBehaviour
 
     private void OnTurnStarted(Character character)
     {
+        skillRangeDirty = true;
+        movementRangeDirty = true;
         StartCoroutine(RefreshHudNextFrame(character));
     }
 
     private void UpdateMovementRange()
     {
-        if (selectedCharacter == null)
+        if (selectedCharacter == null || gridSystem == null ||
+            selectedCharacter.Movement == null || !selectedCharacter.Movement.isActiveAndEnabled ||
+            !selectedCharacter.gameObject.activeInHierarchy ||
+            !selectedCharacter.Stats.IsAlive || selectedCharacter.IsDying ||
+            selectedCharacter.HasStatusEffect<RootEffect>())
+        {
+            reachableCells.Clear();
+            movementPaths.Clear();
+            dangerousPreviewCells.Clear();
+            movementRangeDirty = true;
             return;
+        }
 
         bool explorationMode =
             gameStateManager != null &&
@@ -246,11 +311,55 @@ public class GridInputHandler : MonoBehaviour
                 selectedCharacter.GetMovementCostPerCell();
         }
 
-        reachableCells = _rangeCalculator.GetReachableCells(
+        bool selectionChanged = movementRangeDirty ||
+            cachedMovementCharacter != selectedCharacter ||
+            cachedMovementGrid != gridSystem ||
+            cachedMovementOrigin != selectedCharacter.GridPosition ||
+            cachedMovementWidth != selectedCharacter.GridWidth ||
+            cachedMovementHeight != selectedCharacter.GridHeight ||
+            cachedMovementMaxSteps != maxSteps ||
+            cachedMovementExplorationMode != explorationMode;
+
+        if (!selectionChanged && Time.unscaledTime < nextMovementRangeStateCheck)
+            return;
+
+        bool worldChanged = HasRangeWorldChanged(movementRangeWorldState);
+        nextMovementRangeStateCheck = Time.unscaledTime + SkillRangeStateCheckInterval;
+
+        if (!selectionChanged && !worldChanged)
+            return;
+
+        var candidates = _rangeCalculator.GetReachableCells(
             selectedCharacter.GridPosition,
             maxSteps,
             selectedCharacter
         );
+
+        reachableCells.Clear();
+        movementPaths.Clear();
+
+        // A* may prefer a longer route due to terrain. Advertise only destinations
+        // that the chosen route can actually reach with the current step budget.
+        foreach (Vector2Int candidate in candidates)
+        {
+            List<Vector2Int> path = GetValidMovementPath(candidate);
+            if (path == null)
+                continue;
+
+            reachableCells.Add(candidate);
+            movementPaths[candidate] = path;
+        }
+
+        cachedMovementCharacter = selectedCharacter;
+        cachedMovementGrid = gridSystem;
+        cachedMovementOrigin = selectedCharacter.GridPosition;
+        cachedMovementWidth = selectedCharacter.GridWidth;
+        cachedMovementHeight = selectedCharacter.GridHeight;
+        cachedMovementMaxSteps = maxSteps;
+        cachedMovementExplorationMode = explorationMode;
+        movementRangeWorldState.Clear();
+        movementRangeWorldState.AddRange(pendingSkillRangeWorldState);
+        movementRangeDirty = false;
 
         if (!explorationMode)
             UpdateDangerousPreviewCells();
@@ -258,33 +367,135 @@ public class GridInputHandler : MonoBehaviour
             dangerousPreviewCells.Clear();
     }
 
-    private void UpdateBasicAttackRange()
+    private bool UpdateBasicAttackRange()
     {
-        reachableCells.Clear();
-
-        if (selectedCharacter == null)
-            return;
+        if (selectedCharacter == null || gridSystem == null)
+            return false;
 
         var skill = selectedCharacter.GetSkill(selectedSkillIndex);
-        var origin = selectedCharacter.GridPosition;
-
-        for (int x = -skill.MaxRange; x <= skill.MaxRange; x++)
+        if (skill == null)
         {
-            for (int y = -skill.MaxRange; y <= skill.MaxRange; y++)
+            reachableCells.Clear();
+            skillRangeDirty = true;
+            return rangeTiles.Count > 0;
+        }
+
+        var origin = selectedCharacter.GridPosition;
+        int energy = selectedCharacter.Stats.CurrentEnergy;
+        int cooldown = selectedCharacter.GetSkillCooldown(skill);
+
+        bool selectionChanged = skillRangeDirty ||
+            cachedSkillCharacter != selectedCharacter ||
+            cachedSkill != skill ||
+            cachedSkillGrid != gridSystem ||
+            cachedSkillOrigin != origin ||
+            cachedSkillWidth != selectedCharacter.GridWidth ||
+            cachedSkillHeight != selectedCharacter.GridHeight ||
+            cachedSkillEnergy != energy ||
+            cachedSkillCooldown != cooldown;
+
+        // Reuse both the visual range cells and their tiles while state is unchanged.
+        if (!selectionChanged && Time.unscaledTime < nextSkillRangeStateCheck)
+            return false;
+
+        bool worldChanged = HasSkillRangeWorldChanged();
+        nextSkillRangeStateCheck = Time.unscaledTime + SkillRangeStateCheckInterval;
+
+        if (!selectionChanged && !worldChanged)
+            return false;
+
+        reachableCells.Clear();
+
+        // Show geometric coverage even without a valid target. Also include
+        // valid targets' full footprints, whose cells may extend beyond it.
+        for (int x = 0; x < gridSystem.Width; x++)
+        {
+            for (int y = 0; y < gridSystem.Height; y++)
             {
-                int distance = Mathf.Abs(x) + Mathf.Abs(y);
+                Vector2Int pos = new Vector2Int(x, y);
 
-                if (distance < skill.MinRange || distance > skill.MaxRange)
-                    continue;
-
-                Vector2Int pos = origin + new Vector2Int(x, y);
-
-                if (gridSystem.IsValidCell(pos))
-                {
+                if (skill.IsInRange(origin, pos) ||
+                    skill.CanUse(selectedCharacter, pos, gridSystem))
                     reachableCells.Add(pos);
-                }
             }
         }
+
+        cachedSkillCharacter = selectedCharacter;
+        cachedSkill = skill;
+        cachedSkillGrid = gridSystem;
+        cachedSkillOrigin = origin;
+        cachedSkillWidth = selectedCharacter.GridWidth;
+        cachedSkillHeight = selectedCharacter.GridHeight;
+        cachedSkillEnergy = energy;
+        cachedSkillCooldown = cooldown;
+        skillRangeWorldState.Clear();
+        skillRangeWorldState.AddRange(pendingSkillRangeWorldState);
+        skillRangeDirty = false;
+        return true;
+    }
+
+    private bool HasSkillRangeWorldChanged()
+    {
+        return HasRangeWorldChanged(skillRangeWorldState);
+    }
+
+    private bool HasRangeWorldChanged(List<int> previousWorldState)
+    {
+        // GridSystem has no change event. Compare a small, reusable snapshot
+        // periodically instead of running CanUse across the board every frame.
+        pendingSkillRangeWorldState.Clear();
+        pendingSkillRangeWorldState.Add(gridSystem.Width);
+        pendingSkillRangeWorldState.Add(gridSystem.Height);
+
+        for (int x = 0; x < gridSystem.Width; x++)
+        {
+            for (int y = 0; y < gridSystem.Height; y++)
+            {
+                Vector2Int pos = new Vector2Int(x, y);
+                GridCell cell = gridSystem.GetCell(pos);
+                Character occupant = gridSystem.GetCharacterAt(pos);
+
+                pendingSkillRangeWorldState.Add(cell == null ? -1 : (int)cell.Type);
+                pendingSkillRangeWorldState.Add(cell != null && cell.Walkable ? 1 : 0);
+                pendingSkillRangeWorldState.Add(occupant == null ? 0 : occupant.GetInstanceID());
+
+                if (occupant == null)
+                    continue;
+
+                pendingSkillRangeWorldState.Add(occupant.GridPosition.x);
+                pendingSkillRangeWorldState.Add(occupant.GridPosition.y);
+                pendingSkillRangeWorldState.Add(occupant.GridWidth);
+                pendingSkillRangeWorldState.Add(occupant.GridHeight);
+                pendingSkillRangeWorldState.Add(occupant.IsPlayer ? 1 : 0);
+                pendingSkillRangeWorldState.Add(occupant.gameObject.activeInHierarchy ? 1 : 0);
+                pendingSkillRangeWorldState.Add(occupant.IsDying ? 1 : 0);
+                pendingSkillRangeWorldState.Add(occupant.Stats.CurrentHP);
+
+                var effects = occupant.GetStatusEffects();
+                pendingSkillRangeWorldState.Add(effects.Count);
+                foreach (var effect in effects)
+                    pendingSkillRangeWorldState.Add(effect.RemainingTurns);
+            }
+        }
+
+        foreach (HelmetPickup helmet in FindObjectsByType<HelmetPickup>(FindObjectsSortMode.InstanceID))
+        {
+            pendingSkillRangeWorldState.Add(helmet.GetInstanceID());
+            pendingSkillRangeWorldState.Add(helmet.GridPosition.x);
+            pendingSkillRangeWorldState.Add(helmet.GridPosition.y);
+            pendingSkillRangeWorldState.Add(helmet.IsCollected ? 1 : 0);
+        }
+
+        if (previousWorldState.Count != pendingSkillRangeWorldState.Count)
+            return true;
+
+        for (int i = 0; i < previousWorldState.Count; i++)
+        {
+            if (previousWorldState[i] != pendingSkillRangeWorldState[i])
+                return true;
+        }
+
+        return false;
     }
 
     private void HandleClick()
@@ -305,6 +516,12 @@ public class GridInputHandler : MonoBehaviour
                 return;
             }
 
+            if (!skill.CanUse(selectedCharacter, selectedCharacter.GridPosition, gridSystem))
+            {
+                battleHUD.FlashSkillError(selectedSkillIndex);
+                return;
+            }
+
             StartCoroutine(ExecuteSkill(skill, selectedCharacter.GridPosition));
             return;
         }
@@ -314,37 +531,14 @@ public class GridInputHandler : MonoBehaviour
 
         Vector2Int targetPos = gridSystem.WorldToGrid(hitGrid.point);
 
-        if (!reachableCells.Contains(targetPos))
-        {
-            return;
-        }
-
         if (currentMode == ActionMode.Move)
         {
-            if (gridSystem.IsBlockedForMovement(targetPos))
+            if (!reachableCells.Contains(targetPos))
                 return;
 
-            var path = _pathfinding.FindPath(
-                selectedCharacter.GridPosition,
-                targetPos,
-                selectedCharacter
-            );
-
-            if (path == null || path.Count <= 1)
-                return;
-
-            Vector2Int finalDestination = GetLastValidDestination(path);
-
-            if (finalDestination == selectedCharacter.GridPosition)
-                return;
-
-            path = _pathfinding.FindPath(
-                selectedCharacter.GridPosition,
-                finalDestination,
-                selectedCharacter
-            );
-
-            if (path == null || path.Count <= 1)
+            // Validate live at the click, independently of the cached preview.
+            var path = GetValidMovementPath(targetPos);
+            if (path == null)
                 return;
 
             path.RemoveAt(0);
@@ -352,18 +546,6 @@ public class GridInputHandler : MonoBehaviour
             bool explorationMode =
                 gameStateManager != null &&
                 gameStateManager.IsExplorationMode;
-
-            if (!explorationMode)
-            {
-                int movementCost =
-                    selectedCharacter.GetMovementCostPerCell();
-
-                int maxSteps =
-                    selectedCharacter.Stats.CurrentEnergy / movementCost;
-
-                if (path.Count > maxSteps)
-                    path = path.GetRange(0, maxSteps);
-            }
 
             IAction action = new MoveAction(
                 path,
@@ -410,6 +592,7 @@ public class GridInputHandler : MonoBehaviour
 
         isMoving = false;
         currentMode = ActionMode.Move;
+        movementRangeDirty = true;
         battleHUD.SetSelectedSkill(-1);
         battleHUD.Refresh();
     }
@@ -439,6 +622,8 @@ public class GridInputHandler : MonoBehaviour
         }
 
         selectedSkillIndex = index;
+        skillRangeDirty = true;
+        movementRangeDirty = true;
 
         if (skill.TargetType == SkillTargetType.Self)
         {
@@ -468,16 +653,23 @@ public class GridInputHandler : MonoBehaviour
     {
         isMoving = true;
 
-        yield return selectedCharacter.ExecuteAction(action);
-
-        HelmetPickup adjacentHelmet = GetAdjacentHelmet();
-
-        if (adjacentHelmet != null)
+        try
         {
-            yield return PickupHelmetRoutine(adjacentHelmet);
-        }
+            yield return selectedCharacter.ExecuteAction(action);
 
-        isMoving = false;
+            if (selectedCharacter != null && selectedCharacter.Stats.IsAlive &&
+                !selectedCharacter.IsDying && selectedCharacter.gameObject.activeInHierarchy)
+            {
+                HelmetPickup adjacentHelmet = GetAdjacentHelmet();
+                if (adjacentHelmet != null)
+                    yield return PickupHelmetRoutine(adjacentHelmet);
+            }
+        }
+        finally
+        {
+            isMoving = false;
+            movementRangeDirty = true;
+        }
 
         battleHUD.Refresh();
 
@@ -546,6 +738,7 @@ public class GridInputHandler : MonoBehaviour
     public void SetHelmetInventoryOpen(bool isOpen)
     {
         isHelmetInventoryOpen = isOpen;
+        movementRangeDirty = true;
 
         if (isOpen)
         {
@@ -747,25 +940,38 @@ public class GridInputHandler : MonoBehaviour
         battleHUD.Refresh();
     }
 
-    private Vector2Int GetLastValidDestination(List<Vector2Int> path)
+    private List<Vector2Int> GetValidMovementPath(Vector2Int destination)
     {
-        // path viene con origen incluido
-        for (int i = path.Count - 1; i >= 1; i--)
+        if (selectedCharacter == null || gridSystem == null ||
+            selectedCharacter.Movement == null || !selectedCharacter.Movement.isActiveAndEnabled ||
+            !selectedCharacter.gameObject.activeInHierarchy ||
+            !selectedCharacter.Stats.IsAlive || selectedCharacter.IsDying ||
+            selectedCharacter.HasStatusEffect<RootEffect>() ||
+            !gridSystem.CanCharacterOccupy(selectedCharacter, destination, ignoreSelf: true))
+            return null;
+
+        var path = _pathfinding.FindPath(
+            selectedCharacter.GridPosition, destination, selectedCharacter);
+
+        if (path == null || path.Count <= 1)
+            return null;
+
+        bool explorationMode = gameStateManager != null && gameStateManager.IsExplorationMode;
+        if (!explorationMode &&
+            !selectedCharacter.Stats.HasEnergy((path.Count - 1) * selectedCharacter.GetMovementCostPerCell()))
+            return null;
+
+        // A fall ends movement. A route cannot reach a later destination after it.
+        for (int i = 1; i < path.Count - 1; i++)
         {
-            Vector2Int pos = path[i];
-
-            if (!gridSystem.CanCharacterOccupy(
-                selectedCharacter,
-                pos,
-                ignoreSelf: true))
+            foreach (Vector2Int cell in selectedCharacter.GetOccupiedCells(path[i]))
             {
-                continue;
+                if (gridSystem.GetCell(cell)?.Type == CellType.Void)
+                    return null;
             }
-
-            return pos;
         }
 
-        return path[0];
+        return path;
     }
 
     private void UpdatePathPreview()
@@ -797,53 +1003,14 @@ public class GridInputHandler : MonoBehaviour
             return;
         }
 
-        if (gridSystem.IsBlockedForMovement(targetGridPos))
+        if (!movementPaths.TryGetValue(targetGridPos, out var path))
         {
             currentPath.Clear();
             return;
         }
 
-        if (!gridSystem.IsWalkable(targetGridPos))
-        {
-            currentPath.Clear();
-            return;
-        }
-
-        List<Vector2Int> path =
-        _pathfinding.FindPath(
-            selectedCharacter.GridPosition,
-            targetGridPos,
-            selectedCharacter
-        );
-
-        if (path == null || path.Count <= 1)
-        {
-            currentPath.Clear();
-            return;
-        }
-
-        path.RemoveAt(0);
-
-        bool explorationMode =
-            gameStateManager != null &&
-            gameStateManager.IsExplorationMode;
-
-        if (!explorationMode)
-        {
-            int movementCost =
-                selectedCharacter.GetMovementCostPerCell();
-
-            int maxSteps =
-                selectedCharacter.Stats.CurrentEnergy /
-                movementCost;
-
-            if (path.Count > maxSteps)
-            {
-                path = path.GetRange(0, maxSteps);
-            }
-        }
-
-        currentPath = path;
+        // Keep the cached path intact; it includes the starting origin.
+        currentPath = path.GetRange(1, path.Count - 1);
     }
 
     private void UpdateDangerousPreviewCells()
@@ -852,6 +1019,15 @@ public class GridInputHandler : MonoBehaviour
 
         foreach (var cell in reachableCells)
         {
+            foreach (Vector2Int occupiedCell in selectedCharacter.GetOccupiedCells(cell))
+            {
+                if (gridSystem.GetCell(occupiedCell)?.Type == CellType.Void)
+                {
+                    dangerousPreviewCells.Add(cell);
+                    break;
+                }
+            }
+
             GridCell gridCell = gridSystem.GetCell(cell);
 
             if (gridCell == null || gridCell.Type == CellType.Void)
@@ -943,7 +1119,9 @@ public class GridInputHandler : MonoBehaviour
         {
             GridCell gridCell = gridSystem.GetCell(cell);
 
-            if (gridCell != null && gridCell.Type == CellType.Void)
+            if (currentMode == ActionMode.Move &&
+                ((gridCell != null && gridCell.Type == CellType.Void) ||
+                 dangerousPreviewCells.Contains(cell)))
                 continue;
 
             Vector3 worldPos = gridSystem.GridToWorld(cell);
@@ -957,6 +1135,9 @@ public class GridInputHandler : MonoBehaviour
 
             rangeTiles.Add(tile);
         }
+
+        if (currentMode != ActionMode.Move)
+            return;
 
         foreach (var cell in dangerousPreviewCells)
         {
@@ -995,6 +1176,10 @@ public class GridInputHandler : MonoBehaviour
 
         Vector2Int targetPos = gridSystem.WorldToGrid(hit.point);
 
+        // Hover feedback is checked live, independently of the cached range.
+        if (!skill.CanUse(selectedCharacter, targetPos, gridSystem))
+            return;
+
         foreach (var cell in skill.GetPreviewCells(
             selectedCharacter.GridPosition,
             targetPos))
@@ -1020,6 +1205,9 @@ public class GridInputHandler : MonoBehaviour
         ClearAoeTiles();
 
         if (selectedCharacter == null || skill == null)
+            return;
+
+        if (!skill.CanUse(selectedCharacter, selectedCharacter.GridPosition, gridSystem))
             return;
 
         foreach (var cell in skill.GetPreviewCells(

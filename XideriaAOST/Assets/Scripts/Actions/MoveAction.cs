@@ -15,7 +15,10 @@ public class MoveAction : IAction
 
     public bool CanExecute(Character actor)
     {
-        if (actor == null || actor.Stats == null)
+        if (actor == null || actor.Stats == null || actor.Movement == null ||
+            !actor.Movement.isActiveAndEnabled ||
+            !actor.gameObject.activeInHierarchy || !actor.Stats.IsAlive ||
+            actor.IsDying || actor.HasStatusEffect<RootEffect>())
             return false;
 
         if (path == null || path.Count == 0)
@@ -32,14 +35,19 @@ public class MoveAction : IAction
 
     public IEnumerator Execute(Character actor)
     {
-        if (!ignoreEnergyCost)
-        {
-            int totalCost =
-                path.Count * actor.GetMovementCostPerCell();
+        if (!CanExecute(actor))
+            yield break;
 
-            actor.Stats.ConsumeEnergy(totalCost);
-        }
+        int movementCost = actor.GetMovementCostPerCell();
 
-        yield return actor.Movement.MoveAlongRoutine(path);
+        yield return actor.Movement.MoveAlongRoutine(
+            path,
+            () =>
+            {
+                if (!ignoreEnergyCost)
+                    actor.Stats.ConsumeEnergy(movementCost);
+            },
+            () => ignoreEnergyCost || actor.Stats.HasEnergy(movementCost)
+        );
     }
 }
