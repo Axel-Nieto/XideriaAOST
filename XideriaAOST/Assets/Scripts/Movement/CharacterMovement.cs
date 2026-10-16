@@ -7,6 +7,9 @@ public class CharacterMovement : MonoBehaviour
 {
     private Character _character;
 
+    // Raised only after every requested step commits and walking cleanup finishes.
+    public event System.Action<Character> MovementCompleted;
+
     public float moveSpeed = 5f;
 
     private GridSystem _grid;
@@ -125,7 +128,11 @@ public class CharacterMovement : MonoBehaviour
                     yield break;
 
                 if (_character.IsPlayer)
+                {
                     CheckSpecialCell(step);
+                    if (SceneTransitionManager.Instance != null && SceneTransitionManager.Instance.IsTransitioning)
+                        yield break;
+                }
             }
         }
         finally
@@ -143,6 +150,9 @@ public class CharacterMovement : MonoBehaviour
                     committedPosition.x, transform.position.y, committedPosition.z);
             }
         }
+
+        // yield break/exception/cancellation exits never reach this notification.
+        MovementCompleted?.Invoke(_character);
     }
 
     public IEnumerator MoveToCell(Vector2Int destination, float customSpeed)
@@ -177,33 +187,22 @@ public class CharacterMovement : MonoBehaviour
             return;
         }
 
-        GridCell cell = _grid.GetCell(position);
-        CellType type = cell.Type;
-
-        switch (type)
+        // A large character can touch the exit with any cell of its footprint.
+        if (_grid.TryGetDoorOffer(_character, out RunRewardRecord offer))
         {
-            case CellType.ExitTutorial:
-                LoadSpecialCellScene(position);
-                break;
-
-            case CellType.ExitRun:
-                LoadSpecialCellScene(position);
-                break;
-
-            case CellType.Shop:
-                Debug.Log("Tienda todavía no implementada.");
-                break;
-        }
-    }
-
-    private void LoadSpecialCellScene(Vector2Int position)
-    {
-        string targetScene = _grid.GetTargetScene(position);
-
-        if (string.IsNullOrWhiteSpace(targetScene))
-        {
+            LoadSpecialCellScene(offer);
             return;
         }
+
+    }
+
+    private void LoadSpecialCellScene(RunRewardRecord offer)
+    {
+        SceneTransitionManager transition = SceneTransitionManager.Instance;
+        if (transition == null || !transition.TryLoadDoorScene(offer))
+            return;
+
+        string targetScene = offer.DestinationScene;
 
         bool isReturningToLobby =
             string.Equals(
@@ -220,7 +219,5 @@ public class CharacterMovement : MonoBehaviour
         {
             _character.SavePlayerSession();
         }
-
-        SceneTransitionManager.Instance.LoadScene(targetScene);
     }
 }

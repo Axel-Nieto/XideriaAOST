@@ -21,10 +21,25 @@ public class GameStateManager : MonoBehaviour
     public bool IsExplorationMode => CurrentPhase == LevelPhase.Exploration;
 
     private bool gameEnded = false;
+    private bool roomHadEnemies;
+    private string rewardRoomId;
+    private bool reportedPendingReward;
 
     private void Awake()
     {
         GameSession.IsGameOver = false;
+    }
+
+    private void Start()
+    {
+        foreach (Character character in FindObjectsOfType<Character>())
+            if (!character.IsPlayer && character.Stats.IsAlive)
+                roomHadEnemies = true;
+
+        PlayerSessionData session = PlayerSessionData.Instance;
+        if (session != null)
+            rewardRoomId = session.RunState.EnterScene(gameObject.scene.name).RoomId;
+        gridSystem?.PrepareDoorOffers();
     }
 
     private void Update()
@@ -45,14 +60,33 @@ public class GameStateManager : MonoBehaviour
     private void CheckVictory()
     {
         Character[] characters = FindObjectsOfType<Character>();
+        bool playerSurvived = false;
 
         foreach (var character in characters)
         {
             if (character.IsPlayer)
+            {
+                playerSurvived |= character.gameObject.activeInHierarchy && character.Stats.IsAlive && !character.IsDying;
                 continue;
+            }
 
             if (character.Stats.IsAlive && !character.IsDying)
                 return;
+        }
+
+        if (roomHadEnemies && playerSurvived)
+        {
+            PlayerSessionData session = PlayerSessionData.Instance;
+            if (session != null)
+            {
+                session.TryCompleteRoom(rewardRoomId);
+                foreach (RunRewardRecord offer in session.RunState.Rewards)
+                    if (offer.RoomId == rewardRoomId && offer.HasReward && !offer.IsDelivered && !reportedPendingReward)
+                    {
+                        reportedPendingReward = true;
+                        Debug.LogWarning("Room completed, but its reward could not be credited. It remains pending (check currency capacity).", this);
+                    }
+            }
         }
 
         EnterExplorationMode();

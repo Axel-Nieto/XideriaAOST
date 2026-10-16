@@ -36,6 +36,10 @@ public class GridInputHandler : MonoBehaviour
     private bool isCharacterSelected = false;
     private bool isPlayerTurn = false;
     private bool isHelmetInventoryOpen = false;
+    private bool isUpgradeShopOpen;
+    private int upgradeShopClosedFrame = -1;
+    public bool IsExecutingAction => isMoving;
+    public bool IsUpgradeShopInputBlocked => isUpgradeShopOpen || upgradeShopClosedFrame == Time.frameCount;
     private ActionMode currentMode = ActionMode.Move;
     private int selectedSkillIndex = 0;
     private CharacterPositionIndicator selectedIndicator;
@@ -132,7 +136,7 @@ public class GridInputHandler : MonoBehaviour
 
     private void Update()
     {
-        if (GameSession.IsGameOver)
+        if (GameSession.IsGameOver || IsUpgradeShopInputBlocked)
             return;
 
         UpdateEnemyHover();
@@ -500,6 +504,7 @@ public class GridInputHandler : MonoBehaviour
 
     private void HandleClick()
     {
+        if (IsUpgradeShopInputBlocked) return;
         if (isMoving) return;
 
         Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
@@ -577,6 +582,7 @@ public class GridInputHandler : MonoBehaviour
 
     private IEnumerator ExecuteSkill(SkillBase skill, Vector2Int targetCell)
     {
+        if (IsUpgradeShopInputBlocked) yield break;
         if (isMoving)
             yield break;
 
@@ -599,6 +605,7 @@ public class GridInputHandler : MonoBehaviour
 
     private void SelectSkill(int index)
     {
+        if (IsUpgradeShopInputBlocked) return;
         if (isMoving) return;
         if (selectedCharacter == null) return;
 
@@ -651,6 +658,7 @@ public class GridInputHandler : MonoBehaviour
 
     private IEnumerator ExecuteSelectedAction(IAction action)
     {
+        if (IsUpgradeShopInputBlocked) yield break;
         isMoving = true;
 
         try
@@ -732,7 +740,37 @@ public class GridInputHandler : MonoBehaviour
     {
         return isPlayerTurn &&
                !isMoving &&
+               !IsUpgradeShopInputBlocked &&
                !GameSession.IsGameOver;
+    }
+
+    public bool CanOpenUpgradeShop(Character actor)
+    {
+        return actor != null && actor == playerCharacter && actor.IsPlayer &&
+               actor.Stats != null && actor.Stats.IsAlive && !actor.IsDying &&
+               actor.gameObject.activeInHierarchy && isPlayerTurn && !isMoving &&
+               !isHelmetInventoryOpen && !IsUpgradeShopInputBlocked && !GameSession.IsGameOver;
+    }
+
+    public void SetUpgradeShopOpen(bool open)
+    {
+        if (isUpgradeShopOpen == open)
+            return;
+        isUpgradeShopOpen = open;
+        if (!open)
+            upgradeShopClosedFrame = Time.frameCount;
+        skillRangeDirty = true;
+        movementRangeDirty = true;
+        if (open)
+        {
+            currentPath.Clear();
+            ClearTiles();
+            ClearRangeTiles();
+            ClearAoeTiles();
+            enemyHoverUI?.Hide();
+            battleHUD?.SetSelectedSkill(-1);
+            currentMode = ActionMode.Move;
+        }
     }
 
     public void SetHelmetInventoryOpen(bool isOpen)
@@ -863,6 +901,7 @@ public class GridInputHandler : MonoBehaviour
 
     public void SelectSkillFromUI(int index)
     {
+        if (IsUpgradeShopInputBlocked) return;
         if (!isPlayerTurn) return;
         if (!isCharacterSelected) return;
         if (selectedCharacter == null) return;
@@ -873,6 +912,7 @@ public class GridInputHandler : MonoBehaviour
 
     public void EndTurnFromUI()
     {
+        if (IsUpgradeShopInputBlocked) return;
         if (!isPlayerTurn) return;
         if (isMoving) return;
 

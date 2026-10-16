@@ -43,9 +43,11 @@ public class Character : MonoBehaviour
     [SerializeField] private Transform helmetSocket;
     private GameObject currentHelmetVisual;
 
-    [Header("Pasivas iniciales (provisional)")]
-    [SerializeField] private bool enableVitalImpulse = true;
-    public bool VitalImpulseEnabled => IsPlayer && enableVitalImpulse;
+    private readonly VitalImpulsePassive vitalImpulse = new();
+    // Read ownership directly: purchases and AbandonRun affect even an existing
+    // character immediately, independently of Awake/Start/session load ordering.
+    public bool VitalImpulseEnabled => IsPlayer && PlayerSessionData.Instance != null &&
+        PlayerSessionData.Instance.HasUpgrade(UpgradeDefinition.VitalImpulseId);
 
     public bool IsPlayer => isPlayer;
     private bool isDying;
@@ -67,7 +69,6 @@ public class Character : MonoBehaviour
         Movement = GetComponent<CharacterMovement>();
 
         EquippedHelmet = HelmetFactory.CreateDefaultHelmet();
-        InitializeBasePassives();
 
         InitializePosition();
     }
@@ -91,20 +92,6 @@ public class Character : MonoBehaviour
     {
         GameEvents.OnTurnStarted -= HandleTurnStarted;
         GameEvents.OnCharacterDeathCompleted -= HandleCharacterDeathCompleted;
-    }
-
-    private void InitializeBasePassives()
-    {
-        if (!IsPlayer)
-            return;
-
-        foreach (PassiveEffect passive in basePassives)
-        {
-            if (passive is VitalImpulsePassive)
-                return;
-        }
-
-        basePassives.Add(new VitalImpulsePassive());
     }
 
     public Transform GetHeadAnchor()
@@ -376,8 +363,11 @@ public class Character : MonoBehaviour
         all.AddRange(passiveEffects);
         all.AddRange(helmetPassives);
 
-        if (!VitalImpulseEnabled)
-            all.RemoveAll(passive => passive is VitalImpulsePassive);
+        // Ownership is the sole authority. A helmet or AddPassive cannot bypass
+        // the purchase or create multiple effective copies of this passive.
+        all.RemoveAll(passive => passive is VitalImpulsePassive);
+        if (VitalImpulseEnabled)
+            all.Add(vitalImpulse);
 
         return all;
     }

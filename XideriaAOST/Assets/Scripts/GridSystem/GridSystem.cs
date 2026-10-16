@@ -17,6 +17,24 @@ public class GridSystem : MonoBehaviour
     [SerializeField] private GameObject exitTutorialTilePrefab;
     [SerializeField] private GameObject shopTilePrefab;
 
+    [Header("Door room rewards (configure on each source scene)")]
+    [Tooltip("Explicit allowlist. Leave Lobby, Tutorial and scenes without combat out of this list.")]
+    [SerializeField] private List<string> combatRewardScenes = new();
+    [SerializeField] private DoorRewardSettings doorRewards = new();
+    [SerializeField] private Sprite goldRewardSprite;
+    [SerializeField] private Sprite xideriaFragmentsRewardSprite;
+    [Tooltip("Position relative to a door's Reward Icon Anchor. Without an anchor, world offset from the door center.")]
+    [SerializeField] private Vector3 rewardIconOffset = new(0f, 2f, 0f);
+    [Tooltip("Fixed rotation relative to a door's Reward Icon Anchor, or world angles without an anchor. Never follows the camera.")]
+    [SerializeField] private Vector3 rewardIconRotationOffset;
+    [SerializeField, Min(0.01f)] private float rewardIconWorldSize = 0.75f;
+    [SerializeField] private int rewardIconSortingOrder = 100;
+
+    private List<LogicalDoor> logicalDoors = new();
+    private readonly Dictionary<Vector2Int, LogicalDoor> doorsByCell = new();
+    private readonly HashSet<string> reportedDoorErrors = new();
+    private readonly System.Random doorRandom = new();
+
     private readonly List<GameObject> activeSpecialCellVisuals = new();
     public int Width => width;
     public int Height => height;
@@ -24,6 +42,10 @@ public class GridSystem : MonoBehaviour
     private void Awake()
     {
         GenerateGrid();
+        logicalDoors = LogicalDoor.Build(terrainCells);
+        foreach (LogicalDoor door in logicalDoors)
+            foreach (Vector2Int cell in door.Cells)
+                doorsByCell[cell] = door;
     }
 
     private void GenerateGrid()
@@ -269,8 +291,14 @@ public class GridSystem : MonoBehaviour
         if (!visible)
             return;
 
+        PrepareDoorOffers();
+
         foreach (var cell in GetAllCells())
         {
+            if (doorsByCell.TryGetValue(cell.Position, out LogicalDoor door) &&
+                !TryGetPreparedOffer(door, out _))
+                continue;
+
             GameObject prefab = GetSpecialCellPrefab(cell.Type);
 
             if (prefab == null)
@@ -285,6 +313,34 @@ public class GridSystem : MonoBehaviour
             );
 
             activeSpecialCellVisuals.Add(visual);
+        }
+
+        foreach (LogicalDoor door in logicalDoors)
+        {
+            if (!TryGetPreparedOffer(door, out RunRewardRecord offer) || !offer.HasReward)
+                continue;
+
+            Vector3 center = Vector3.zero;
+            foreach (Vector2Int cell in door.Cells)
+                center += GridToWorld(cell);
+            center /= door.Cells.Count;
+
+            var iconObject = new GameObject($"Door reward {door.Id}");
+            iconObject.AddComponent<DoorRewardIcon>().Initialize(GetRewardSprite(offer.Currency),
+                rewardIconWorldSize, rewardIconRotationOffset, rewardIconSortingOrder);
+            if (door.RewardIconAnchor != null)
+            {
+                Transform anchor = door.RewardIconAnchor;
+                iconObject.transform.position = anchor.TransformPoint(rewardIconOffset);
+                iconObject.transform.rotation = anchor.rotation * Quaternion.Euler(rewardIconRotationOffset);
+                iconObject.transform.SetParent(anchor, true);
+            }
+            else
+            {
+                iconObject.transform.position = center + rewardIconOffset;
+                iconObject.transform.SetParent(transform, true);
+            }
+            activeSpecialCellVisuals.Add(iconObject);
         }
     }
 
@@ -301,31 +357,93 @@ public class GridSystem : MonoBehaviour
 
     public string GetTargetScene(Vector2Int position)
     {
-        foreach (var terrainCell in terrainCells)
+        // Read only: all randomness happens in PrepareDoorOffers before visuals appear.
+        return doorsByCell.TryGetValue(position, out LogicalDoor door) &&
+            TryGetPreparedOffer(door, out RunRewardRecord offer) ? offer.DestinationScene : null;
+    }
+
+    public void PrepareDoorOffers()
+    {
+        PlayerSessionData session = PlayerSessionData.Instance;
+        if (session == null)
         {
-            if (terrainCell.Position != position)
-                continue;
-
-            var targetScenes = terrainCell.TargetScenes;
-
-            if (targetScenes == null || targetScenes.Count == 0)
-            {
-                Debug.LogWarning(
-                    $"La celda {position} no tiene escenas destino configuradas."
-                );
-
-                return null;
-            }
-
-            if (targetScenes.Count == 1)
-                return targetScenes[0];
-
-            int randomIndex = Random.Range(0, targetScenes.Count);
-
-            return targetScenes[randomIndex];
+            ReportDoorError("session", "Door offers require the persistent PlayerSessionData (start from Lobby or Tutorial).");
+            return;
         }
 
-        return null;
+        RunRoomRecord source = session.RunState.FindRoom(session.RunState.CurrentRoomId);
+        if (source == null || source.SceneId != gameObject.scene.name)
+            source = session.RunState.EnterScene(gameObject.scene.name);
+        foreach (LogicalDoor door in logicalDoors)
+        {
+            if (!door.IsValid)
+            {
+                ReportDoorError(door.Id, "Cells sharing a door must have identical types and destinations, and at most one shared reward icon anchor.");
+                continue;
+            }
+
+            if (session.RunState.FindDoorOffer(source.RoomId, door.Id) == null && !CanLoadDoorTargets(door))
+                continue;
+
+            IReadOnlyList<string> combatScenes = door.Type == CellType.ExitRun ? combatRewardScenes : null;
+            if (!session.RunState.TryPrepareDoorOffer(source.RoomId, door.Id, door.TargetScenes,
+                combatScenes, doorRewards, doorRandom.NextDouble, out _, out string error))
+                ReportDoorError(door.Id, error);
+        }
+    }
+
+    private bool CanLoadDoorTargets(LogicalDoor door)
+    {
+        if (door.TargetScenes == null || door.TargetScenes.Count == 0)
+        {
+            ReportDoorError(door.Id, "Configure at least one destination scene.");
+            return false;
+        }
+        foreach (string target in door.TargetScenes)
+            if (string.IsNullOrWhiteSpace(target) || !Application.CanStreamedLevelBeLoaded(target))
+            {
+                ReportDoorError(door.Id, $"Destination '{target}' must be present and enabled in the build scene list.");
+                return false;
+            }
+        return true;
+    }
+
+    public bool TryGetDoorOffer(Character character, out RunRewardRecord offer)
+    {
+        offer = null;
+        return character != null && LogicalDoor.TryFindTouched(logicalDoors,
+            character.GetOccupiedCells(character.GridPosition), out LogicalDoor door) &&
+            TryGetPreparedOffer(door, out offer);
+    }
+
+    private bool TryGetPreparedOffer(LogicalDoor door, out RunRewardRecord offer)
+    {
+        offer = null;
+        PlayerSessionData session = PlayerSessionData.Instance;
+        if (session == null || !door.IsValid)
+            return false;
+        RunRoomRecord source = session.RunState.FindRoom(session.RunState.CurrentRoomId);
+        if (source == null || source.SceneId != gameObject.scene.name)
+            return false;
+        offer = session.RunState.FindDoorOffer(source.RoomId, door.Id);
+        if (offer == null)
+            return false;
+        if (offer.HasReward && (GetRewardSprite(offer.Currency) == null ||
+            rewardIconWorldSize <= 0 || float.IsNaN(rewardIconWorldSize) || float.IsInfinity(rewardIconWorldSize)))
+        {
+            ReportDoorError(door.Id + ":icon", "Assign the announced currency sprite and a positive finite icon size. The reward exit stays disabled until configured.");
+            return false;
+        }
+        return true;
+    }
+
+    private Sprite GetRewardSprite(RunCurrency currency) =>
+        currency == RunCurrency.Gold ? goldRewardSprite : xideriaFragmentsRewardSprite;
+
+    private void ReportDoorError(string id, string error)
+    {
+        if (reportedDoorErrors.Add(id))
+            Debug.LogError($"Door {id}: {error}", this);
     }
 
     public bool CanCharacterOccupy(
