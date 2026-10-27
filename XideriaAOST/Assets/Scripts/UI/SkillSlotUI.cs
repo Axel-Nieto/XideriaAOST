@@ -9,6 +9,7 @@ public class SkillSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [Header("Texts")]
     [SerializeField] private TextMeshProUGUI keyText;
     [SerializeField] private TextMeshProUGUI cooldownText;
+    [SerializeField] private TextMeshProUGUI energyCostText;
 
     [Header("Images")]
     [SerializeField] private Image frameImage;
@@ -56,6 +57,7 @@ public class SkillSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             }
 
             cooldownText.text = "";
+            energyCostText.text = "";
 
             if (darkOverlay != null)
                 darkOverlay.SetActive(true);
@@ -78,6 +80,7 @@ public class SkillSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         bool usable = cooldown <= 0 && hasEnergy;
 
         cooldownText.text = cooldown > 0 ? cooldown.ToString() : "";
+        energyCostText.text = skill.EnergyCost.ToString();
 
         if (darkOverlay != null)
             darkOverlay.SetActive(!usable);

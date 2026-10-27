@@ -4,16 +4,17 @@ using UnityEngine;
 
 public class FlameDashSkill : SkillBase
 {
-    private readonly int damage = 4;
+    private readonly int damage = 7;
     private readonly int aoeRadius = 1;
     private readonly float dashSpeed = 14f;
     public override int AreaRadius => aoeRadius;
+    public override bool ShowOnlyUsableTargets => true;
 
     public FlameDashSkill()
         : base(
             name: "Dash Llameante",
             description: "Te desplazas hacia una celda y quemas enemigos adyacentes al detenerte.",
-            energyCost: 4,
+            energyCost: 3,
             cooldown: 2,
             minRange: 2,
             maxRange: 8,
@@ -27,19 +28,33 @@ public class FlameDashSkill : SkillBase
 
     public override bool CanUse(Character user, Vector2Int targetCell, GridSystem grid)
     {
+        return CanUseFromCell(user, user != null ? user.GridPosition : Vector2Int.zero,
+            targetCell, grid, user?.Stats?.CurrentEnergy ?? 0);
+    }
+
+    public override bool CanUseFromPosition(Character user, Vector2Int simulatedPosition,
+        Character target, GridSystem grid, int availableEnergy)
+    {
+        return target != null && CanUseFromCell(user, simulatedPosition,
+            target.GridPosition, grid, availableEnergy);
+    }
+
+    private bool CanUseFromCell(Character user, Vector2Int origin, Vector2Int targetCell,
+        GridSystem grid, int availableEnergy)
+    {
         if (user == null || grid == null)
             return false;
 
-        if (!user.Stats.HasEnergy(EnergyCost))
+        if (availableEnergy < EnergyCost)
             return false;
 
         if (!grid.IsValidCell(targetCell))
             return false;
 
-        if (!IsInRange(user.GridPosition, targetCell))
+        if (!IsInRange(origin, targetCell))
             return false;
 
-        Vector2Int direction = GetDirection(user.GridPosition, targetCell);
+        Vector2Int direction = GetDirection(origin, targetCell);
 
         if (direction == Vector2Int.zero)
             return false;
@@ -49,7 +64,7 @@ public class FlameDashSkill : SkillBase
 
         return BuildDashPath(
             user,
-            user.GridPosition,
+            origin,
             targetCell,
             direction,
             grid
@@ -147,10 +162,10 @@ public class FlameDashSkill : SkillBase
     {
         Vector2Int delta = target - origin;
 
-        if (Mathf.Abs(delta.x) > Mathf.Abs(delta.y))
+        if (delta.x != 0 && delta.y == 0)
             return new Vector2Int(delta.x > 0 ? 1 : -1, 0);
 
-        if (delta.y != 0)
+        if (delta.x == 0 && delta.y != 0)
             return new Vector2Int(0, delta.y > 0 ? 1 : -1);
 
         return Vector2Int.zero;

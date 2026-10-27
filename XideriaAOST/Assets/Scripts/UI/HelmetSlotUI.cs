@@ -19,6 +19,7 @@ public class HelmetSlotUI : MonoBehaviour
     private Character playerCharacter;
 
     public HelmetType HelmetType => helmetType;
+    public void ConfigureType(HelmetType type) => helmetType = type;
 
     private void Awake()
     {
@@ -77,7 +78,7 @@ public class HelmetSlotUI : MonoBehaviour
         }
 
         if (button != null)
-            button.interactable = amount > 0;
+            button.interactable = amount > 0 && playerCharacter != null && playerCharacter.CanEquipHelmet;
     }
 
     public void SelectHelmet()

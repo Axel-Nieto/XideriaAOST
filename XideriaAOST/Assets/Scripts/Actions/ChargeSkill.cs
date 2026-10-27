@@ -10,14 +10,14 @@ public class ChargeSkill : SkillBase
     private readonly float chargeSpeed;
 
     public ChargeSkill(
-        int damage = 7,
+        int damage = 3,
         int minPushDistance = 2,
         int maxPushDistance = 3,
         float chargeSpeed = 12f)
         : base(
             name: "Embestida",
             description:
-                "Carga en línea recta contra el objetivo, inflige daño y lo empuja entre 2 y 3 celdas.",
+                "Carga en lï¿½nea recta contra el objetivo, inflige daï¿½o y lo empuja entre 2 y 3 celdas.",
             energyCost: 5,
             cooldown: 2,
             minRange: 2,
@@ -139,7 +139,7 @@ public class ChargeSkill : SkillBase
         );
 
         // Comprobamos nuevamente que el objetivo siga
-        // siendo alcanzable después de la carga.
+        // siendo alcanzable despuï¿½s de la carga.
         if (target == null ||
             !target.Stats.IsAlive ||
             target.IsDying)
@@ -196,8 +196,8 @@ public class ChargeSkill : SkillBase
         {
             Vector2Int next = current + direction;
 
-            // Si desde la posición actual ya estamos
-            // adyacentes, no necesitamos avanzar más.
+            // Si desde la posiciï¿½n actual ya estamos
+            // adyacentes, no necesitamos avanzar mï¿½s.
             if (IsAdjacentFromPosition(
                     user,
                     current,
@@ -228,7 +228,7 @@ public class ChargeSkill : SkillBase
             path.Add(next);
             current = next;
 
-            // Llegamos a posición de impacto.
+            // Llegamos a posiciï¿½n de impacto.
             if (IsAdjacentFromPosition(
                     user,
                     current,
@@ -239,7 +239,7 @@ public class ChargeSkill : SkillBase
         }
 
         // Si recorrimos el camino pero nunca terminamos
-        // junto al objetivo, la Embestida no es válida.
+        // junto al objetivo, la Embestida no es vï¿½lida.
         path.Clear();
 
         return path;
@@ -323,7 +323,7 @@ public class ChargeSkill : SkillBase
                 : damage + user.Stats.Attack;
 
         return
-            $"Daño: {estimatedDamage}\n" +
+            $"Daï¿½o: {estimatedDamage}\n" +
             $"Empuje: {minPushDistance}-{maxPushDistance}";
     }
 

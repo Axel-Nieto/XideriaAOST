@@ -13,6 +13,7 @@ public abstract class SkillBase
     public SkillTargetType TargetType { get; }
     public DamageType DamageType { get; }
     public virtual int AreaRadius => 0;
+    public virtual bool ShowOnlyUsableTargets => false;
     public Sprite Icon { get; }
 
     protected SkillBase(
@@ -99,6 +100,9 @@ public abstract class SkillBase
     {
         return "";
     }
+
+    public virtual IEnumerable<Vector2Int> GetPreviewCells(Character user, Vector2Int origin,
+        Vector2Int targetCell, GridSystem grid) => GetPreviewCells(origin, targetCell);
 
     public virtual bool CanUseFromPosition(
     Character user,

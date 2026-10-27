@@ -20,6 +20,11 @@ public class SkillIconLibrary : MonoBehaviour
     public Sprite waterWave;
     public Sprite waterPrison;
 
+    [Header("Rock")]
+    public Sprite rockShield;
+    public Sprite rockExcavate;
+    public Sprite rockEruption;
+
     [Header("Larva")]
     public Sprite larvaBite;
     public Sprite poisonSpit;

@@ -7,6 +7,9 @@ public class CharacterMovement : MonoBehaviour
 {
     private Character _character;
 
+    // Raised only after every requested step commits and walking cleanup finishes.
+    public event System.Action<Character> MovementCompleted;
+
     public float moveSpeed = 5f;
 
     private GridSystem _grid;
@@ -22,13 +25,15 @@ public class CharacterMovement : MonoBehaviour
 
     public IEnumerator MoveAlongRoutine(List<Vector2Int> path)
     {
-        if (_character.HasStatusEffect<RootEffect>())
-        {
-            yield break;
-        }
-
-
         yield return FollowPath(path);
+    }
+
+    public IEnumerator MoveAlongRoutine(
+        List<Vector2Int> path,
+        System.Action onStepCompleted,
+        System.Func<bool> canCompleteStep)
+    {
+        yield return FollowPath(path, onStepCompleted, canCompleteStep);
     }
 
     public IEnumerator MoveAlongRoutine(List<Vector2Int> path, float customSpeed)
@@ -37,86 +42,117 @@ public class CharacterMovement : MonoBehaviour
 
         moveSpeed = customSpeed;
 
-        yield return MoveAlongRoutine(path);
-
-        moveSpeed = originalSpeed;
+        try
+        {
+            yield return MoveAlongRoutine(path);
+        }
+        finally
+        {
+            moveSpeed = originalSpeed;
+        }
     }
 
-    private IEnumerator FollowPath(List<Vector2Int> path)
+    private bool CanMove()
     {
-        if (_grid == null)
-        {
+        return _character != null && _character.Stats != null &&
+            isActiveAndEnabled && _character.gameObject.activeInHierarchy &&
+            _character.Stats.IsAlive && !_character.IsDying &&
+            !_character.HasStatusEffect<RootEffect>();
+    }
+
+    private IEnumerator FollowPath(
+        List<Vector2Int> path,
+        System.Action onStepCompleted = null,
+        System.Func<bool> canCompleteStep = null)
+    {
+        if (_grid == null || path == null || path.Count == 0 || !CanMove())
             yield break;
-        }
 
         CharacterAnimationController anim =
             _character.GetComponentInChildren<CharacterAnimationController>();
 
         anim?.SetWalking(true);
 
-        for (int i = 0; i < path.Count; i++)
+        try
         {
-            Vector2Int step = path[i];
-
-            _character.FaceCell(step);
-
-            _grid.UnregisterCharacter(_character);
-
-            Vector3 targetPos =_grid.GridToWorld(step, _character) + _character.VisualOffset;
-            Vector3 targetFlat = new Vector3(targetPos.x, transform.position.y, targetPos.z);
-
-            bool isLastStep = (i == path.Count - 1);
-            bool walkStopped = false;
-
-            while (Vector3.Distance(transform.position, targetFlat) > 0.05f)
+            for (int i = 0; i < path.Count; i++)
             {
-                if (isLastStep &&
-                    !walkStopped &&
-                    Vector3.Distance(transform.position, targetFlat) < 0.5f)
+                Vector2Int step = path[i];
+
+                if (!CanMove() || !_grid.CanCharacterOccupy(_character, step, ignoreSelf: true) ||
+                    (canCompleteStep != null && !canCompleteStep()))
+                    yield break;
+
+                Vector2Int moveDirection = step - _character.GridPosition;
+                _character.FaceDirection(moveDirection);
+
+                Vector3 targetPos = _grid.GridToWorld(step, _character) + _character.VisualOffset;
+                Vector3 targetFlat = new Vector3(targetPos.x, transform.position.y, targetPos.z);
+
+                bool isLastStep = (i == path.Count - 1);
+                bool walkStopped = false;
+
+                // Keep the last completed footprint occupied throughout the animation.
+                while (Vector3.Distance(transform.position, targetFlat) > 0.05f)
                 {
-                    anim?.SetWalking(false);
-                    walkStopped = true;
+                    if (!CanMove())
+                        yield break;
+
+                    if (isLastStep && !walkStopped &&
+                        Vector3.Distance(transform.position, targetFlat) < 0.5f)
+                    {
+                        anim?.SetWalking(false);
+                        walkStopped = true;
+                    }
+
+                    transform.position = Vector3.MoveTowards(
+                        transform.position, targetFlat, moveSpeed * Time.deltaTime);
+                    yield return null;
                 }
 
-                transform.position = Vector3.MoveTowards(
-                    transform.position,
-                    targetFlat,
-                    moveSpeed * Time.deltaTime
-                );
+                // The board or available energy may have changed during the step.
+                if (!CanMove() || !_grid.CanCharacterOccupy(_character, step, ignoreSelf: true) ||
+                    (canCompleteStep != null && !canCompleteStep()))
+                    yield break;
 
-                yield return null;
+                transform.position = targetFlat;
+                _grid.UnregisterCharacter(_character);
+                _character.SetGridPosition(step);
+                _grid.RegisterCharacter(_character);
+
+                // Charge only committed steps, before terrain effects or session saving.
+                onStepCompleted?.Invoke();
+                _character.ProcessCurrentTerrain();
+
+                if (!CanMove())
+                    yield break;
+
+                if (_character.IsPlayer)
+                {
+                    CheckSpecialCell(step);
+                    if (SceneTransitionManager.Instance != null && SceneTransitionManager.Instance.IsTransitioning)
+                        yield break;
+                }
             }
+        }
+        finally
+        {
+            if (anim != null)
+                anim.SetWalking(false);
 
-            transform.position = new Vector3(
-                targetFlat.x,
-                transform.position.y,
-                targetFlat.z
-            );
-
-            _character.SetGridPosition(step);
-
-            _grid.RegisterCharacter(_character);
-            _character.ProcessCurrentTerrain();
-
-            if (_character.IsPlayer)
+            if (_grid != null && _character != null &&
+                _character.gameObject.activeInHierarchy &&
+                _character.Stats.IsAlive && !_character.IsDying)
             {
-                CheckSpecialCell(step);
-            }
-
-            if (!_character.Stats.IsAlive)
-            {
-                anim?.SetWalking(false);
-                yield break;
-            }
-
-            if (_character.HasStatusEffect<RootEffect>())
-            {
-                anim?.SetWalking(false);
-                yield break;
+                Vector3 committedPosition =
+                    _grid.GridToWorld(_character.GridPosition, _character) + _character.VisualOffset;
+                transform.position = new Vector3(
+                    committedPosition.x, transform.position.y, committedPosition.z);
             }
         }
 
-        anim?.SetWalking(false);
+        // yield break/exception/cancellation exits never reach this notification.
+        MovementCompleted?.Invoke(_character);
     }
 
     public IEnumerator MoveToCell(Vector2Int destination, float customSpeed)
@@ -130,9 +166,14 @@ public class CharacterMovement : MonoBehaviour
         destination
     };
 
-        yield return FollowPath(path);
-
-        moveSpeed = originalSpeed;
+        try
+        {
+            yield return FollowPath(path);
+        }
+        finally
+        {
+            moveSpeed = originalSpeed;
+        }
     }
 
     private void CheckSpecialCell(Vector2Int position)
@@ -146,33 +187,22 @@ public class CharacterMovement : MonoBehaviour
             return;
         }
 
-        GridCell cell = _grid.GetCell(position);
-        CellType type = cell.Type;
-
-        switch (type)
+        // A large character can touch the exit with any cell of its footprint.
+        if (_grid.TryGetDoorOffer(_character, out RunRewardRecord offer))
         {
-            case CellType.ExitTutorial:
-                LoadSpecialCellScene(position);
-                break;
-
-            case CellType.ExitRun:
-                LoadSpecialCellScene(position);
-                break;
-
-            case CellType.Shop:
-                Debug.Log("Tienda todavía no implementada.");
-                break;
-        }
-    }
-
-    private void LoadSpecialCellScene(Vector2Int position)
-    {
-        string targetScene = _grid.GetTargetScene(position);
-
-        if (string.IsNullOrWhiteSpace(targetScene))
-        {
+            LoadSpecialCellScene(offer);
             return;
         }
+
+    }
+
+    private void LoadSpecialCellScene(RunRewardRecord offer)
+    {
+        SceneTransitionManager transition = SceneTransitionManager.Instance;
+        if (transition == null || !transition.TryLoadDoorScene(offer))
+            return;
+
+        string targetScene = offer.DestinationScene;
 
         bool isReturningToLobby =
             string.Equals(
@@ -189,7 +219,5 @@ public class CharacterMovement : MonoBehaviour
         {
             _character.SavePlayerSession();
         }
-
-        SceneTransitionManager.Instance.LoadScene(targetScene);
     }
 }

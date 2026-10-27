@@ -31,6 +31,9 @@ public static class PushSystem
         // El objetivo bloquea el desplazamiento.
         if (target.BlocksPush())
         {
+            if (source.BlocksPush())
+                yield break;
+
             Vector2Int reflectedDirection = -direction;
 
             yield return PushInDirection(
@@ -49,7 +52,8 @@ public static class PushSystem
             direction,
             distance,
             grid,
-            pushSpeed
+            pushSpeed,
+            source
         );
     }
 
@@ -58,7 +62,8 @@ public static class PushSystem
         Vector2Int direction,
         int distance,
         GridSystem grid,
-        float pushSpeed = DefaultPushSpeed)
+        float pushSpeed = DefaultPushSpeed,
+        Character source = null)
     {
         if (target == null ||
             grid == null ||
@@ -72,6 +77,10 @@ public static class PushSystem
         if (direction == Vector2Int.zero)
             yield break;
 
+        if (target.BlocksPush())
+            yield break;
+
+        bool collided = false;
         Vector2Int origin = target.GridPosition;
         Vector2Int destination = origin;
 
@@ -88,6 +97,7 @@ public static class PushSystem
                     candidate,
                     ignoreSelf: true))
             {
+                collided = true;
                 break;
             }
 
@@ -96,7 +106,10 @@ public static class PushSystem
 
         // No pudo desplazarse ni una celda.
         if (destination == origin)
+        {
+            ApplyCollisionDamage(source, target, collided);
             yield break;
+        }
 
         grid.UnregisterCharacter(target);
 
@@ -125,6 +138,20 @@ public static class PushSystem
         grid.RegisterCharacter(target);
 
         target.ProcessCurrentTerrain();
+        ApplyCollisionDamage(source, target, collided);
+    }
+
+    private static void ApplyCollisionDamage(Character source, Character target, bool collided)
+    {
+        if (!collided || source == null || target == null || source == target ||
+            source.IsPlayer == target.IsPlayer || target.Stats == null || !target.Stats.IsAlive || target.IsDying)
+            return;
+        foreach (PassiveEffect passive in source.GetPassiveEffects())
+            if (passive is UnstoppablePassive unstoppable)
+            {
+                target.TakeDamage(unstoppable.CollisionDamage, DamageType.Physical, source);
+                return;
+            }
     }
 
     public static Vector2Int GetPushDirection(

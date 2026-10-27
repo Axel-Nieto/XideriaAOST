@@ -16,6 +16,7 @@ public class SceneTransitionManager : MonoBehaviour
     private Canvas currentHudCanvas;
 
     private bool isTransitioning;
+    public bool IsTransitioning => isTransitioning;
 
     private const float OpenValue = 1f;
     private const float ClosedValue = -1f;
@@ -40,6 +41,31 @@ public class SceneTransitionManager : MonoBehaviour
             return;
 
         StartCoroutine(LoadSceneRoutine(sceneName));
+    }
+
+    public bool TryLoadDoorScene(RunRewardRecord offer)
+    {
+        PlayerSessionData session = PlayerSessionData.Instance;
+        if (isTransitioning || session == null || offer == null)
+            return false;
+        if (!Application.CanStreamedLevelBeLoaded(offer.DestinationScene))
+        {
+            Debug.LogError($"Door destination '{offer.DestinationScene}' is not available in the build scene list.", this);
+            return false;
+        }
+        if (!session.RunState.TrySelectDoor(offer))
+            return false;
+
+        try
+        {
+            LoadScene(offer.DestinationScene);
+            return true;
+        }
+        catch
+        {
+            session.RunState.CancelPendingDoor();
+            throw;
+        }
     }
 
     private IEnumerator LoadSceneRoutine(string sceneName)

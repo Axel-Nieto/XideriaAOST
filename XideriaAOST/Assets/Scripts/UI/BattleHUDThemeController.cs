@@ -278,6 +278,17 @@ public class BattleHUDThemeController : MonoBehaviour
                 return theme;
         }
 
+        if (type == HelmetType.Rock)
+        {
+            HelmetUITheme basic = GetTheme(HelmetType.Default);
+            return new HelmetUITheme
+            {
+                helmetType = HelmetType.Rock,
+                color = new Color(0.62f, 0.43f, 0.24f, 1f),
+                helmetImage = basic != null ? basic.helmetImage : null,
+                helmetSymbol = basic != null ? basic.helmetSymbol : null
+            };
+        }
         return null;
     }
 

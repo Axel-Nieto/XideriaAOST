@@ -4,16 +4,15 @@ using UnityEngine;
 public class FireBasicAttackSkill : SkillBase
 {
     [SerializeField]
-    private Vector3 slashOffset = new Vector3(-1.2f, 0f, 0f);
-
-    [SerializeField]
     private float slashHitDelay = 1.2f;
+
+    private readonly int damageBonus = 4;
 
     public FireBasicAttackSkill()
         : base(
             name: "Ataque Ígneo",
             description: "Lanza un ataque de fuego a distancia. Aplica quemadura",
-            energyCost: 3,
+            energyCost: 2,
             cooldown: 0,
             minRange: 3,
             maxRange: 5,
@@ -80,16 +79,16 @@ public class FireBasicAttackSkill : SkillBase
             anim.StartCoroutine(anim.PlayAttackUntilHitFrame());
 
         // El hacha aparece prácticamente al mismo tiempo.
-        yield return BasicAttackVFX.Play(
+        yield return BasicAttackVFX.PlayFire(
+            user,
             target,
-            DamageType.Fire,
-            slashOffset,
+            grid,
             slashHitDelay);
 
         // El daño ocurre cuando el VFX llega al momento de impacto.
         int damage = Mathf.Max(
             1,
-            user.Stats.Attack - target.Stats.Defense);
+            user.Stats.Attack + damageBonus - target.Stats.Defense);
 
         target.TakeDamage(
             damage,
@@ -106,8 +105,8 @@ public class FireBasicAttackSkill : SkillBase
     public override string GetTooltipDetails(Character user)
     {
         int estimatedDamage = user == null
-            ? 0
-            : user.Stats.Attack;
+            ? damageBonus
+            : user.Stats.Attack + damageBonus;
 
         return
         $"Daño: {estimatedDamage}";

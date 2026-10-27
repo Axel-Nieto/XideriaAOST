@@ -1,8 +1,31 @@
 using System.Collections.Generic;
 using Unity.VisualScripting;
+using UnityEngine;
 
 public static class HelmetFactory
 {
+    public static HelmetData CreateRockHelmet(GameObject rockObstaclePrefab = null)
+    {
+        return new HelmetData
+        {
+            Type = HelmetType.Rock,
+            Name = "Casco de Tierra",
+            Description = "Dominio de la tierra.",
+            ActiveSkills = new List<SkillBase>
+            {
+                new RockBasicSkill(),
+                new RockShieldSkill(),
+                new RockExcavateSkill(),
+                new RockEruptionSkill(rockObstaclePrefab)
+            },
+            PassiveEffects = new List<PassiveEffect>
+            {
+                new UnstoppablePassive(),
+                new RockGuardPassive()
+            }
+        };
+    }
+
     public static HelmetData CreateDefaultHelmet()
     {
         return new HelmetData

@@ -28,6 +28,7 @@ public class HelmetInventoryData : MonoBehaviour
     {
         UnlockHelmet(HelmetType.Fire);
         UnlockHelmet(HelmetType.Water);
+        UnlockHelmet(HelmetType.Rock);
     }
 
     private void InitializeInventory()

@@ -53,5 +53,8 @@ MonoBehaviour:
   waterHeal: {fileID: 21300000, guid: ca4ba03da6a65c84bae95114d204f940, type: 3}
   waterWave: {fileID: 21300000, guid: 27deb5fb9dac1d74a83337c91b754a9a, type: 3}
   waterPrison: {fileID: 21300000, guid: 33b6611c72931a44a94f59b9b81491ae, type: 3}
+  rockShield: {fileID: 21300000, guid: df4000b8636554542a6fb2870d8e0cbb, type: 3}
+  rockExcavate: {fileID: 21300000, guid: db65da0f6e8f91e4ea02e3968d87648d, type: 3}
+  rockEruption: {fileID: 21300000, guid: 326f8bf2650bab14aa2802e7231f0501, type: 3}
   larvaBite: {fileID: 0}
   poisonSpit: {fileID: 0}

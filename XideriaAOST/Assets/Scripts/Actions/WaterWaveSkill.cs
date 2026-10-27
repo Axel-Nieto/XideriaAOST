@@ -8,6 +8,7 @@ public class WaterWaveSkill : SkillBase
     private readonly int slowDuration = 3;
 
     public override int AreaRadius => 0;
+    public override bool ShowOnlyUsableTargets => true;
 
     public WaterWaveSkill()
         : base(
@@ -27,13 +28,27 @@ public class WaterWaveSkill : SkillBase
 
     public override bool CanUse(Character user, Vector2Int targetCell, GridSystem grid)
     {
+        return CanUseFromCell(user, user != null ? user.GridPosition : Vector2Int.zero,
+            targetCell, grid, user?.Stats?.CurrentEnergy ?? 0);
+    }
+
+    public override bool CanUseFromPosition(Character user, Vector2Int simulatedPosition,
+        Character target, GridSystem grid, int availableEnergy)
+    {
+        return target != null && CanUseFromCell(user, simulatedPosition,
+            target.GridPosition, grid, availableEnergy);
+    }
+
+    private bool CanUseFromCell(Character user, Vector2Int origin, Vector2Int targetCell,
+        GridSystem grid, int availableEnergy)
+    {
         if (user == null || grid == null) return false;
-        if (!user.Stats.HasEnergy(EnergyCost)) return false;
+        if (availableEnergy < EnergyCost) return false;
         if (!grid.IsValidCell(targetCell)) return false;
-        if (!IsInRange(user.GridPosition, targetCell)) return false;
+        if (!IsInRange(origin, targetCell)) return false;
         if (user.IsSkillOnCooldown(this)) return false;
 
-        Vector2Int direction = GetDirection(user.GridPosition, targetCell);
+        Vector2Int direction = GetDirection(origin, targetCell);
 
         if (direction == Vector2Int.zero)
             return false;
@@ -41,7 +56,7 @@ public class WaterWaveSkill : SkillBase
         List<Vector2Int> movementPath =
             BuildMovementPath(
                 user,
-                user.GridPosition,
+                origin,
                 direction,
                 grid
             );
@@ -194,10 +209,13 @@ public class WaterWaveSkill : SkillBase
         if (delta == Vector2Int.zero)
             return Vector2Int.zero;
 
-        if (Mathf.Abs(delta.x) > Mathf.Abs(delta.y))
+        if (delta.x != 0 && delta.y == 0)
             return new Vector2Int(delta.x > 0 ? 1 : -1, 0);
 
-        return new Vector2Int(0, delta.y > 0 ? 1 : -1);
+        if (delta.x == 0 && delta.y != 0)
+            return new Vector2Int(0, delta.y > 0 ? 1 : -1);
+
+        return Vector2Int.zero;
     }
 
     private Vector2Int GetSideDirection(Vector2Int direction)

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using Unity.VisualScripting;
@@ -12,6 +13,16 @@ public class BattleHUD : MonoBehaviour
     [SerializeField] private TextMeshProUGUI hpMaxText;
     [SerializeField] private TextMeshProUGUI energyCurrentText;
     [SerializeField] private TextMeshProUGUI energyMaxText;
+
+    [Header("Low Health Warning")]
+    [SerializeField, Range(0f, 1f)]
+    private float lowHealthThreshold = 0.3f;
+
+    [SerializeField]
+    private float healthBlinkInterval = 0.35f;
+
+    private Coroutine healthBlinkCoroutine;
+    private Color hpNormalColor;
 
     [Header("Status / Passive Icons")]
     [SerializeField] private Transform statusIconContainer;
@@ -48,8 +59,10 @@ public class BattleHUD : MonoBehaviour
 
     private Character currentCharacter;
     private int selectedSkillIndex = -1;
+    private bool isPlayerTurn;
 
     private bool themeInitialized = false;
+    private bool displayedVitalImpulseEnabled;
 
     private readonly string[] keys = { "Q", "W", "E", "R" };
 
@@ -64,6 +77,28 @@ public class BattleHUD : MonoBehaviour
         endTurnButton.onClick.AddListener(EndTurn);
 
         HideTooltip();
+        hpNormalColor = hpCurrentText.color;
+    }
+
+    private void Update()
+    {
+        UpdateEndTurnButton();
+
+        if (currentCharacter != null &&
+            displayedVitalImpulseEnabled != currentCharacter.VitalImpulseEnabled)
+        {
+            RefreshStatusIcons();
+        }
+    }
+
+    public bool TryGetEnergyColor(out Color color)
+    {
+        color = default;
+        if (energyCurrentText == null)
+            return false;
+
+        color = energyCurrentText.color;
+        return true;
     }
 
     public void ShowCharacter(Character character)
@@ -97,6 +132,7 @@ public class BattleHUD : MonoBehaviour
         {
             characterPanel.SetActive(false);
             ClearStatusIcons();
+            StopHealthBlink();
             return;
         }
 
@@ -109,6 +145,8 @@ public class BattleHUD : MonoBehaviour
 
         energyCurrentText.text = stats.CurrentEnergy.ToString();
         energyMaxText.text = stats.MaxEnergy.ToString();
+
+        UpdateLowHealthWarning(stats);
     }
 
     public void ShowGenericTooltip(string title, string description)
@@ -118,13 +156,23 @@ public class BattleHUD : MonoBehaviour
         tooltipTitleText.text = title;
         tooltipDescriptionText.text = description;
         tooltipStatsText.text = "";
+        FitTooltip();
     }
 
     public void SetPlayerTurn(bool isPlayerTurn)
     {
-        endTurnButton.interactable = isPlayerTurn;
+        this.isPlayerTurn = isPlayerTurn;
+        UpdateEndTurnButton();
+    }
 
-        if (!isPlayerTurn && endTurnPulse != null)
+    private void UpdateEndTurnButton()
+    {
+        if (endTurnButton == null)
+            return;
+
+        endTurnButton.interactable = isPlayerTurn && inputHandler != null && inputHandler.CanEndTurn;
+
+        if (!endTurnButton.interactable && endTurnPulse != null)
             endTurnPulse.SetPulsing(false);
     }
 
@@ -190,12 +238,7 @@ public class BattleHUD : MonoBehaviour
             return HelmetType.Default;
         }
 
-        return character.EquippedHelmet.Name switch
-        {
-            "Casco de Fuego" => HelmetType.Fire,
-            "Casco de Agua" => HelmetType.Water,
-            _ => HelmetType.Default
-        };
+        return character.EquippedHelmet.Type;
     }
 
     private void ClearSkills()
@@ -255,6 +298,27 @@ public class BattleHUD : MonoBehaviour
             $"CD: {skill.Cooldown}   " +
             $"Rango: {rangeText}" +
             areaText;
+        FitTooltip();
+    }
+
+    private void FitTooltip()
+    {
+        var rect = tooltipPanel.transform as RectTransform;
+        if (rect == null) return;
+        var parent = rect.parent as RectTransform;
+        float width = parent != null && parent.rect.width > 0f
+            ? Mathf.Min(600f, parent.rect.width * 0.9f) : 600f;
+        var fitter = tooltipPanel.GetComponent<ContentSizeFitter>();
+        if (fitter != null)
+        {
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        }
+        rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+        tooltipTitleText.textWrappingMode = TextWrappingModes.Normal;
+        tooltipDescriptionText.textWrappingMode = TextWrappingModes.Normal;
+        tooltipStatsText.textWrappingMode = TextWrappingModes.Normal;
+        LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
     }
 
     public void HideTooltip()
@@ -282,6 +346,8 @@ public class BattleHUD : MonoBehaviour
     {
         currentCharacter = null;
         selectedSkillIndex = -1;
+
+        StopHealthBlink();
 
         HideTooltip();
         ClearSkills();
@@ -321,6 +387,7 @@ public class BattleHUD : MonoBehaviour
             return;
 
         bool shouldPulse =
+            isPlayerTurn && inputHandler != null && inputHandler.CanEndTurn &&
             currentCharacter != null &&
             currentCharacter.IsPlayer &&
             !HasUsableSkill(currentCharacter);
@@ -334,6 +401,8 @@ public class BattleHUD : MonoBehaviour
 
         if (currentCharacter == null)
             return;
+
+        displayedVitalImpulseEnabled = currentCharacter.VitalImpulseEnabled;
 
         foreach (var effect in currentCharacter.GetStatusEffects())
         {
@@ -364,16 +433,17 @@ public class BattleHUD : MonoBehaviour
             );
 
             Sprite passiveIcon =
-                passive.Icon != null
-                ? passive.Icon
-                : StatusIconDatabase.Instance.defaultPassiveIcon;
+                passive is UnstoppablePassive || passive is RockGuardPassive
+                ? null
+                : passive.Icon != null ? passive.Icon : StatusIconDatabase.Instance.defaultPassiveIcon;
 
             icon.Setup(
                 passiveIcon,
                 passive.Name,
                 passive.Description,
                 0,
-                this
+                this,
+                passive is UnstoppablePassive || passive is RockGuardPassive
             );
         }
     }
@@ -405,5 +475,67 @@ public class BattleHUD : MonoBehaviour
 
         helmetChargesText.text =
             currentCharacter.HelmetCharges.ToString();
+    }
+
+    private void UpdateLowHealthWarning(CharacterStats stats)
+    {
+        if (stats == null || stats.MaxHP <= 0)
+        {
+            StopHealthBlink();
+            return;
+        }
+
+        float healthPercentage =
+            (float)stats.CurrentHP / stats.MaxHP;
+
+        bool isLowHealth =
+            stats.CurrentHP > 0 &&
+            healthPercentage <= lowHealthThreshold;
+
+        if (isLowHealth)
+        {
+            if (healthBlinkCoroutine == null)
+            {
+                healthBlinkCoroutine =
+                    StartCoroutine(HealthBlinkRoutine());
+            }
+        }
+        else
+        {
+            StopHealthBlink();
+        }
+    }
+
+    private IEnumerator HealthBlinkRoutine()
+    {
+        while (true)
+        {
+            hpCurrentText.enabled = false;
+
+            yield return new WaitForSecondsRealtime(
+                healthBlinkInterval
+            );
+
+            hpCurrentText.enabled = true;
+
+            yield return new WaitForSecondsRealtime(
+                healthBlinkInterval
+            );
+        }
+    }
+
+    private void StopHealthBlink()
+    {
+        if (healthBlinkCoroutine != null)
+        {
+            StopCoroutine(healthBlinkCoroutine);
+            healthBlinkCoroutine = null;
+        }
+
+        if (hpCurrentText != null)
+        {
+            hpCurrentText.enabled = true;
+            hpCurrentText.color = hpNormalColor;
+        }
     }
 }

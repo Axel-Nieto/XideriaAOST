@@ -43,6 +43,10 @@ public class LarvaAI : MonoBehaviour, IEnemyAI
         // 2. Si no puede atacar, moverse
         yield return MoveTowardsPlayer(player);
 
+        if (!character.Stats.IsAlive || character.IsDying ||
+            !character.gameObject.activeInHierarchy)
+            yield break;
+
         // 3. Intentar atacar después de moverse
         if (TryUseAnySkill(player, out SkillBase skillAfterMove))
         {
@@ -83,6 +87,11 @@ public class LarvaAI : MonoBehaviour, IEnemyAI
 
     private IEnumerator MoveTowardsPlayer(Character player)
     {
+        if (!character.Stats.IsAlive || character.IsDying ||
+            !character.gameObject.activeInHierarchy ||
+            character.HasStatusEffect<RootEffect>())
+            yield break;
+
         List<Vector2Int> path =
             FindBestPathTowardsPlayer(player);
 
@@ -129,11 +138,9 @@ public class LarvaAI : MonoBehaviour, IEnemyAI
             yield break;
 
         yield return character.Movement.MoveAlongRoutine(
-            movement
-        );
-
-        character.Stats.ConsumeEnergy(
-            movement.Count * movementCost
+            movement,
+            () => character.Stats.ConsumeEnergy(movementCost),
+            () => character.Stats.HasEnergy(movementCost)
         );
     }
 
