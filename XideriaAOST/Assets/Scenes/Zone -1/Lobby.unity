@@ -10486,6 +10486,7 @@ MonoBehaviour:
   helmetPickupPrefabs:
   - {fileID: 638254224416280855, guid: ce4a301a3a0f76f40a08e84e9aa7d545, type: 3}
   - {fileID: 8381617828633822735, guid: 7ba07da3a23cde7499e199d40b5e3f72, type: 3}
+  - {fileID: 6847629672161265073, guid: 56b997da468fbb645bc2c311dae7879f, type: 3}
 --- !u!4 &67781242
 Transform:
   m_ObjectHideFlags: 0
@@ -10615,6 +10616,12 @@ MonoBehaviour:
     InventoryIcon: {fileID: 21300000, guid: 991a63f4eb5241742a5ee59ff6243b24, type: 3}
     MaxStored: 3
     MaxCharges: 3
+  - Type: 3
+    VisualPrefab: {fileID: 5817428548955033433, guid: c58be5282adc5594b8a051e37dea1e52, type: 3}
+    InventoryIcon: {fileID: 21300000, guid: d204df59d58b133438811870ff43cef0, type: 3}
+    MaxStored: 3
+    MaxCharges: 3
+  rockObstaclePrefab: {fileID: 919132149155446097, guid: e9b206b617fca4c4a8b3d2d250ac83d5, type: 3}
 --- !u!4 &86252127
 Transform:
   m_ObjectHideFlags: 0
@@ -11366,7 +11373,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 7385404472213f14ab77aed4d39be598, type: 3}
+  m_Sprite: {fileID: 21300000, guid: cefdbe20e11cf86458d4aae4597ac2a6, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -11479,7 +11486,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.1254902, g: 0.1254902, b: 0.1254902, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -11495,8 +11502,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4280295456
+  m_fontColor: {r: 0.1254902, g: 0.1254902, b: 0.1254902, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -11735,7 +11742,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.1254902, g: 0.1254902, b: 0.1254902, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -11751,8 +11758,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4280295456
+  m_fontColor: {r: 0.1254902, g: 0.1254902, b: 0.1254902, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -16459,7 +16466,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: c986ee9f358b24b498764daa07f3af1d, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -16816,7 +16823,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.1254902, g: 0.1254902, b: 0.1254902, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -16832,8 +16839,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4280295456
+  m_fontColor: {r: 0.1254902, g: 0.1254902, b: 0.1254902, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -22166,7 +22173,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 207ad10daedbc1340bec53d621d9eba3, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 0df0c5bc0861a1e4687efcf19f6c722f, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -22213,8 +22220,8 @@ MonoBehaviour:
   m_Padding:
     m_Left: 80
     m_Right: 80
-    m_Top: 18
-    m_Bottom: 15
+    m_Top: 36
+    m_Bottom: 36
   m_ChildAlignment: 1
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
@@ -32937,6 +32944,7 @@ GameObject:
   - component: {fileID: 1498647230}
   - component: {fileID: 1498647232}
   - component: {fileID: 1498647231}
+  - component: {fileID: 9000000001001}
   m_Layer: 5
   m_Name: EnemyInfoPanel
   m_TagString: Untagged
@@ -33011,6 +33019,19 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &9000000001001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1498647229}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c2b70f41c2845a6a1893920f4b963d8, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyInfoFrameResizer
+  referenceSize: 400
 --- !u!222 &1498647232
 CanvasRenderer:
   m_ObjectHideFlags: 0

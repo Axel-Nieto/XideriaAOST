@@ -17,14 +17,15 @@ public class StatusIconUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
         string title,
         string description,
         int remainingTurns,
-        BattleHUD hud)
+        BattleHUD hud,
+        bool blankIcon = false)
     {
         this.title = title;
         this.description = description;
         battleHUD = hud;
 
         iconImage.sprite = icon;
-        iconImage.enabled = icon != null;
+        iconImage.enabled = icon != null || blankIcon;
 
         if (remainingTurns > 0)
         {

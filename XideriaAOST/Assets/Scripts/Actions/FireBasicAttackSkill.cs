@@ -4,9 +4,6 @@ using UnityEngine;
 public class FireBasicAttackSkill : SkillBase
 {
     [SerializeField]
-    private Vector3 slashOffset = new Vector3(-1.2f, 0f, 0f);
-
-    [SerializeField]
     private float slashHitDelay = 1.2f;
 
     private readonly int damageBonus = 4;
@@ -82,10 +79,10 @@ public class FireBasicAttackSkill : SkillBase
             anim.StartCoroutine(anim.PlayAttackUntilHitFrame());
 
         // El hacha aparece prácticamente al mismo tiempo.
-        yield return BasicAttackVFX.Play(
+        yield return BasicAttackVFX.PlayFire(
+            user,
             target,
-            DamageType.Fire,
-            slashOffset,
+            grid,
             slashHitDelay);
 
         // El daño ocurre cuando el VFX llega al momento de impacto.

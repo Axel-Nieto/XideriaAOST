@@ -50,6 +50,8 @@ public class Character : MonoBehaviour
         PlayerSessionData.Instance.HasUpgrade(UpgradeDefinition.VitalImpulseId);
 
     public bool IsPlayer => isPlayer;
+    public bool CanEquipHelmet => !IsPlayer ||
+        !string.Equals(gameObject.scene.name, "Lobby", System.StringComparison.OrdinalIgnoreCase);
     private bool isDying;
     private bool deathCompletedNotified;
     public bool IsDying => isDying;
@@ -110,6 +112,19 @@ public class Character : MonoBehaviour
 
         foreach (PassiveEffect passive in GetPassiveEffects())
             passive.OnOtherCharacterDeathCompleted(this, deceased);
+    }
+
+    // Only for a newly instantiated, inactive character, before Awake registers it.
+    public void ConfigureSpawn(GridSystem grid, Vector2Int origin, Vector3 offset)
+    {
+        if (gameObject.activeInHierarchy || Stats != null)
+            throw new System.InvalidOperationException("ConfigureSpawn must run before Character.Awake on an inactive instance.");
+        if (grid == null)
+            throw new System.ArgumentNullException(nameof(grid));
+
+        _grid = grid;
+        startGridPosition = origin;
+        visualSpawnOffset = offset;
     }
 
     private void InitializePosition()
@@ -397,6 +412,7 @@ public class Character : MonoBehaviour
     public void EquipHelmet(HelmetData newHelmet)
     {
         if (newHelmet == null) return;
+        if (newHelmet.Type != HelmetType.Default && !CanEquipHelmet) return;
 
         EquippedHelmet = newHelmet;
 
@@ -435,6 +451,8 @@ public class Character : MonoBehaviour
     {
         IsTurnFinished = false;
 
+        foreach (PassiveEffect passive in GetPassiveEffects())
+            passive.OnTurnStart(this);
         Stats.RegenEnergy();
     }
 
@@ -624,7 +642,7 @@ public class Character : MonoBehaviour
         Stats.SetCurrentHP(session.currentHP);
         Stats.SetCurrentEnergy(session.currentEnergy);
 
-        if (session.hasHelmet)
+        if (session.hasHelmet && CanEquipHelmet)
         {
             if (HelmetCatalog.Instance == null)
             {
@@ -716,7 +734,7 @@ public class Character : MonoBehaviour
 
     public bool EquipHelmetFromInventory(HelmetType type)
     {
-        if (!IsPlayer)
+        if (!IsPlayer || !CanEquipHelmet)
             return false;
 
         if (type == HelmetType.Default)

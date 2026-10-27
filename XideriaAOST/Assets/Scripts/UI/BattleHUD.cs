@@ -59,6 +59,7 @@ public class BattleHUD : MonoBehaviour
 
     private Character currentCharacter;
     private int selectedSkillIndex = -1;
+    private bool isPlayerTurn;
 
     private bool themeInitialized = false;
     private bool displayedVitalImpulseEnabled;
@@ -81,6 +82,8 @@ public class BattleHUD : MonoBehaviour
 
     private void Update()
     {
+        UpdateEndTurnButton();
+
         if (currentCharacter != null &&
             displayedVitalImpulseEnabled != currentCharacter.VitalImpulseEnabled)
         {
@@ -153,13 +156,23 @@ public class BattleHUD : MonoBehaviour
         tooltipTitleText.text = title;
         tooltipDescriptionText.text = description;
         tooltipStatsText.text = "";
+        FitTooltip();
     }
 
     public void SetPlayerTurn(bool isPlayerTurn)
     {
-        endTurnButton.interactable = isPlayerTurn;
+        this.isPlayerTurn = isPlayerTurn;
+        UpdateEndTurnButton();
+    }
 
-        if (!isPlayerTurn && endTurnPulse != null)
+    private void UpdateEndTurnButton()
+    {
+        if (endTurnButton == null)
+            return;
+
+        endTurnButton.interactable = isPlayerTurn && inputHandler != null && inputHandler.CanEndTurn;
+
+        if (!endTurnButton.interactable && endTurnPulse != null)
             endTurnPulse.SetPulsing(false);
     }
 
@@ -225,12 +238,7 @@ public class BattleHUD : MonoBehaviour
             return HelmetType.Default;
         }
 
-        return character.EquippedHelmet.Name switch
-        {
-            "Casco de Fuego" => HelmetType.Fire,
-            "Casco de Agua" => HelmetType.Water,
-            _ => HelmetType.Default
-        };
+        return character.EquippedHelmet.Type;
     }
 
     private void ClearSkills()
@@ -290,6 +298,27 @@ public class BattleHUD : MonoBehaviour
             $"CD: {skill.Cooldown}   " +
             $"Rango: {rangeText}" +
             areaText;
+        FitTooltip();
+    }
+
+    private void FitTooltip()
+    {
+        var rect = tooltipPanel.transform as RectTransform;
+        if (rect == null) return;
+        var parent = rect.parent as RectTransform;
+        float width = parent != null && parent.rect.width > 0f
+            ? Mathf.Min(600f, parent.rect.width * 0.9f) : 600f;
+        var fitter = tooltipPanel.GetComponent<ContentSizeFitter>();
+        if (fitter != null)
+        {
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        }
+        rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+        tooltipTitleText.textWrappingMode = TextWrappingModes.Normal;
+        tooltipDescriptionText.textWrappingMode = TextWrappingModes.Normal;
+        tooltipStatsText.textWrappingMode = TextWrappingModes.Normal;
+        LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
     }
 
     public void HideTooltip()
@@ -358,6 +387,7 @@ public class BattleHUD : MonoBehaviour
             return;
 
         bool shouldPulse =
+            isPlayerTurn && inputHandler != null && inputHandler.CanEndTurn &&
             currentCharacter != null &&
             currentCharacter.IsPlayer &&
             !HasUsableSkill(currentCharacter);
@@ -403,16 +433,17 @@ public class BattleHUD : MonoBehaviour
             );
 
             Sprite passiveIcon =
-                passive.Icon != null
-                ? passive.Icon
-                : StatusIconDatabase.Instance.defaultPassiveIcon;
+                passive is UnstoppablePassive || passive is RockGuardPassive
+                ? null
+                : passive.Icon != null ? passive.Icon : StatusIconDatabase.Instance.defaultPassiveIcon;
 
             icon.Setup(
                 passiveIcon,
                 passive.Name,
                 passive.Description,
                 0,
-                this
+                this,
+                passive is UnstoppablePassive || passive is RockGuardPassive
             );
         }
     }

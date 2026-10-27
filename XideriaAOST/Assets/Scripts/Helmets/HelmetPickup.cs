@@ -5,6 +5,7 @@ public class HelmetPickup : MonoBehaviour
     [SerializeField] private HelmetType helmetType;
     [SerializeField] private Vector2Int startGridPosition;
     [SerializeField] private Vector3 visualOffset;
+    [SerializeField] private GameObject rockObstaclePrefab;
 
     private GridSystem _grid;
     private HelmetData _helmetData;
@@ -60,6 +61,8 @@ public class HelmetPickup : MonoBehaviour
                 return HelmetFactory.CreateFireHelmet();
             case HelmetType.Water:
                 return HelmetFactory.CreateWaterHelmet();
+            case HelmetType.Rock:
+                return HelmetFactory.CreateRockHelmet(rockObstaclePrefab);
             default:
                 return HelmetFactory.CreateDefaultHelmet();
         }
@@ -84,5 +87,6 @@ public enum HelmetType
 {
     Default,
     Fire,
-    Water
+    Water,
+    Rock = 3
 }

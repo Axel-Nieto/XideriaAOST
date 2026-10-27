@@ -40,6 +40,11 @@ public class GridInputHandler : MonoBehaviour
     private int upgradeShopClosedFrame = -1;
     public bool IsExecutingAction => isMoving;
     public bool IsUpgradeShopInputBlocked => isUpgradeShopOpen || upgradeShopClosedFrame == Time.frameCount;
+    public bool CanEndTurn =>
+        !GameSession.IsGameOver &&
+        !IsUpgradeShopInputBlocked &&
+        isPlayerTurn && !isMoving && playerCharacter != null &&
+        (gameStateManager == null || !gameStateManager.IsExplorationMode);
     private ActionMode currentMode = ActionMode.Move;
     private int selectedSkillIndex = 0;
     private CharacterPositionIndicator selectedIndicator;
@@ -146,12 +151,9 @@ public class GridInputHandler : MonoBehaviour
         if (isHelmetInventoryOpen)
             return;
 
-        if (Keyboard.current.spaceKey.wasPressedThisFrame && !isMoving)
+        if (Keyboard.current.spaceKey.wasPressedThisFrame && CanEndTurn)
         {
-            if (isPlayerTurn)
-            {
-                playerCharacter.FinishTurn();
-            }
+            EndTurnFromUI();
             return;
         }
 
@@ -418,8 +420,11 @@ public class GridInputHandler : MonoBehaviour
             {
                 Vector2Int pos = new Vector2Int(x, y);
 
-                if (skill.IsInRange(origin, pos) ||
-                    skill.CanUse(selectedCharacter, pos, gridSystem))
+                bool selectable = skill.ShowOnlyUsableTargets
+                    ? skill.CanUse(selectedCharacter, pos, gridSystem)
+                    : skill.IsInRange(origin, pos) || skill.CanUse(selectedCharacter, pos, gridSystem);
+
+                if (selectable)
                     reachableCells.Add(pos);
             }
         }
@@ -593,12 +598,19 @@ public class GridInputHandler : MonoBehaviour
             yield break;
 
         isMoving = true;
-
-        yield return skill.Execute(selectedCharacter, targetCell, gridSystem);
-
-        isMoving = false;
-        currentMode = ActionMode.Move;
-        movementRangeDirty = true;
+        Vector2Int origin = selectedCharacter.GridPosition;
+        try
+        {
+            yield return skill.Execute(selectedCharacter, targetCell, gridSystem);
+            if (selectedCharacter != null && selectedCharacter.GridPosition != origin)
+                yield return TryPickupAdjacentHelmet();
+        }
+        finally
+        {
+            isMoving = false;
+            currentMode = ActionMode.Move;
+            movementRangeDirty = true;
+        }
         battleHUD.SetSelectedSkill(-1);
         battleHUD.Refresh();
     }
@@ -665,13 +677,7 @@ public class GridInputHandler : MonoBehaviour
         {
             yield return selectedCharacter.ExecuteAction(action);
 
-            if (selectedCharacter != null && selectedCharacter.Stats.IsAlive &&
-                !selectedCharacter.IsDying && selectedCharacter.gameObject.activeInHierarchy)
-            {
-                HelmetPickup adjacentHelmet = GetAdjacentHelmet();
-                if (adjacentHelmet != null)
-                    yield return PickupHelmetRoutine(adjacentHelmet);
-            }
+            yield return TryPickupAdjacentHelmet();
         }
         finally
         {
@@ -705,34 +711,26 @@ public class GridInputHandler : MonoBehaviour
         ClearAoeTiles();
     }
 
+    private IEnumerator TryPickupAdjacentHelmet()
+    {
+        if (selectedCharacter == null || !selectedCharacter.IsPlayer || selectedCharacter.Stats == null ||
+            !selectedCharacter.Stats.IsAlive || selectedCharacter.IsDying || !selectedCharacter.gameObject.activeInHierarchy)
+            yield break;
+        HelmetPickup adjacentHelmet = GetAdjacentHelmet();
+        if (adjacentHelmet != null)
+            yield return PickupHelmetRoutine(adjacentHelmet);
+    }
+
     private HelmetPickup GetAdjacentHelmet()
     {
-        if (selectedCharacter == null)
-            return null;
-
-        Vector2Int origin = selectedCharacter.GridPosition;
-
-        Vector2Int[] directions =
-        {
-        Vector2Int.up,
-        Vector2Int.down,
-        Vector2Int.left,
-        Vector2Int.right
-    };
-
+        if (selectedCharacter == null) return null;
+        Vector2Int[] directions = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
         HelmetPickup[] allHelmets = FindObjectsOfType<HelmetPickup>();
-
-        foreach (var dir in directions)
-        {
-            Vector2Int adjacentPos = origin + dir;
-
-            foreach (var helmet in allHelmets)
-            {
-                if (helmet.GridPosition == adjacentPos)
-                    return helmet;
-            }
-        }
-
+        foreach (Vector2Int cell in selectedCharacter.GetOccupiedCells())
+            foreach (Vector2Int direction in directions)
+                foreach (HelmetPickup helmet in allHelmets)
+                    if (!helmet.IsCollected && helmet.GridPosition == cell + direction)
+                        return helmet;
         return null;
     }
 
@@ -912,9 +910,7 @@ public class GridInputHandler : MonoBehaviour
 
     public void EndTurnFromUI()
     {
-        if (IsUpgradeShopInputBlocked) return;
-        if (!isPlayerTurn) return;
-        if (isMoving) return;
+        if (!CanEndTurn) return;
 
         playerCharacter.FinishTurn();
     }
@@ -1221,8 +1217,8 @@ public class GridInputHandler : MonoBehaviour
             return;
 
         foreach (var cell in skill.GetPreviewCells(
-            selectedCharacter.GridPosition,
-            targetPos))
+            selectedCharacter, selectedCharacter.GridPosition,
+            targetPos, gridSystem))
         {
             if (!gridSystem.IsValidCell(cell))
                 continue;
@@ -1251,8 +1247,8 @@ public class GridInputHandler : MonoBehaviour
             return;
 
         foreach (var cell in skill.GetPreviewCells(
-            selectedCharacter.GridPosition,
-            selectedCharacter.GridPosition))
+            selectedCharacter, selectedCharacter.GridPosition,
+            selectedCharacter.GridPosition, gridSystem))
         {
             if (!gridSystem.IsValidCell(cell))
                 continue;

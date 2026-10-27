@@ -7,6 +7,7 @@ public class HelmetCatalog : MonoBehaviour
 
     [SerializeField]
     private List<HelmetCatalogEntry> helmets = new();
+    [SerializeField] private GameObject rockObstaclePrefab;
 
     private void Awake()
     {
@@ -37,6 +38,7 @@ public class HelmetCatalog : MonoBehaviour
         {
             HelmetType.Fire => HelmetFactory.CreateFireHelmet(),
             HelmetType.Water => HelmetFactory.CreateWaterHelmet(),
+            HelmetType.Rock => HelmetFactory.CreateRockHelmet(rockObstaclePrefab),
             _ => HelmetFactory.CreateDefaultHelmet()
         };
 

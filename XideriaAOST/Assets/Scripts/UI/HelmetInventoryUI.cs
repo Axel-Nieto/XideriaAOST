@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.InputSystem;
 
 public class HelmetInventoryUI : MonoBehaviour
@@ -19,6 +20,7 @@ public class HelmetInventoryUI : MonoBehaviour
 
         if (inventoryPanel != null)
         {
+            EnsureRockSlot();
             helmetSlots =
                 inventoryPanel.GetComponentsInChildren<HelmetSlotUI>(true);
 
@@ -26,6 +28,23 @@ public class HelmetInventoryUI : MonoBehaviour
         }
 
         IsOpen = false;
+    }
+
+    private void EnsureRockSlot()
+    {
+        HelmetSlotUI[] existing = inventoryPanel.GetComponentsInChildren<HelmetSlotUI>(true);
+        foreach (HelmetSlotUI slot in existing)
+            if (slot.HelmetType == HelmetType.Rock) return;
+        if (existing.Length == 0) return;
+        HelmetSlotUI template = existing[existing.Length - 1];
+        GameObject clone = Instantiate(template.gameObject, template.transform.parent, false);
+        clone.name = "Helmet_Rock_Slot";
+        clone.GetComponent<HelmetSlotUI>().ConfigureType(HelmetType.Rock);
+        if (template.transform.parent.GetComponent<LayoutGroup>() == null)
+        {
+            RectTransform rect = clone.GetComponent<RectTransform>();
+            if (rect != null) rect.anchoredPosition += Vector2.right * (rect.rect.width + 20f);
+        }
     }
 
     private void Update()
