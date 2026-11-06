@@ -44,6 +44,7 @@ public class Character : MonoBehaviour
     private GameObject currentHelmetVisual;
 
     private readonly VitalImpulsePassive vitalImpulse = new();
+    private PlayerSessionData upgradeSession;
     // Read ownership directly: purchases and AbandonRun affect even an existing
     // character immediately, independently of Awake/Start/session load ordering.
     public bool VitalImpulseEnabled => IsPlayer && PlayerSessionData.Instance != null &&
@@ -67,6 +68,8 @@ public class Character : MonoBehaviour
             maxEnergy: baseStats.maxEnergy,
             energyRegen: baseStats.energyRegen
         );
+        RefreshRunUpgradeBonuses();
+        Stats.SetCurrentHP(Stats.MaxHP);
 
         Movement = GetComponent<CharacterMovement>();
 
@@ -79,6 +82,13 @@ public class Character : MonoBehaviour
     {
         if (IsPlayer)
         {
+            // A fresh spawn uses its upgraded maximum, including late session Awake.
+            // Restoring a saved character below preserves its actual remaining HP.
+            if (PlayerSessionData.Instance != null && !PlayerSessionData.Instance.hasSavedData)
+            {
+                RefreshRunUpgradeBonuses();
+                Stats.SetCurrentHP(Stats.MaxHP);
+            }
             LoadPlayerSession();
         }
     }
@@ -88,12 +98,52 @@ public class Character : MonoBehaviour
     {
         GameEvents.OnTurnStarted += HandleTurnStarted;
         GameEvents.OnCharacterDeathCompleted += HandleCharacterDeathCompleted;
+        if (IsPlayer)
+        {
+            PlayerSessionData.InstanceChanged -= BindUpgradeSession;
+            PlayerSessionData.InstanceChanged += BindUpgradeSession;
+            BindUpgradeSession(PlayerSessionData.Instance);
+        }
     }
 
     private void OnDisable()
     {
         GameEvents.OnTurnStarted -= HandleTurnStarted;
         GameEvents.OnCharacterDeathCompleted -= HandleCharacterDeathCompleted;
+        UnsubscribeUpgradeSession();
+    }
+
+    private void OnDestroy() => UnsubscribeUpgradeSession();
+
+    private void BindUpgradeSession(PlayerSessionData session)
+    {
+        if (!ReferenceEquals(upgradeSession, null))
+            upgradeSession.UpgradesChanged -= RefreshRunUpgradeBonuses;
+        upgradeSession = IsPlayer ? session : null;
+        if (upgradeSession != null)
+            upgradeSession.UpgradesChanged += RefreshRunUpgradeBonuses;
+        RefreshRunUpgradeBonuses();
+    }
+
+    private void UnsubscribeUpgradeSession()
+    {
+        PlayerSessionData.InstanceChanged -= BindUpgradeSession;
+        if (!ReferenceEquals(upgradeSession, null))
+            upgradeSession.UpgradesChanged -= RefreshRunUpgradeBonuses;
+        upgradeSession = null;
+    }
+
+    private bool HasRunUpgrade(string id) => IsPlayer && PlayerSessionData.Instance != null &&
+        PlayerSessionData.Instance.HasUpgrade(id);
+
+    private void RefreshRunUpgradeBonuses()
+    {
+        if (Stats == null)
+            return;
+        Stats.ApplyRunUpgradeBonuses(
+            HasRunUpgrade(UpgradeDefinition.MaxHealthId) ? 2 : 0,
+            HasRunUpgrade(UpgradeDefinition.BaseDefenseId) ? 1 : 0,
+            HasRunUpgrade(UpgradeDefinition.BaseDamageId) ? 2 : 0);
     }
 
     public Transform GetHeadAnchor()
@@ -623,6 +673,7 @@ public class Character : MonoBehaviour
             return;
 
         var session = PlayerSessionData.Instance;
+        RefreshRunUpgradeBonuses();
 
         if (session.forceNewRun)
         {
@@ -784,7 +835,8 @@ public class Character : MonoBehaviour
 
         EquipHelmet(helmet);
 
-        HelmetCharges = catalogEntry.MaxCharges;
+        HelmetCharges = (int)System.Math.Min(int.MaxValue, (long)catalogEntry.MaxCharges +
+            (HasRunUpgrade(UpgradeDefinition.HelmetDurabilityId) ? 1 : 0));
 
         Debug.Log(
             $"[HELMET] Equipado {helmet.Name} con " +

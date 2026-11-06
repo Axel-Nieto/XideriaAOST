@@ -300,6 +300,55 @@ public class RoomRewardDeliveryTests
     }
 
     [Test]
+    public void SelectedAnnouncementWinsWhenSeveralRecordsReferToTheSameRoom()
+    {
+        RunRewardRecord first = DoorRewardTests.Prepare(session.RunState, "first", 0.75);
+        RunRewardRecord selected = DoorRewardTests.Prepare(session.RunState, "selected", 0);
+        // A restored room can be referenced by several announcements. Reproduce
+        // the old first-match payout choosing fragments although gold was selected.
+        selected.RoomId = first.RoomId;
+        Assert.That(session.RunState.TrySelectDoor(selected), Is.True);
+        Assert.That(session.RunState.FindRoom(selected.RoomId).SelectedRewardId, Is.EqualTo(selected.RewardId));
+        session.RunState.EnterScene(selected.DestinationScene);
+        Assert.That(session.TryCompleteRoom(selected.RoomId), Is.True);
+        Assert.That(session.Gold, Is.EqualTo(selected.Amount));
+        Assert.That(session.XideriaFragments, Is.Zero);
+        Assert.That(first.IsDelivered, Is.False);
+        Assert.That(selected.IsDelivered, Is.True);
+        Assert.That(session.TryCompleteRoom(selected.RoomId), Is.False);
+    }
+
+    [Test]
+    public void SelectedAnnouncementSurvivesSerializationAndDoesNotFallBackToAnotherReward()
+    {
+        RunRewardRecord first = DoorRewardTests.Prepare(session.RunState, "first", 0.75);
+        RunRewardRecord selected = DoorRewardTests.Prepare(session.RunState, "selected", 0);
+        selected.RoomId = first.RoomId;
+        session.RunState.TrySelectDoor(selected);
+        RunState restored = JsonUtility.FromJson<RunState>(JsonUtility.ToJson(session.RunState));
+        typeof(PlayerSessionData).GetField("runState", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(session, restored);
+        restored.EnterScene(selected.DestinationScene);
+        Assert.That(session.TryCompleteRoom(selected.RoomId), Is.True);
+        Assert.That(session.Gold, Is.EqualTo(selected.Amount));
+        Assert.That(session.XideriaFragments, Is.Zero);
+    }
+
+    [Test]
+    public void AmbiguousLegacyRoomWithoutASelectedAnnouncementCannotPayTheWrongCurrency()
+    {
+        RunRewardRecord first = DoorRewardTests.Prepare(session.RunState, "first", 0.75);
+        RunRewardRecord other = DoorRewardTests.Prepare(session.RunState, "other", 0);
+        other.RoomId = first.RoomId;
+        session.RunState.TrySelectDoor(other);
+        session.RunState.EnterScene(other.DestinationScene);
+        session.RunState.FindRoom(other.RoomId).SelectedRewardId = null;
+        Assert.That(session.TryCompleteRoom(other.RoomId), Is.False);
+        Assert.That(session.Gold, Is.Zero);
+        Assert.That(session.XideriaFragments, Is.Zero);
+        Assert.That(first.IsDelivered || other.IsDelivered, Is.False);
+    }
+
+    [Test]
     public void ReentrantBalanceListenerCannotDeliverTwice()
     {
         RunRewardRecord offer = EnterCombat();

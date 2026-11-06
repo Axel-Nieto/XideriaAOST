@@ -1,5 +1,7 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.VFX;
 
 [DisallowMultipleComponent]
 public sealed class TemporaryRockField : MonoBehaviour
@@ -11,10 +13,16 @@ public sealed class TemporaryRockField : MonoBehaviour
         public CellType PreviousType;
         public int Turns;
         public GameObject Visual;
+        public VisualEffect Effect;
+        public Coroutine Rise;
+        public float SinkDuration;
     }
     private readonly List<Rock> rocks = new();
+    private readonly List<VisualEffect> retiringEffects = new();
     // Map art sits above the logical grid plane (about 0.25 in Zone 1).
     [SerializeField] private float visualSurfaceOffset = 0.3f;
+    // Match the map tiles/highlights, independently of the caster's model offset.
+    [SerializeField] private Vector2 visualHorizontalOffset = new(-0.3f, -0.3f);
     private GridSystem grid;
     public int Count => rocks.Count;
     private void Awake() => grid = GetComponent<GridSystem>();
@@ -28,6 +36,14 @@ public sealed class TemporaryRockField : MonoBehaviour
         GameEvents.OnTurnStarted -= Tick;
         GameEvents.OnCharacterDeathCompleted -= ClearOwner;
         ClearAll();
+        foreach (VisualEffect effect in retiringEffects)
+            if (effect != null)
+            {
+                effect.SetFloat("RockProgress", 0f);
+                if (Application.isPlaying) Destroy(effect.gameObject);
+                else DestroyImmediate(effect.gameObject);
+            }
+        retiringEffects.Clear();
     }
     public static TemporaryRockField For(GridSystem grid)
     {
@@ -44,6 +60,8 @@ public sealed class TemporaryRockField : MonoBehaviour
     public bool TryPlace(Character owner, Vector2Int cell, GameObject prefab, int duration = 2)
     {
         if (owner == null || prefab == null || duration <= 0 || !CanPlace(cell)) return false;
+        Vector3 surface = grid.GridToWorld(cell) +
+            new Vector3(visualHorizontalOffset.x, visualSurfaceOffset, visualHorizontalOffset.y);
         GameObject visual = Instantiate(prefab, grid.GridToWorld(cell), Quaternion.identity, transform);
         visual.name = "Temporary Rock " + cell;
         visual.SetActive(true);
@@ -61,10 +79,24 @@ public sealed class TemporaryRockField : MonoBehaviour
                 bounds = renderers[0].bounds;
                 foreach (Renderer renderer in renderers) bounds.Encapsulate(renderer.bounds);
             }
-            Vector3 surface = grid.GridToWorld(cell) + Vector3.up * visualSurfaceOffset;
             visual.transform.position += new Vector3(surface.x - bounds.center.x, surface.y - bounds.min.y, surface.z - bounds.center.z);
         }
-        rocks.Add(new Rock { Owner = owner, Cell = cell, PreviousType = grid.GetCell(cell).Type, Turns = duration, Visual = visual });
+        var rock = new Rock { Owner = owner, Cell = cell, PreviousType = grid.GetCell(cell).Type, Turns = duration, Visual = visual };
+        var presentation = owner.GetComponent<RockSkillVFX>();
+        if (presentation != null)
+        {
+            float cellSize = Vector3.Distance(grid.GridToWorld(cell), grid.GridToWorld(cell + Vector2Int.right));
+            rock.Effect = presentation.CreateEruptionRock(surface, cellSize, transform);
+            if (rock.Effect != null)
+            {
+                // Keep the existing mesh as a fallback for characters without the new effects.
+                visual.SetActive(false);
+                rock.SinkDuration = presentation.RockSinkDuration;
+                if (Application.isPlaying) rock.Rise = StartCoroutine(AnimateProgress(rock.Effect, 0f, 1.5f, presentation.RockRiseDuration));
+                else rock.Effect.SetFloat("RockProgress", 1.5f);
+            }
+        }
+        rocks.Add(rock);
         grid.SetCellType(cell, CellType.Blocked);
         return true;
     }
@@ -89,6 +121,21 @@ public sealed class TemporaryRockField : MonoBehaviour
     private void Remove(int index)
     {
         Rock rock = rocks[index];
+        if (rock.Rise != null) StopCoroutine(rock.Rise);
+        if (rock.Effect != null)
+        {
+            if (Application.isPlaying && isActiveAndEnabled)
+            {
+                retiringEffects.Add(rock.Effect);
+                StartCoroutine(Sink(rock.Effect, rock.SinkDuration));
+            }
+            else
+            {
+                rock.Effect.SetFloat("RockProgress", 0f);
+                if (Application.isPlaying) Destroy(rock.Effect.gameObject);
+                else DestroyImmediate(rock.Effect.gameObject);
+            }
+        }
         if (grid != null && grid.GetCell(rock.Cell)?.Type == CellType.Blocked)
             grid.SetCellType(rock.Cell, rock.PreviousType);
         if (rock.Visual != null)
@@ -97,5 +144,26 @@ public sealed class TemporaryRockField : MonoBehaviour
             else DestroyImmediate(rock.Visual);
         }
         rocks.RemoveAt(index);
+    }
+
+    private static IEnumerator AnimateProgress(VisualEffect effect, float from, float to, float duration)
+    {
+        for (float elapsed = 0f; elapsed < duration && effect != null; elapsed += Time.deltaTime)
+        {
+            effect.SetFloat("RockProgress", Mathf.Lerp(from, to, elapsed / duration));
+            yield return null;
+        }
+        if (effect != null) effect.SetFloat("RockProgress", to);
+    }
+
+    private IEnumerator Sink(VisualEffect effect, float duration)
+    {
+        yield return AnimateProgress(effect, effect.GetFloat("RockProgress"), 0f, duration);
+        if (effect != null)
+        {
+            effect.Stop();
+            retiringEffects.Remove(effect);
+            Destroy(effect.gameObject);
+        }
     }
 }

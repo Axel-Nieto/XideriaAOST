@@ -63,6 +63,7 @@ public class BattleHUD : MonoBehaviour
 
     private bool themeInitialized = false;
     private bool displayedVitalImpulseEnabled;
+    private int displayedMaxHP = -1;
 
     private readonly string[] keys = { "Q", "W", "E", "R" };
 
@@ -83,6 +84,9 @@ public class BattleHUD : MonoBehaviour
     private void Update()
     {
         UpdateEndTurnButton();
+        if (currentCharacter != null && currentCharacter.Stats != null &&
+            displayedMaxHP != currentCharacter.Stats.MaxHP)
+            RefreshCharacterPanel();
 
         if (currentCharacter != null &&
             displayedVitalImpulseEnabled != currentCharacter.VitalImpulseEnabled)
@@ -142,6 +146,7 @@ public class BattleHUD : MonoBehaviour
 
         hpCurrentText.text = stats.CurrentHP.ToString();
         hpMaxText.text = stats.MaxHP.ToString();
+        displayedMaxHP = stats.MaxHP;
 
         energyCurrentText.text = stats.CurrentEnergy.ToString();
         energyMaxText.text = stats.MaxEnergy.ToString();
@@ -433,17 +438,14 @@ public class BattleHUD : MonoBehaviour
             );
 
             Sprite passiveIcon =
-                passive is UnstoppablePassive || passive is RockGuardPassive
-                ? null
-                : passive.Icon != null ? passive.Icon : StatusIconDatabase.Instance.defaultPassiveIcon;
+                passive.Icon != null ? passive.Icon : StatusIconDatabase.Instance.defaultPassiveIcon;
 
             icon.Setup(
                 passiveIcon,
                 passive.Name,
                 passive.Description,
                 0,
-                this,
-                passive is UnstoppablePassive || passive is RockGuardPassive
+                this
             );
         }
     }

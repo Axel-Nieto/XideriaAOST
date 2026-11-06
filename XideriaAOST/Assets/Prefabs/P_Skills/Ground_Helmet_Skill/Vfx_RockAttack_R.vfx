@@ -401,8 +401,8 @@ MonoBehaviour:
       slotIndex: 0
   integration: 0
   angularIntegration: 0
-  ageParticles: 1
-  reapParticles: 1
+  ageParticles: 0
+  reapParticles: 0
   skipZeroDeltaUpdate: 0
 --- !u!114 &114920711487922656
 MonoBehaviour:

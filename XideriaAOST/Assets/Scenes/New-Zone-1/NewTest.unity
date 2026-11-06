@@ -1874,6 +1874,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: fx_GroundShield_W
       objectReference: {fileID: 0}
+    - target: {fileID: 8668698496245251874, guid: 0dc9229d462a808448e8037e1623bedf, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -9223,6 +9227,10 @@ MonoBehaviour:
     color: {r: 0.22352941, g: 0.7529412, b: 1, a: 0}
     helmetImage: {fileID: 21300000, guid: 991a63f4eb5241742a5ee59ff6243b24, type: 3}
     helmetSymbol: {fileID: 0}
+  - helmetType: 3
+    color: {r: 0.62, g: 0.43, b: 0.24, a: 1}
+    helmetImage: {fileID: 21300000, guid: 22b22a08817e8d944a4c6f59c344f8cc, type: 3}
+    helmetSymbol: {fileID: 0}
   helmetImage: {fileID: 1447828940}
   helmetSymbol: {fileID: 606026404}
   helmetMaterial: {fileID: 2100000, guid: 83abfa84771007f478b7df3d3d943a7d, type: 2}
@@ -11087,6 +11095,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 880000000}
   - component: {fileID: 1378975417}
   - component: {fileID: 1378975416}
   - component: {fileID: 1378975415}
@@ -11119,6 +11128,7 @@ MonoBehaviour:
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   fireHelmetColor: {r: 1, g: 0.29803923, b: 0, a: 1}
   waterHelmetColor: {r: 0, g: 0.6748581, b: 1, a: 1}
+  rockHelmetColor: {r: 0.62, g: 0.43, b: 0.24, a: 1}
 --- !u!114 &1378975411
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11432,7 +11442,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1420822851
 Transform:
   m_ObjectHideFlags: 0
@@ -12348,7 +12358,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1590496727
 Transform:
   m_ObjectHideFlags: 0
@@ -12972,7 +12982,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1662081452
 Transform:
   m_ObjectHideFlags: 0
@@ -15229,7 +15239,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1932822596
 Transform:
   m_ObjectHideFlags: 0
@@ -15310,7 +15320,7 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 1.5
+      - m_Value: 0
         m_Name: RockProgress
         m_Overridden: 1
     m_Vector2f:
@@ -17932,3 +17942,23 @@ SceneRoots:
   - {fileID: 440505302}
   - {fileID: 803836604}
   - {fileID: 1423147174}
+--- !u!114 &880000000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378975409}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89cd76d5dc0d431eb42e09a25d469a1d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RockSkillVFX
+  shield: {fileID: 991728348}
+  slash: {fileID: 1590496729}
+  earthquake: {fileID: 1420822853}
+  eruptionRock: {fileID: 1932822598}
+  excavate: {fileID: 1662081454}
+  rockRiseDuration: 0.15
+  rockSinkDuration: 0.2
+  excavateTravelDelay: 1.1

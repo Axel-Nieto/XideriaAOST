@@ -7,6 +7,8 @@ public sealed class RockGuardPassive : PassiveEffect
     private readonly List<int> stackTurns = new();
     public int ArmorStacks => stackTurns.Count;
     public int ShieldCharges { get; private set; }
+    public override UnityEngine.Sprite Icon => StatusIconDatabase.Instance != null
+        ? StatusIconDatabase.Instance.rockPassiveIcon : null;
     public override string Name => "Coraza de Tierra";
     public override string Description => $"Giro de Tierra: {ArmorStacks * 10}% de reducción de daño.\n+10% por enemigo golpeado durante dos turnos propios.\n\nEscudo de Roca: {ShieldCharges}/3 cargas.\nCada impacto consume una y añade 10% de reducción.\nLas cargas vencen al iniciar tu próximo turno.";
 

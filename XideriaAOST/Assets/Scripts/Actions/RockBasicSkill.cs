@@ -20,6 +20,7 @@ public sealed class RockBasicSkill : RockSkillBase
         Spend(user);
         var animation = user.GetComponentInChildren<CharacterAnimationController>();
         if (animation != null) yield return animation.PlayAttackUntilHitFrame();
+        user.GetComponent<RockSkillVFX>()?.PlaySlash();
         List<Character> targets = Enemies(user, grid, user.GridPosition, AreaRadius);
         foreach (Character target in targets) Damage(user, target);
         RockGuardPassive.For(user).AddArmor(targets.Count);

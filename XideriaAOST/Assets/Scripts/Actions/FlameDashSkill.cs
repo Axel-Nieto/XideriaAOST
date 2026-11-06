@@ -140,6 +140,9 @@ public class FlameDashSkill : SkillBase
             if (target.IsPlayer == user.IsPlayer)
                 continue;
 
+            if (target.Stats == null || !target.Stats.IsAlive || target.IsDying)
+                continue;
+
             targets.Add(target);
         }
 
@@ -156,7 +159,13 @@ public class FlameDashSkill : SkillBase
                 user
             );
         }
+        if (targets.Count == 0 && user.GridPosition == path[path.Count - 1] && HasCooldownUpgrade(user))
+            user.SetSkillCooldown(this, Mathf.Max(0, user.GetSkillCooldown(this) - 1));
     }
+
+    private static bool HasCooldownUpgrade(Character user) =>
+        user != null && user.IsPlayer && PlayerSessionData.Instance != null &&
+        PlayerSessionData.Instance.HasUpgrade(UpgradeDefinition.FlameDashCooldownId);
 
     private Vector2Int GetDirection(Vector2Int origin, Vector2Int target)
     {
@@ -252,7 +261,9 @@ public class FlameDashSkill : SkillBase
             ? damage
             : damage + user.Stats.Attack;
 
-        return
-            $"Daño: {estimatedDamage}";
+        string upgradeText = HasCooldownUpgrade(user)
+            ? "\nSi completas el dash sin impactar a ning\u00fan enemigo, reduce en 1 turno la espera de este uso."
+            : "";
+        return $"Daño: {estimatedDamage}" + upgradeText;
     }
 }

@@ -25,6 +25,7 @@ public sealed class RockEruptionSkill : RockSkillBase
         if (!CanUse(user, targetCell, grid)) yield break;
         Spend(user);
         yield return Cast(user);
+        user.GetComponent<RockSkillVFX>()?.PlayEarthquake();
         List<Character> targets = Enemies(user, grid, user.GridPosition, AreaRadius);
         foreach (Character target in targets)
         {

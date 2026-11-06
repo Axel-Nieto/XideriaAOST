@@ -78,7 +78,7 @@ public class PlayerSessionData : MonoBehaviour
     public bool HasUpgrade(string upgradeId) => RunState.HasUpgrade(upgradeId);
 
     /// <summary>
-    /// Atomically buys one supported upgrade with fragments only. A false result
+    /// Atomically buys one supported upgrade with its configured currency. A false result
     /// leaves both ownership and balances unchanged. Notifications run after commit.
     /// Call on Unity's main thread, like the other session operations.
     /// </summary>
@@ -86,12 +86,12 @@ public class PlayerSessionData : MonoBehaviour
     {
         if (definition == null || string.IsNullOrWhiteSpace(definition.Id))
             result = UpgradePurchaseResult.InvalidDefinition;
-        else if (definition.FragmentCost <= 0)
+        else if (definition.Cost <= 0)
             result = UpgradePurchaseResult.InvalidCost;
-        else if (definition.Type != UpgradeType.VitalImpulse || definition.Id != UpgradeDefinition.VitalImpulseId)
+        else if (!definition.IsSupported)
             result = UpgradePurchaseResult.UnsupportedUpgrade;
         else
-            result = RunState.TryPurchaseUpgrade(definition.Id, definition.FragmentCost);
+            result = RunState.TryPurchaseUpgradeWithCurrency(definition.Id, definition.Cost, definition.Currency);
 
         if (result != UpgradePurchaseResult.Success)
             return false;
@@ -99,8 +99,9 @@ public class PlayerSessionData : MonoBehaviour
         // Both values are already committed: even a reentrant purchase cannot charge twice.
         // A broken observer must not turn a successful transaction into a reported failure
         // or prevent the remaining observers from learning about the committed change.
-        int balance = XideriaFragments;
-        NotifySafely(BalanceChanged, listener => ((Action<RunCurrency, int>)listener)(RunCurrency.XideriaFragments, balance));
+        RunCurrency currency = definition.Currency;
+        int balance = GetBalance(currency);
+        NotifySafely(BalanceChanged, listener => ((Action<RunCurrency, int>)listener)(currency, balance));
         NotifySafely(UpgradesChanged, listener => ((Action)listener)());
         return true;
     }
@@ -129,8 +130,19 @@ public class PlayerSessionData : MonoBehaviour
         foreach (RunRewardRecord candidate in RunState.Rewards)
             if (candidate.RoomId == roomId && candidate.HasReward)
             {
+                if (!string.IsNullOrEmpty(room.SelectedRewardId))
+                {
+                    if (candidate.RewardId != room.SelectedRewardId)
+                        continue;
+                    reward = candidate;
+                    break;
+                }
+
+                // Compatibility with a run restored from before selected IDs
+                // were recorded. Do not guess between different announcements.
+                if (reward != null)
+                    return false;
                 reward = candidate;
-                break;
             }
 
         if (reward == null || reward.IsDelivered)
@@ -144,6 +156,7 @@ public class PlayerSessionData : MonoBehaviour
             reward.IsDelivered = false;
             return false;
         }
+        Debug.Log($"[ROOM REWARD] Delivered {reward.Currency} x{reward.Amount}; scene={room.SceneId}; reward={reward.RewardId}; room={room.RoomId}", this);
         return true;
     }
 

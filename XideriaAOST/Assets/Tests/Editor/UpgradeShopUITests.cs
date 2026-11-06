@@ -16,6 +16,10 @@ public class UpgradeShopUITests : UpgradeIntegrationFixture
     private UpgradeShopUI shop;
     private TMP_Text balanceText;
     private Button closeButton;
+    private Button previousSectionButton;
+    private Button nextSectionButton;
+    private TMP_Text sectionTitleText;
+    private TMP_Text emptySectionText;
     private UpgradeShopItemUI template;
 
     [SetUp]
@@ -28,6 +32,10 @@ public class UpgradeShopUITests : UpgradeIntegrationFixture
         panel = NewUI("Panel", host.transform);
         balanceText = NewText("FragmentsBalance", panel.transform);
         closeButton = NewUI("CloseButton", panel.transform).AddComponent<Button>();
+        previousSectionButton = NewUI("PreviousSectionButton", panel.transform).AddComponent<Button>();
+        nextSectionButton = NewUI("NextSectionButton", panel.transform).AddComponent<Button>();
+        sectionTitleText = NewText("SectionTitle", panel.transform);
+        emptySectionText = NewText("EmptySection", panel.transform);
         container = NewUI("Content", panel.transform).transform;
         var templateObject = NewUI("Item template", root.transform);
         templateObject.SetActive(false);
@@ -43,6 +51,10 @@ public class UpgradeShopUITests : UpgradeIntegrationFixture
         Set(shop, "panelRoot", panel);
         Set(shop, "fragmentsBalanceText", balanceText);
         Set(shop, "closeButton", closeButton);
+        Set(shop, "previousSectionButton", previousSectionButton);
+        Set(shop, "nextSectionButton", nextSectionButton);
+        Set(shop, "sectionTitleText", sectionTitleText);
+        Set(shop, "emptySectionText", emptySectionText);
         Set(shop, "itemsContainer", container);
         Set(shop, "itemPrefab", template);
         Set(shop, "upgrades", new List<UpgradeDefinition> { definition });
@@ -59,6 +71,123 @@ public class UpgradeShopUITests : UpgradeIntegrationFixture
             shop.Close();
             Call(shop, "OnDestroy");
         }
+    }
+
+    [Test]
+    public void ArrowsVisitAllSectionsInOrderAndWrapInBothDirections()
+    {
+        shop.Open();
+        Assert.That(sectionTitleText.text, Is.EqualTo("Sir Tete"));
+        Assert.That(emptySectionText.gameObject.activeSelf, Is.False);
+        UpgradeShopItemUI original = Items().Single();
+        foreach (string section in new[] { "Fuego", "Agua", "Tierra", "Sir Tete" })
+        {
+            nextSectionButton.onClick.Invoke();
+            Assert.That(sectionTitleText.text, Is.EqualTo(section));
+            Assert.That(original.gameObject.activeSelf, Is.EqualTo(section == "Sir Tete"));
+            Assert.That(emptySectionText.gameObject.activeSelf, Is.EqualTo(section != "Sir Tete"));
+            Assert.That(Items().Single(), Is.SameAs(original));
+        }
+        foreach (string section in new[] { "Tierra", "Agua", "Fuego", "Sir Tete" })
+        {
+            previousSectionButton.onClick.Invoke();
+            Assert.That(sectionTitleText.text, Is.EqualTo(section));
+        }
+        Assert.That(session.RunState.PurchasedUpgradeIds, Is.Empty);
+    }
+
+    [Test]
+    public void HiddenOfferCannotBePurchasedAndReturningReadsCurrentSessionState()
+    {
+        session.TryAddCurrency(RunCurrency.XideriaFragments, 10);
+        session.TryAddCurrency(RunCurrency.Gold, 25);
+        shop.Open();
+        var item = Items().Single();
+        nextSectionButton.onClick.Invoke();
+        // Even a retained callback must not buy an offer from a different section.
+        var request = Get<Action<UpgradeDefinition>>(item, "purchaseRequested");
+        request.Invoke(definition);
+        BuyButton().onClick.Invoke();
+        Assert.That(session.XideriaFragments, Is.EqualTo(10));
+        Assert.That(session.HasUpgrade(definition.Id), Is.False);
+        Assert.That(session.TryPurchaseUpgrade(definition, out _), Is.True);
+        Assert.That(sectionTitleText.text, Is.EqualTo("Fuego"));
+        Assert.That(balanceText.text, Is.EqualTo("25"));
+        previousSectionButton.onClick.Invoke();
+        Assert.That(ItemText("purchaseButtonText").text, Is.EqualTo("Adquirida"));
+        Assert.That(BuyButton().interactable, Is.False);
+    }
+
+    [Test]
+    public void FireSectionShowsTwoGoldUpgradesAndUpdatesPurchasesWithoutSpendingFragments()
+    {
+        var fireball = ScriptableObject.CreateInstance<UpgradeDefinition>();
+        var dash = ScriptableObject.CreateInstance<UpgradeDefinition>();
+        try
+        {
+            Set(fireball, "upgradeType", UpgradeType.FireballCooldown);
+            Set(fireball, "upgradeId", UpgradeDefinition.FireballCooldownId);
+            Set(fireball, "goldCost", 20);
+            Set(dash, "upgradeType", UpgradeType.FlameDashCooldown);
+            Set(dash, "upgradeId", UpgradeDefinition.FlameDashCooldownId);
+            Set(dash, "goldCost", 20);
+            Set(shop, "upgrades", new List<UpgradeDefinition> { definition, fireball, dash });
+            TMP_Text currencyLabel = NewText("Currency label", panel.transform);
+            Set(shop, "currencyLabelText", currencyLabel);
+            session.TryAddCurrency(RunCurrency.XideriaFragments, 50);
+            session.TryAddCurrency(RunCurrency.Gold, 19);
+            shop.Open();
+            Assert.That(balanceText.text, Is.EqualTo("50"));
+            nextSectionButton.onClick.Invoke();
+            Assert.That(shop.CurrentCurrency, Is.EqualTo(RunCurrency.Gold));
+            Assert.That(currencyLabel.text, Is.EqualTo("Oro"));
+            Assert.That(balanceText.text, Is.EqualTo("19"));
+            UpgradeShopItemUI[] visible = Items().Where(item => item.gameObject.activeSelf).ToArray();
+            CollectionAssert.AreEquivalent(new[] { fireball, dash }, visible.Select(item => item.Definition));
+            var item = visible.Single(view => view.Definition == fireball);
+            Assert.That(Get<TMP_Text>(item, "costText").text, Is.EqualTo("20"));
+            Assert.That(Get<TMP_Text>(item, "purchaseButtonText").text, Is.EqualTo("Oro insuficiente"));
+            session.TryAddCurrency(RunCurrency.Gold, 1);
+            Assert.That(balanceText.text, Is.EqualTo("20"));
+            Get<Button>(item, "purchaseButton").onClick.Invoke();
+            Get<Button>(item, "purchaseButton").onClick.Invoke();
+            Assert.That(balanceText.text, Is.EqualTo("0"));
+            Assert.That(session.XideriaFragments, Is.EqualTo(50));
+            Assert.That(session.HasUpgrade(fireball.Id), Is.True);
+            Assert.That(session.HasUpgrade(dash.Id), Is.False);
+            Assert.That(Get<TMP_Text>(item, "purchaseButtonText").text, Is.EqualTo("Adquirida"));
+            previousSectionButton.onClick.Invoke();
+            Assert.That(balanceText.text, Is.EqualTo("50"));
+            Assert.That(currencyLabel.text, Is.EqualTo("Fragmentos de Xideria"));
+        }
+        finally
+        {
+            shop.Close();
+            UnityEngine.Object.DestroyImmediate(fireball);
+            UnityEngine.Object.DestroyImmediate(dash);
+        }
+    }
+
+    [Test]
+    public void RepeatedOpenKeepsSectionAndSingleArrowListenerButReopeningStartsAtSirTete()
+    {
+        shop.Open();
+        nextSectionButton.onClick.Invoke();
+        for (int i = 0; i < 5; i++)
+        {
+            shop.Open();
+            shop.Refresh();
+            Assert.That(shop.CurrentSection, Is.EqualTo(UpgradeShopSection.Fire));
+        }
+        nextSectionButton.onClick.Invoke();
+        Assert.That(shop.CurrentSection, Is.EqualTo(UpgradeShopSection.Water));
+        shop.Close();
+        nextSectionButton.onClick.Invoke();
+        previousSectionButton.onClick.Invoke();
+        Assert.That(shop.CurrentSection, Is.EqualTo(UpgradeShopSection.Water));
+        shop.Open();
+        Assert.That(shop.CurrentSection, Is.EqualTo(UpgradeShopSection.SirTete));
+        Assert.That(Items().Single().gameObject.activeSelf, Is.True);
     }
 
     [Test]
@@ -263,6 +392,8 @@ public class UpgradeShopUITests : UpgradeIntegrationFixture
         host.SetActive(true);
         shop.Open();
         var destroyedShop = shop;
+        // EditMode does not guarantee native lifecycle callbacks for this host.
+        Call(shop, "OnDestroy");
         UnityEngine.Object.DestroyImmediate(host);
         Assert.That(ListenerCount(session, "BalanceChanged", destroyedShop), Is.Zero);
         Assert.That(ListenerCount(session, "UpgradesChanged", destroyedShop), Is.Zero);

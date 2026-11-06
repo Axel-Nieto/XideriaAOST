@@ -9,6 +9,8 @@ public class CharacterColorByHelmet : MonoBehaviour
     [SerializeField] private Color fireHelmetColor = new Color(255f, 76f, 0f);
     [SerializeField] private Color waterHelmetColor = new Color(0f, 134f, 255f);
 
+    [SerializeField] private Color rockHelmetColor = new Color(0.62f, 0.43f, 0.24f, 1f);
+
     public void ApplyHelmetColor(HelmetData helmet)
     {
         if (helmet == null)
@@ -25,6 +27,10 @@ public class CharacterColorByHelmet : MonoBehaviour
 
             case "Casco de Agua":
                 SetColor(waterHelmetColor);
+                break;
+
+            case "Casco de Tierra":
+                SetColor(rockHelmetColor);
                 break;
 
             default:
