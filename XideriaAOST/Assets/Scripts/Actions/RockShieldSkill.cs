@@ -13,6 +13,7 @@ public sealed class RockShieldSkill : RockSkillBase
         Spend(user);
         yield return Cast(user);
         RockGuardPassive.For(user).ActivateShield();
+        user.GetComponent<RockSkillVFX>()?.PlayShield();
         yield return FinishCast(user);
     }
 }

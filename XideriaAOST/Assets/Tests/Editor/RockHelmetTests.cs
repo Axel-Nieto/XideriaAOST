@@ -191,6 +191,39 @@ public class RockCombatTests : UpgradeIntegrationFixture
         foreach (Vector2Int cell in player.GetOccupiedCells()) Assert.That(grid.GetCharacterAt(cell), Is.SameAs(player));
     }
 
+    [TestCase(1, 0, 1)] [TestCase(-1, 0, 1)] [TestCase(0, 1, 1)] [TestCase(0, -1, 1)]
+    [TestCase(1, 0, 2)] [TestCase(-1, 0, 2)] [TestCase(0, 1, 2)] [TestCase(0, -1, 2)]
+    public void ExcavationEffectsHideEachBlockedBandWithoutHidingTheOthers(int dx, int dy, int size)
+    {
+        Resize(player, size);
+        Vector2Int origin = player.GridPosition;
+        var direction = new Vector2Int(dx, dy);
+        Vector2Int side = dx != 0 ? Vector2Int.up : Vector2Int.right;
+        int depth = dx < 0 || dy < 0 ? 1 : size;
+        Vector2Int first = origin + direction * depth;
+        Vector2Int third = first + direction * 2;
+        Assert.That(RockSkillVFX.CanShowExcavateRock(player, grid, origin, direction, 1), Is.True);
+        // A blocked far corner must also suppress the effect for a 2x2 character.
+        grid.SetCellType(first + side * (size - 1), CellType.Blocked);
+        grid.SetCellType(third + side * (size - 1), CellType.Void);
+        Assert.That(RockSkillVFX.CanShowExcavateRock(player, grid, origin, direction, 1), Is.False);
+        Assert.That(RockSkillVFX.CanShowExcavateRock(player, grid, origin, direction, 2), Is.True);
+        Assert.That(RockSkillVFX.CanShowExcavateRock(player, grid, origin, direction, 3), Is.False);
+        Assert.That(player.GridPosition, Is.EqualTo(origin));
+        foreach (Vector2Int cell in player.GetOccupiedCells()) Assert.That(grid.GetCharacterAt(cell), Is.SameAs(player));
+    }
+
+    [TestCase(1)] [TestCase(2)]
+    public void ExcavationEffectsRejectCharactersAndTheEdgeOfTheBoard(int size)
+    {
+        Resize(player, size);
+        Vector2Int origin = player.GridPosition;
+        Vector2Int first = origin + Vector2Int.right * size;
+        Actor(false, first + Vector2Int.up * (size - 1), 2);
+        Assert.That(RockSkillVFX.CanShowExcavateRock(player, grid, origin, Vector2Int.right, 1), Is.False);
+        Assert.That(RockSkillVFX.CanShowExcavateRock(player, grid, new Vector2Int(0, 0), Vector2Int.left, 1), Is.False);
+    }
+
     [Test]
     public void PlayerAndBossCannotPushEachOtherOrReflectTheirImmunity()
     {
@@ -337,6 +370,60 @@ public class RockCombatTests : UpgradeIntegrationFixture
             Assert.That(bounds.size.y, Is.GreaterThan(0.5f));
         }
         field.ClearAll();
+    }
+
+    [TestCase(1)] [TestCase(2)]
+    public void TemporaryRockBaseMatchesTheMapTileWithoutMovingItsBlockedCell(int casterSize)
+    {
+        Set(player, "gridWidth", casterSize);
+        Set(player, "gridHeight", casterSize);
+        // Character model offsets/rotations are unrelated to the map's tile offset.
+        Set(player, "visualSpawnOffset", new Vector3(4f, 3f, -2f));
+        player.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+        grid.transform.position = new Vector3(-0.6f, 0f, -0.6f);
+        GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/HelmetModels/Rock.fbx");
+        var field = TemporaryRockField.For(grid);
+        var cell = new Vector2Int(10, 9);
+        Assert.That(field.TryPlace(player, cell, model), Is.True);
+        Transform visual = grid.transform.Cast<Transform>().Single(t => t.name == "Temporary Rock " + cell);
+        Renderer[] renderers = visual.GetComponentsInChildren<Renderer>();
+        Bounds bounds = renderers[0].bounds;
+        foreach (Renderer renderer in renderers) bounds.Encapsulate(renderer.bounds);
+        Vector3 surface = grid.GridToWorld(cell) + new Vector3(-0.3f, 0.3f, -0.3f);
+        Assert.That(bounds.center.x, Is.EqualTo(surface.x).Within(0.001f));
+        Assert.That(bounds.center.z, Is.EqualTo(surface.z).Within(0.001f));
+        Assert.That(bounds.min.y, Is.EqualTo(surface.y).Within(0.001f));
+        Assert.That(grid.GetCell(cell).Type, Is.EqualTo(CellType.Blocked));
+        Assert.That(grid.GetCell(cell + Vector2Int.right).Type, Is.EqualTo(CellType.Ground));
+        Assert.That(grid.GetCell(cell + Vector2Int.up).Type, Is.EqualTo(CellType.Ground));
+        field.ClearAll();
+        Assert.That(grid.GetCell(cell).Type, Is.EqualTo(CellType.Ground));
+    }
+
+    [TestCase(0.5f, 1f)] [TestCase(1f, 1f)] [TestCase(2f, 3f)]
+    public void EruptionEffectMeshBaseRestsOnItsTileThroughoutGridAndCellSizeChanges(float cellSize, float parentScale)
+    {
+        Mesh mesh = AssetDatabase.LoadAllAssetsAtPath("Assets/Prefabs/P_Skills/Ground_Helmet_Skill/RockSkill_R.fbx")
+            .OfType<Mesh>().Single();
+        var presentation = player.gameObject.AddComponent<RockSkillVFX>();
+        Transform effect = Child("R effect transform").transform;
+        grid.transform.SetPositionAndRotation(new Vector3(-0.6f, 2f, -0.6f), Quaternion.Euler(0f, 90f, 0f));
+        grid.transform.localScale = Vector3.one * parentScale;
+        Set(grid, "cellSize", cellSize);
+        Vector3 surface = grid.GridToWorld(new Vector2Int(10, 9)) + new Vector3(-0.3f, 0.3f, -0.3f);
+        Call(presentation, "PositionEruptionRock", effect, surface, cellSize, grid.transform);
+
+        // Use the imported mesh and the graph's size/scale/pivot, as applied by
+        // GetElementToVFXMatrix in the installed VFX package. Bounds from the VFX
+        // renderer also include debris and are not the permanent obstacle base.
+        Vector3 meshBase = new(mesh.bounds.center.x, mesh.bounds.min.y, mesh.bounds.center.z);
+        Vector3 graphBase = Vector3.Scale(meshBase - new Vector3(0f, 1.7f, 0f), new Vector3(0.3f, 0.45f, 0.3f));
+        Vector3 restingBase = graphBase + Vector3.up * 1.5f;
+        Assert.That(Vector3.Distance(effect.TransformPoint(restingBase), surface), Is.LessThan(0.001f));
+        Assert.That(Vector3.Distance(effect.lossyScale, Vector3.one * (cellSize * 0.8f)), Is.LessThan(0.001f));
+        Assert.That(Quaternion.Angle(effect.rotation, Quaternion.identity), Is.LessThan(0.001f));
+        // At the start of emergence (and end of sinking), the mesh is below the floor.
+        Assert.That(effect.TransformPoint(graphBase).y, Is.LessThan(surface.y));
     }
 
     [TestCase(1, false)] [TestCase(2, false)]

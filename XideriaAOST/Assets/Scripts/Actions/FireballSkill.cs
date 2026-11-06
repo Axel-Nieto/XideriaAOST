@@ -99,6 +99,9 @@ public class FireballSkill : SkillBase
             if (target.IsPlayer == user.IsPlayer)
                 continue;
 
+            if (target.Stats == null || !target.Stats.IsAlive || target.IsDying)
+                continue;
+
             targets.Add(target);
         }
 
@@ -116,9 +119,16 @@ public class FireballSkill : SkillBase
             );
         }
 
+        if (targets.Count > 1 && HasCooldownUpgrade(user))
+            user.SetSkillCooldown(this, Mathf.Max(0, user.GetSkillCooldown(this) - 1));
+
         if (anim != null)
             yield return anim.WaitAttackFinished();
     }
+
+    private static bool HasCooldownUpgrade(Character user) =>
+        user != null && user.IsPlayer && PlayerSessionData.Instance != null &&
+        PlayerSessionData.Instance.HasUpgrade(UpgradeDefinition.FireballCooldownId);
 
     private IEnumerable<Vector2Int> GetAreaCells(Vector2Int center, int radius)
     {
@@ -146,7 +156,9 @@ public class FireballSkill : SkillBase
             ? damage
             : damage + user.Stats.Attack;
 
-        return
-            $"Daño: {estimatedDamage}"; ;
+        string upgradeText = HasCooldownUpgrade(user)
+            ? "\nSi impacta a dos o m\u00e1s enemigos distintos, reduce en 1 turno la espera de este uso."
+            : "";
+        return $"Daño: {estimatedDamage}" + upgradeText;
     }
 }

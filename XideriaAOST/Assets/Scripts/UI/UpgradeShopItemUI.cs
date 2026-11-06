@@ -11,6 +11,9 @@ public sealed class UpgradeShopItemUI : MonoBehaviour
     [SerializeField] private TMP_Text nameText;
     [SerializeField] private TMP_Text descriptionText;
     [SerializeField] private TMP_Text costText;
+    [SerializeField] private Image costCurrencyIcon;
+    [SerializeField] private Sprite goldCurrencySprite;
+    [SerializeField] private Sprite fragmentsCurrencySprite;
     [SerializeField] private Button purchaseButton;
     [SerializeField] private TMP_Text purchaseButtonText;
 
@@ -22,8 +25,7 @@ public sealed class UpgradeShopItemUI : MonoBehaviour
     // responsible for validating every actual transaction. Extend this filter only
     // when the corresponding upgrade is supported by the purchase system.
     public static bool CanDisplay(UpgradeDefinition definition) =>
-        definition != null && definition.FragmentCost > 0 &&
-        definition.Type == UpgradeType.VitalImpulse && definition.Id == UpgradeDefinition.VitalImpulseId;
+        definition != null && definition.Cost > 0 && definition.IsSupported;
 
     private void OnEnable() => BindButton();
     private void OnDisable() => UnbindButton();
@@ -52,7 +54,12 @@ public sealed class UpgradeShopItemUI : MonoBehaviour
         if (descriptionText != null)
             descriptionText.text = valid ? Definition.Description : "";
         if (costText != null)
-            costText.text = valid ? Definition.FragmentCost.ToString(CultureInfo.InvariantCulture) : "";
+            costText.text = valid ? Definition.Cost.ToString(CultureInfo.InvariantCulture) : "";
+        if (costCurrencyIcon != null)
+        {
+            costCurrencyIcon.sprite = valid ? (Definition.Currency == RunCurrency.Gold ? goldCurrencySprite : fragmentsCurrencySprite) : null;
+            costCurrencyIcon.enabled = costCurrencyIcon.sprite != null;
+        }
 
         string label;
         bool available = false;
@@ -62,8 +69,8 @@ public sealed class UpgradeShopItemUI : MonoBehaviour
             label = "Sesión no disponible";
         else if (session.HasUpgrade(Definition.Id))
             label = "Adquirida";
-        else if (session.XideriaFragments < Definition.FragmentCost)
-            label = "Fragmentos insuficientes";
+        else if (session.GetBalance(Definition.Currency) < Definition.Cost)
+            label = Definition.Currency == RunCurrency.Gold ? "Oro insuficiente" : "Fragmentos insuficientes";
         else
         {
             label = "Comprar";

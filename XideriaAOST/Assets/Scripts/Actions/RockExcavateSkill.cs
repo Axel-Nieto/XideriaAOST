@@ -61,11 +61,24 @@ public sealed class RockExcavateSkill : RockSkillBase
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
         if (!CanUse(user, targetCell, grid)) yield break;
+        user.FaceCell(targetCell);
         yield return Cast(user);
         // Revalidate after presentation; invalid attempts never spend energy.
         if (!CanUse(user, targetCell, grid) || !TryGetDestination(user, user.GridPosition, targetCell, grid, out Vector2Int destination)) yield break;
+        var vfx = user.GetComponent<RockSkillVFX>();
+        if (vfx != null)
+        {
+            Vector2Int delta = destination - user.GridPosition;
+            Vector2Int direction = new Vector2Int(System.Math.Sign(delta.x), System.Math.Sign(delta.y));
+            yield return vfx.PlayExcavate(user, grid, user.GridPosition, direction);
+        }
+        // The presentation can span several frames; validate the full landing area again.
+        if (!CanUse(user, targetCell, grid) || !TryGetDestination(user, user.GridPosition, targetCell, grid, out destination))
+        {
+            yield return FinishCast(user);
+            yield break;
+        }
         Spend(user);
-        user.FaceCell(targetCell);
         grid.UnregisterCharacter(user);
         user.SetGridPosition(destination);
         user.transform.position = grid.GridToWorld(destination, user) + user.VisualOffset;

@@ -56,6 +56,9 @@ public class SceneTransitionManager : MonoBehaviour
         if (!session.RunState.TrySelectDoor(offer))
             return false;
 
+        if (offer.HasReward)
+            Debug.Log($"[ROOM REWARD] Selected {offer.Currency} x{offer.Amount}; destination={offer.DestinationScene}; reward={offer.RewardId}; room={offer.RoomId}", this);
+
         try
         {
             LoadScene(offer.DestinationScene);

@@ -11,6 +11,7 @@ public class HelmetPickup : MonoBehaviour
     private HelmetData _helmetData;
 
     public Vector2Int GridPosition { get; private set; }
+    public HelmetType Type => helmetType;
 
     private bool _collected;
 
@@ -23,7 +24,8 @@ public class HelmetPickup : MonoBehaviour
 
     private void Awake()
     {
-        _grid = FindObjectOfType<GridSystem>();
+        if (_grid == null)
+            _grid = FindObjectOfType<GridSystem>();
 
         if (HelmetCatalog.Instance != null)
         {
@@ -51,6 +53,20 @@ public class HelmetPickup : MonoBehaviour
     public HelmetData GetHelmet()
     {
         return _helmetData;
+    }
+
+    // Configure an inactive replacement before Awake so the prefab's authored
+    // cell and offset never replace the location chosen by the map.
+    internal void ConfigureSceneSpawn(HelmetPickup spawnPoint)
+    {
+        if (gameObject.activeInHierarchy || _helmetData != null)
+            throw new System.InvalidOperationException("Configure the helmet before activation.");
+
+        _grid = spawnPoint._grid;
+        startGridPosition = spawnPoint.GridPosition;
+        GridPosition = startGridPosition;
+        visualOffset = spawnPoint.visualOffset;
+        transform.SetPositionAndRotation(spawnPoint.transform.position, spawnPoint.transform.rotation);
     }
 
     private HelmetData CreateHelmet(HelmetType type)

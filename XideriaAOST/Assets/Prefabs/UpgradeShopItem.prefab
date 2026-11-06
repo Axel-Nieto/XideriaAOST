@@ -119,6 +119,9 @@ MonoBehaviour:
   nameText: {fileID: 700013}
   descriptionText: {fileID: 700017}
   costText: {fileID: 700027}
+  costCurrencyIcon: {fileID: 700023}
+  goldCurrencySprite: {fileID: 21300000, guid: 24c4ff6cc5e7f704c84be412cf0d8a67, type: 3}
+  fragmentsCurrencySprite: {fileID: 21300000, guid: 5b70c211105e9224fbeb7dee5791bb7b, type: 3}
   purchaseButton: {fileID: 700032}
   purchaseButtonText: {fileID: 700036}
 --- !u!1 &700006

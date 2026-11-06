@@ -15,7 +15,7 @@ public enum RunCurrency
 [Serializable]
 public sealed class RunState : ISerializationCallbackReceiver
 {
-    public const int CurrentSchemaVersion = 3;
+    public const int CurrentSchemaVersion = 4;
 
     [SerializeField] private int schemaVersion = CurrentSchemaVersion;
     [SerializeField] private string runId = Guid.NewGuid().ToString("N");
@@ -161,6 +161,11 @@ public sealed class RunState : ISerializationCallbackReceiver
         if (destination == null || destination.SceneId != offer.DestinationScene)
             return false;
 
+        // Carry the selected announcement across the load. Several records may
+        // refer to a restored room; its first reward is not necessarily the one shown.
+        if (offer.HasReward && string.IsNullOrWhiteSpace(offer.RewardId))
+            return false;
+        destination.SelectedRewardId = offer.HasReward ? offer.RewardId : null;
         pendingRoomId = destination.RoomId;
         return true;
     }
@@ -228,18 +233,26 @@ public sealed class RunState : ISerializationCallbackReceiver
     // No events or external callbacks inside this transaction. Validate everything
     // before changing state; allocate the list entry before subtracting the balance.
     internal UpgradePurchaseResult TryPurchaseUpgrade(string upgradeId, int fragmentCost)
+        => TryPurchaseUpgradeWithCurrency(upgradeId, fragmentCost, RunCurrency.XideriaFragments);
+
+    internal UpgradePurchaseResult TryPurchaseUpgradeWithCurrency(string upgradeId, int cost, RunCurrency currency)
     {
         if (string.IsNullOrWhiteSpace(upgradeId))
             return UpgradePurchaseResult.InvalidDefinition;
-        if (fragmentCost <= 0)
+        if (currency != RunCurrency.XideriaFragments && currency != RunCurrency.Gold)
+            return UpgradePurchaseResult.UnsupportedUpgrade;
+        if (cost <= 0)
             return UpgradePurchaseResult.InvalidCost;
         if (HasUpgrade(upgradeId))
             return UpgradePurchaseResult.AlreadyPurchased;
-        if (xideriaFragments < fragmentCost)
-            return UpgradePurchaseResult.InsufficientFragments;
+        if (GetBalance(currency) < cost)
+            return currency == RunCurrency.Gold ? UpgradePurchaseResult.InsufficientGold : UpgradePurchaseResult.InsufficientFragments;
 
         purchasedUpgradeIds.Add(upgradeId);
-        xideriaFragments -= fragmentCost;
+        if (currency == RunCurrency.Gold)
+            gold -= cost;
+        else
+            xideriaFragments -= cost;
         return UpgradePurchaseResult.Success;
     }
 
@@ -303,6 +316,7 @@ public sealed class RunRoomRecord
     public string SceneId;
     public bool IsCompleted;
     public bool IsSceneEntry;
+    public string SelectedRewardId;
 }
 
 [Serializable]
