@@ -17,10 +17,16 @@ public sealed class LarvaFireSpitSkill : LarvaSpecialSkill
 
     protected override IEnumerator ApplyEffect(Character user, Character target, GridSystem grid)
     {
-        SkillVFXLibrary effects = SkillVFXLibrary.Instance;
-        if (effects != null)
-            yield return SkillVFXSpawner.SpawnProjectile(effects.fireballProjectile, null,
-                user.transform.position + Vector3.up, target.transform.position + Vector3.up, 10f);
+        LarvaVFX presentation = user.GetComponent<LarvaVFX>();
+        if (presentation != null)
+            yield return presentation.PlayProjectile(target, grid);
+        else
+        {
+            SkillVFXLibrary effects = SkillVFXLibrary.Instance;
+            if (effects != null)
+                yield return SkillVFXSpawner.SpawnProjectile(effects.fireballProjectile, null,
+                    user.transform.position + Vector3.up, target.transform.position + Vector3.up, 10f);
+        }
 
         if (target == null || !target.Stats.IsAlive || target.IsDying)
             yield break;

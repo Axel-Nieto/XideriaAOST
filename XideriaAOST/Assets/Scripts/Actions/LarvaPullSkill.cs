@@ -26,6 +26,7 @@ public sealed class LarvaPullSkill : LarvaSpecialSkill
 
     protected override IEnumerator ApplyEffect(Character user, Character target, GridSystem grid)
     {
+        user.GetComponent<LarvaVFX>()?.PlaySpecial(target, grid, cardinal: true);
         DealDamage(user, target);
         if (target.Stats.IsAlive && !target.IsDying && !target.BlocksPush())
             yield return PushSystem.PushInDirection(target,

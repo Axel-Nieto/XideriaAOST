@@ -82,6 +82,15 @@ public class GridInputHandler : MonoBehaviour
     private void Awake()
     {
         gameStateManager = FindFirstObjectByType<GameStateManager>();
+
+        // Older maps may not have serialized the preview pool reference.
+        // Keep an assigned pool; otherwise use or create one owned by this handler.
+        if (tilePool == null)
+        {
+            tilePool = GetComponent<TileObjectPool>();
+            if (tilePool == null)
+                tilePool = gameObject.AddComponent<TileObjectPool>();
+        }
     }
 
     private void Start()

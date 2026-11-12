@@ -16,6 +16,7 @@ public sealed class RockSkillVFX : MonoBehaviour
     [SerializeField] private VisualEffect excavate;
     [SerializeField, Min(0.01f)] private float rockRiseDuration = 0.15f;
     [SerializeField, Min(0.01f)] private float rockSinkDuration = 0.2f;
+    [Tooltip("Delay from the excavation VFX start to the third pillar, when the caster emerges.")]
     [SerializeField, Min(0.01f)] private float excavateTravelDelay = 1.1f;
     private GameObject activeShield;
     private Character owner;

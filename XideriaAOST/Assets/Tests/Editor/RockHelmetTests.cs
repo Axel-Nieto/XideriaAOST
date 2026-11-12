@@ -546,6 +546,99 @@ public class RockCombatTests : UpgradeIntegrationFixture
         Assert.That(rockSlot.GetComponent<Button>().onClick.GetPersistentTarget(0), Is.SameAs(rockSlot));
     }
 
+    [Test]
+    public void ExcavationHoldsTheBuriedPoseUntilTheExitAndRestoresTheModel()
+    {
+        Animator animator = ExcavationModel(out CharacterAnimationController animation);
+        Vector3 origin = player.transform.position;
+        AdvanceAnimation(animation.PlayExcavateEnter(), animator);
+        Assert.That(animator.GetCurrentAnimatorStateInfo(0).normalizedTime, Is.EqualTo(0.5f).Within(0.001f));
+        Assert.That(animator.transform.localPosition.y, Is.EqualTo(-4.04f).Within(0.01f));
+        animator.Update(1.1f);
+        Assert.That(animator.GetCurrentAnimatorStateInfo(0).normalizedTime, Is.EqualTo(0.5f).Within(0.001f));
+        Assert.That(player.transform.position, Is.EqualTo(origin));
+        AdvanceAnimation(animation.PlayExcavateExit(), animator);
+        animation.FinishExcavate();
+        Assert.That(animator.transform.localPosition, Is.EqualTo(Vector3.zero));
+        Assert.That(animator.GetFloat("ExcavateSpeed"), Is.EqualTo(1f));
+    }
+
+    [TestCase(1, false)] [TestCase(2, false)]
+    [TestCase(1, true)] [TestCase(2, true)]
+    public void AnimatedExcavationMovesOnlyAfterBurialAndRevalidatesTheLanding(int size, bool blockLanding)
+    {
+        Resize(player, size);
+        Animator animator = ExcavationModel(out CharacterAnimationController animation);
+        Vector2Int origin = player.GridPosition;
+        Vector2Int obstacle = origin + Vector2Int.right * size;
+        Vector2Int destination = origin + Vector2Int.right * (size + 1);
+        grid.SetCellType(obstacle, CellType.Blocked);
+        IEnumerator skill = new RockExcavateSkill().Execute(player, obstacle, grid);
+        Assert.That(skill.MoveNext(), Is.True);
+        AdvanceAnimation((IEnumerator)skill.Current, animator);
+        Assert.That(player.GridPosition, Is.EqualTo(origin));
+        Assert.That(player.Stats.CurrentEnergy, Is.EqualTo(100));
+        Assert.That(animator.transform.localPosition.y, Is.LessThan(-4f));
+        if (blockLanding) grid.SetCellType(destination + Vector2Int.one * (size - 1), CellType.Blocked);
+        if (skill.MoveNext())
+        {
+            Assert.That(blockLanding, Is.False);
+            Assert.That(player.GridPosition, Is.EqualTo(destination));
+            Assert.That(animator.transform.localPosition.y, Is.LessThan(-4f));
+            AdvanceAnimation((IEnumerator)skill.Current, animator);
+            Assert.That(skill.MoveNext(), Is.False);
+        }
+        Assert.That(player.GridPosition, Is.EqualTo(blockLanding ? origin : destination));
+        Assert.That(player.Stats.CurrentEnergy, Is.EqualTo(blockLanding ? 100 : 99));
+        Assert.That(animator.transform.localPosition, Is.EqualTo(Vector3.zero));
+        foreach (Vector2Int cell in player.GetOccupiedCells()) Assert.That(grid.GetCharacterAt(cell), Is.SameAs(player));
+    }
+
+    [Test]
+    public void InterruptedExcavationRestoresTheModelAndAnimationSpeedWithoutSpendingEnergy()
+    {
+        Animator animator = ExcavationModel(out CharacterAnimationController animation);
+        Vector2Int origin = player.GridPosition;
+        Vector2Int obstacle = origin + Vector2Int.right;
+        grid.SetCellType(obstacle, CellType.Blocked);
+        IEnumerator skill = new RockExcavateSkill().Execute(player, obstacle, grid);
+        Assert.That(skill.MoveNext(), Is.True);
+        AdvanceAnimation((IEnumerator)skill.Current, animator);
+        ((IDisposable)skill).Dispose();
+        Assert.That(animator.transform.localPosition, Is.EqualTo(Vector3.zero));
+        Assert.That(animator.GetFloat("ExcavateSpeed"), Is.EqualTo(1f));
+        Assert.That(player.GridPosition, Is.EqualTo(origin));
+        Assert.That(player.Stats.CurrentEnergy, Is.EqualTo(100));
+    }
+
+    private Animator ExcavationModel(out CharacterAnimationController animation)
+    {
+        GameObject model = Child("Excavating Tete");
+        model.transform.SetParent(player.transform, false);
+        Animator animator = model.AddComponent<Animator>();
+        animator.runtimeAnimatorController = AssetDatabase.LoadAssetAtPath<AnimatorController>("Assets/Prefabs/TeteNew/TeteAnimado.controller");
+        Assert.That(animator.runtimeAnimatorController, Is.Not.Null);
+        animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        animation = model.AddComponent<CharacterAnimationController>();
+        Set(animation, "animator", animator);
+        model.SetActive(true);
+        player.gameObject.SetActive(true);
+        animator.Rebind();
+        animator.Update(0f);
+        return animator;
+    }
+
+    private static void AdvanceAnimation(IEnumerator routine, Animator animator)
+    {
+        int frames = 0;
+        while (routine.MoveNext())
+        {
+            Assert.That(++frames, Is.LessThan(100), "Animation did not complete");
+            animator.Update(0.05f);
+        }
+    }
+
+
     private RockGuardPassive Guard => player.GetPassiveEffects().OfType<RockGuardPassive>().Single();
 
     [Test]

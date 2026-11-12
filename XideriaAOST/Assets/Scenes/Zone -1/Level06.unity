@@ -12259,6 +12259,7 @@ GameObject:
   m_Component:
   - component: {fileID: 378317404}
   - component: {fileID: 378317403}
+  - component: {fileID: 889400000000000100}
   m_Layer: 0
   m_Name: InputHandler
   m_TagString: Untagged
@@ -12294,6 +12295,19 @@ MonoBehaviour:
   characterInfoHUD: {fileID: 0}
   dangerRangeTilePrefab: {fileID: 9059845278185196461, guid: d176b237af4c5c74da3539706f5c6888, type: 3}
   helmetHoverUI: {fileID: 2028227239}
+  tilePool: {fileID: 889400000000000100}
+--- !u!114 &889400000000000100
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 378317402}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bbbb6bd591a9f84788840c6485ab6cc, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::TileObjectPool
 --- !u!4 &378317404
 Transform:
   m_ObjectHideFlags: 0

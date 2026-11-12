@@ -394,7 +394,10 @@ public class Character : MonoBehaviour
         }
 
         if (!isPlayer)
+        {
+            GetComponent<LarvaVFX>()?.PlayDeathBurst(_grid);
             GetComponent<EnemyLootDropper>()?.TryDrop(this);
+        }
 
         _grid.UnregisterCharacter(this);
 

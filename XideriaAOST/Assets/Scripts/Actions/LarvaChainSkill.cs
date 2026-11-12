@@ -9,6 +9,7 @@ public sealed class LarvaChainSkill : LarvaSpecialSkill
 
     protected override IEnumerator ApplyEffect(Character user, Character target, GridSystem grid)
     {
+        user.GetComponent<LarvaVFX>()?.PlaySpecial(target, grid);
         DealDamage(user, target);
         if (target.Stats.IsAlive && !target.IsDying)
             yield return PushSystem.Push(user, target, grid, 1);

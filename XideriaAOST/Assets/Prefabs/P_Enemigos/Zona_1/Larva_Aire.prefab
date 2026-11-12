@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 6636659004518384819}
   - component: {fileID: 3826183753003728720}
   - component: {fileID: 7304882463643250356}
+  - component: {fileID: 889400000000000110}
   m_Layer: 0
   m_Name: Larva Aire
   m_TagString: Untagged
@@ -23,6 +24,24 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &889400000000000110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5643338015365915146}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fe187eabfca4ac9978cfddf51321a3f, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::LarvaVFX
+  deathEffectPrefab: {fileID: 7517365012362386973, guid: 9d4608bc4971b2d4ea416f1031927b43, type: 3}
+  specialEffectPrefab: {fileID: 7561516994089518425, guid: 6cd1d3794afde1145bdf65a9073c5320, type: 3}
+  specialHeight: 0.3
+  specialEffectDuration: 1.5
+  projectileSpeed: 10
+  projectileHeight: 0.7
 --- !u!4 &4979567949886503088
 Transform:
   m_ObjectHideFlags: 0
