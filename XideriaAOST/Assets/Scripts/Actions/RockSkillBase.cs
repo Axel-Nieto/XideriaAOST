@@ -42,8 +42,8 @@ public abstract class RockSkillBase : SkillBase
         return result;
     }
 
-    protected static void Damage(Character user, Character target) =>
-        target.TakeDamage(Mathf.Max(1, user.Stats.Attack - target.Stats.Defense), DamageType.Physical, user);
+    protected static void Damage(Character user, Character target, int damageBonus = 0) =>
+        target.TakeDamage(Mathf.Max(1, user.Stats.Attack + damageBonus - target.Stats.Defense), DamageType.Physical, user);
 
     protected static IEnumerator Cast(Character user)
     {

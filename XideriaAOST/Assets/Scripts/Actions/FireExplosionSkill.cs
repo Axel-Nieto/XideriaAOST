@@ -5,6 +5,8 @@ using UnityEngine;
 public class FireExplosionSkill : SkillBase
 {
     private readonly int damage;
+    private const int burnDuration = 2;
+    private const int burnDamage = 2;
 
     private readonly int aoeRadius;
     public override int AreaRadius => aoeRadius;
@@ -25,7 +27,7 @@ public class FireExplosionSkill : SkillBase
             ? SkillIconLibrary.Instance.fireExplosion
             : null)
     {
-        damage = 18;
+        damage = 6;
         aoeRadius = 8;
 
         Debug.Log("SkillIconLibrary: " + SkillIconLibrary.Instance);
@@ -90,7 +92,7 @@ public class FireExplosionSkill : SkillBase
         {
             int finalDamage = Mathf.Max(
                 1,
-                damage - target.Stats.Defense
+                damage + user.Stats.Attack - target.Stats.Defense
             );
 
             target.TakeDamage(
@@ -102,7 +104,7 @@ public class FireExplosionSkill : SkillBase
             if (target.Stats.IsAlive && !target.IsDying)
             {
                 target.ApplyStatusEffect(
-                    new BurnEffect(2, 4)
+                    new BurnEffect(burnDuration, burnDamage)
                 );
             }
         }
@@ -133,6 +135,7 @@ public class FireExplosionSkill : SkillBase
 
     public override string GetTooltipDetails(Character user)
     {
-        return $"Daño: {damage}";
+        int estimatedDamage = damage + (user?.Stats?.Attack ?? 0);
+        return $"Daño: {estimatedDamage}\nQuemadura: {burnDamage} por turno, {burnDuration} turnos.";
     }
 }

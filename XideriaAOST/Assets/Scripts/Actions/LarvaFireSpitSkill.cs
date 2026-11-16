@@ -6,7 +6,7 @@ public sealed class LarvaFireSpitSkill : LarvaSpecialSkill
     private readonly int burnDuration;
     private readonly int burnDamage;
 
-    public LarvaFireSpitSkill(int damage = 3, int burnDuration = 3, int burnDamage = 2,
+    public LarvaFireSpitSkill(int damage = 2, int burnDuration = 3, int burnDamage = 1,
         int energyCost = 3, int cooldown = 3)
         : base("Escupitajo de Fuego", "Lanza una bola de fuego contra el objetivo y aplica burn.",
             3, 4, DamageType.Fire, damage, energyCost, cooldown)

@@ -87,6 +87,64 @@ public class LarvaVFXTests : UpgradeIntegrationFixture
         Assert.That((Vector3)Invoke("Direction", owner, target, grid, true), Is.EqualTo(Vector3.right));
     }
 
+    [TestCase(1, 1)] [TestCase(2, 1)] [TestCase(1, 2)] [TestCase(2, 2)]
+    public void EarthChainSlashStaysCenteredOnAndFollowsTheLarva(int ownerSize, int targetSize)
+    {
+        GridSystem grid = Child("Grid").AddComponent<GridSystem>();
+        Set(grid, "cellSize", 1.5f);
+        Character owner = Child("Earth larva").AddComponent<Character>();
+        owner.enabled = false;
+        Set(owner, "baseStats", new CharacterStatsData());
+        Set(owner, "gridWidth", ownerSize); Set(owner, "gridHeight", ownerSize);
+        Set(owner, "visualSpawnOffset", new Vector3(-0.3f, 0.1f, -0.3f));
+        owner.transform.localScale = Vector3.one * 0.7f;
+        owner.gameObject.SetActive(true);
+        typeof(Character).GetProperty(nameof(Character.Stats)).SetValue(owner, new CharacterStats(4, 2, 100, 10, 5));
+        owner.Stats.SetCurrentEnergy(10);
+        owner.SetGridPosition(new Vector2Int(4, 4));
+        owner.transform.position = grid.GridToWorld(owner.GridPosition, owner) + owner.VisualOffset;
+        Character target = Child("Tete").AddComponent<Character>();
+        Set(target, "isPlayer", true);
+        Set(target, "gridWidth", targetSize); Set(target, "gridHeight", targetSize);
+        typeof(Character).GetProperty(nameof(Character.Stats)).SetValue(target, new CharacterStats(4, 2, 100, 10, 5));
+        target.SetGridPosition(new Vector2Int(4 + ownerSize, 4));
+        LarvaVFX presentation = owner.gameObject.AddComponent<LarvaVFX>();
+        GameObject prefab = Child("Earth slash template");
+        Set(presentation, "specialEffectPrefab", prefab);
+        // Run the real Cadenazo effect hook, up to the pending push coroutine.
+        var skill = new LarvaChainSkill();
+        IEnumerator hit = (IEnumerator)typeof(LarvaChainSkill).GetMethod("ApplyEffect", BindingFlags.Instance | BindingFlags.NonPublic)
+            .Invoke(skill, new object[] { owner, target, grid });
+        GameObject effect = null;
+        try
+        {
+            ExpectRuntimeDestroy(); // staging holder
+            ExpectRuntimeDestroy(); // slash lifetime
+            Assert.That(hit.MoveNext(), Is.True);
+            effect = Resources.FindObjectsOfTypeAll<GameObject>().Single(g => g.name == "Earth slash template(Clone)");
+            Assert.That(effect.transform.parent, Is.SameAs(owner.transform));
+            Vector3 center = owner.transform.position + Vector3.up * 0.3f;
+            Assert.That(Vector3.Distance(effect.transform.position, center), Is.LessThan(0.001f));
+            Assert.That(effect.transform.lossyScale.x, Is.EqualTo(1.5f).Within(0.001f));
+            target.transform.position += Vector3.right * 3f;
+            Assert.That(Vector3.Distance(effect.transform.position, center), Is.LessThan(0.001f));
+            Vector3 translation = new Vector3(2f, 0f, -1f);
+            owner.transform.position += translation;
+            Assert.That(Vector3.Distance(effect.transform.position, center + translation), Is.LessThan(0.001f));
+            Quaternion rotation = effect.transform.rotation;
+            owner.transform.Rotate(Vector3.up, 90f, Space.World);
+            Assert.That(Quaternion.Angle(effect.transform.rotation, Quaternion.AngleAxis(90f, Vector3.up) * rotation), Is.LessThan(0.01f));
+            Assert.That(owner.GridPosition, Is.EqualTo(new Vector2Int(4, 4)));
+            Assert.That(target.Stats.CurrentHP, Is.EqualTo(98));
+        }
+        finally
+        {
+            ((IDisposable)hit).Dispose();
+            if (effect != null) UnityEngine.Object.DestroyImmediate(effect);
+            ClearStagingObjects();
+        }
+    }
+
     [Test]
     public void DeathParticlesIgnoreStagingOffsetsAndRemainActiveWithoutTheLarva()
     {

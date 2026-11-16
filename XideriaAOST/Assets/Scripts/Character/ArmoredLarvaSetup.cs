@@ -3,11 +3,11 @@ using UnityEngine;
 public class ArmoredLarvaSetup : MonoBehaviour
 {
     [Header("Cornada")]
-    [SerializeField] private int hornDamage = 5;
+    [SerializeField] private int hornDamage = 3;
     [SerializeField] private int hornPushDistance = 1;
 
     [Header("Embestida")]
-    [SerializeField] private int chargeDamage = 7;
+    [SerializeField] private int chargeDamage = 5;
     [SerializeField] private int chargeMinPushDistance = 2;
     [SerializeField] private int chargeMaxPushDistance = 3;
     [SerializeField] private float chargeSpeed = 12f;

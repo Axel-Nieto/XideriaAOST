@@ -10,9 +10,9 @@ public sealed class ElementalLarvaSetup : MonoBehaviour
     [SerializeField, Min(0)] private int specialEnergyCost = 3;
     [SerializeField, Min(0)] private int specialCooldown = 3;
     [Header("Fire")]
-    [SerializeField, Min(0)] private int fireDamage = 3;
+    [SerializeField, Min(0)] private int fireDamage = 2;
     [SerializeField, Min(1)] private int burnDuration = 3;
-    [SerializeField, Min(1)] private int burnDamage = 2;
+    [SerializeField, Min(1)] private int burnDamage = 1;
 
     private void Start()
     {

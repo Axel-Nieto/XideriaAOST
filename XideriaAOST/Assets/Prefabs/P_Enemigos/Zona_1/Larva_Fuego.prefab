@@ -80,8 +80,8 @@ MonoBehaviour:
   modelTransform: {fileID: 0}
   baseStats:
     attack: 4
-    defense: 2
-    maxHP: 12
+    defense: 1
+    maxHP: 14
     maxEnergy: 10
     energyRegen: 5
   visualSpawnOffset: {x: -0.3, y: 0.1, z: -0.3}
@@ -152,9 +152,9 @@ MonoBehaviour:
   element: 2
   specialEnergyCost: 3
   specialCooldown: 3
-  fireDamage: 3
+  fireDamage: 2
   burnDuration: 3
-  burnDamage: 2
+  burnDamage: 1
 --- !u!114 &3826183753003728720
 MonoBehaviour:
   m_ObjectHideFlags: 0

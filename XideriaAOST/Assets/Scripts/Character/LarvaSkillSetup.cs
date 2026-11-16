@@ -12,7 +12,7 @@ public class LarvaSkillSetup : MonoBehaviour
     [SerializeField] private int poisonSpitMinRange = 2;
     [SerializeField] private int poisonSpitMaxRange = 4;
     [SerializeField] private int poisonDuration = 3;
-    [SerializeField] private int poisonDamage = 2;
+    [SerializeField] private int poisonDamage = 1;
 
     private void Start()
     {

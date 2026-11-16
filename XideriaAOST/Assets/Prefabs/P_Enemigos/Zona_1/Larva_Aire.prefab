@@ -80,8 +80,8 @@ MonoBehaviour:
   modelTransform: {fileID: 0}
   baseStats:
     attack: 4
-    defense: 2
-    maxHP: 12
+    defense: 1
+    maxHP: 14
     maxEnergy: 10
     energyRegen: 5
   visualSpawnOffset: {x: -0.3, y: 0.1, z: -0.3}

@@ -79,9 +79,9 @@ MonoBehaviour:
   rotateModelOnly: 0
   modelTransform: {fileID: 0}
   baseStats:
-    attack: 4
+    attack: 5
     defense: 2
-    maxHP: 12
+    maxHP: 20
     maxEnergy: 10
     energyRegen: 5
   visualSpawnOffset: {x: -0.3, y: 0.1, z: -0.3}

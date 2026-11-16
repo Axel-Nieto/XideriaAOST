@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeDefinition
   upgradeId: sir_tete.base_defense
   displayName: "Piel de Acero"
-  description: "Aumenta en 1 tu defensa base durante esta run."
+  description: "Aumenta en 1 tu defensa base."
   icon: {fileID: 21300000, guid: 988a20ef9975eea45a5ad26326bbf619, type: 3}
   fragmentCost: 20
   goldCost: 0

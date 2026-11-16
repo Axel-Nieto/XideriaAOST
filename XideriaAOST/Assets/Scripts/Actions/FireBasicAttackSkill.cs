@@ -6,7 +6,9 @@ public class FireBasicAttackSkill : SkillBase
     [SerializeField]
     private float slashHitDelay = 1.2f;
 
-    private readonly int damageBonus = 4;
+    private readonly int damageBonus = 1;
+    private const int burnDuration = 3;
+    private const int burnDamage = 1;
 
     public FireBasicAttackSkill()
         : base(
@@ -96,7 +98,7 @@ public class FireBasicAttackSkill : SkillBase
             user);
 
         target.ApplyStatusEffect(
-            new BurnEffect(3, 2));
+            new BurnEffect(burnDuration, burnDamage));
 
         if (anim != null)
             yield return anim.WaitAttackFinished();
@@ -109,6 +111,6 @@ public class FireBasicAttackSkill : SkillBase
             : user.Stats.Attack + damageBonus;
 
         return
-        $"Daño: {estimatedDamage}";
+        $"Daño: {estimatedDamage}\nQuemadura: {burnDamage} por turno, {burnDuration} turnos.";
     }
 }

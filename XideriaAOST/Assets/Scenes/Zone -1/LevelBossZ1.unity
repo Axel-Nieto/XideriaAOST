@@ -33323,9 +33323,9 @@ MonoBehaviour:
   startGridPosition: {x: 5, y: 1}
   modelForwardYOffset: 180
   baseStats:
-    attack: 5
+    attack: 6
     defense: 2
-    maxHP: 20
+    maxHP: 36
     maxEnergy: 13
     energyRegen: 7
   visualRoot: {fileID: 0}
@@ -44141,7 +44141,7 @@ MonoBehaviour:
   - {fileID: 800724850, guid: 724b1bdf0fd1450a8276d802e99bc113, type: 3}
   spawnPoints:
   - gridPosition: {x: 6, y: 11}
-    visualOffset: {x: -0.2, y: 0.5, z: -0.8}
+    visualOffset: {x: 0, y: 0.5, z: 0}
 --- !u!1001 &3557094228292635407
 PrefabInstance:
   m_ObjectHideFlags: 0

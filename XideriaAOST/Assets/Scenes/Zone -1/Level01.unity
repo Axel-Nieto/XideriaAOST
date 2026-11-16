@@ -32414,9 +32414,9 @@ MonoBehaviour:
   startGridPosition: {x: 1, y: 6}
   modelForwardYOffset: 180
   baseStats:
-    attack: 5
+    attack: 6
     defense: 2
-    maxHP: 20
+    maxHP: 36
     maxEnergy: 13
     energyRegen: 7
   visualRoot: {fileID: 0}

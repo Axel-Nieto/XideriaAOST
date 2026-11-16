@@ -6,15 +6,16 @@ public class LarvaAI : MonoBehaviour, IEnemyAI
 {
     private Character character;
     private GridSystem grid;
-    private AStarPathfinding pathfinding;
+    private static readonly Vector2Int[] directions =
+    {
+        Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right
+    };
 
     private void Awake()
     {
         character = GetComponent<Character>();
 
         grid = FindObjectOfType<GridSystem>();
-
-        pathfinding = new AStarPathfinding(grid);
     }
 
     public IEnumerator TakeTurn()
@@ -144,126 +145,68 @@ public class LarvaAI : MonoBehaviour, IEnemyAI
         );
     }
 
-    private List<Vector2Int> FindBestPathTowardsPlayer(
-    Character player)
+    private List<Vector2Int> FindBestPathTowardsPlayer(Character player)
     {
-        List<Vector2Int> attackCandidates = new();
-        List<Vector2Int> approachCandidates = new();
+        Vector2Int start = character.GridPosition;
+        var frontier = new Queue<Vector2Int>();
+        var steps = new Dictionary<Vector2Int, int> { [start] = 0 };
+        var parents = new Dictionary<Vector2Int, Vector2Int>();
+        Vector2Int? futureAttack = null;
+        Vector2Int approach = start;
+        int approachDistance = GetDistanceToTarget(character, start, player);
+        int movementCost = character.GetMovementCostPerCell();
+        frontier.Enqueue(start);
 
-        int searchRadius = 6;
-
-        // PASO 1:
-        // Buscar posiciones candidatas.
-        // Esto es barato porque todavía NO ejecutamos A*.
-        for (int x = -searchRadius; x <= searchRadius; x++)
+        // AI movement charges the same energy per committed cell. Search outward
+        // once, so the first affordable attack needs the fewest actual steps.
+        // Every origin is checked against the entire body, including safe terrain.
+        while (frontier.Count > 0)
         {
-            for (int y = -searchRadius; y <= searchRadius; y++)
-            {
-                Vector2Int candidate =
-                    player.GridPosition +
-                    new Vector2Int(x, y);
+            Vector2Int current = frontier.Dequeue();
+            int remainingEnergy = character.Stats.CurrentEnergy - steps[current] * movementCost;
+            if (remainingEnergy >= 0 && CanUseAnySkillFromPosition(current, player, remainingEnergy))
+                return BuildPath(current, parents);
 
-                if (!IsValidAIStep(candidate))
+            // If no attack is affordable this turn, approach the nearest reachable
+            // firing position. Staying there saves energy for a subsequent turn.
+            if (!futureAttack.HasValue &&
+                CanUseAnySkillFromPosition(current, player, character.Stats.MaxEnergy))
+                futureAttack = current;
+
+            int distance = GetDistanceToTarget(character, current, player);
+            if (distance < approachDistance)
+            {
+                approachDistance = distance;
+                approach = current;
+            }
+
+            foreach (Vector2Int direction in directions)
+            {
+                Vector2Int next = current + direction;
+                if (steps.ContainsKey(next) || !IsValidAIStep(next))
                     continue;
-
-                int distance =
-                    GetDistanceToTarget(
-                        character,
-                        candidate,
-                        player
-                    );
-
-                if (CanUseAnySkillFromPosition(
-                        candidate,
-                        player,
-                        character.Stats.CurrentEnergy))
-                {
-                    attackCandidates.Add(candidate);
-                }
-                else
-                {
-                    approachCandidates.Add(candidate);
-                }
+                steps[next] = steps[current] + 1;
+                parents[next] = current;
+                frontier.Enqueue(next);
             }
         }
 
-        // PASO 2:
-        // Primero intentamos llegar a una posición
-        // desde la que podamos atacar.
-        attackCandidates.Sort(
-            (a, b) =>
-            {
-                int distanceA =
-                    GetDistanceToTarget(
-                        character,
-                        a,
-                        player
-                    );
+        // The start participates too: do not circle an already optimal position
+        // when the target is surrounded, unreachable, or skills are on cooldown.
+        return BuildPath(futureAttack ?? approach, parents);
+    }
 
-                int distanceB =
-                    GetDistanceToTarget(
-                        character,
-                        b,
-                        player
-                    );
-
-                return distanceA.CompareTo(distanceB);
-            }
-        );
-
-        foreach (Vector2Int candidate in attackCandidates)
+    private static List<Vector2Int> BuildPath(Vector2Int destination,
+        Dictionary<Vector2Int, Vector2Int> parents)
+    {
+        var path = new List<Vector2Int> { destination };
+        while (parents.TryGetValue(destination, out Vector2Int previous))
         {
-            List<Vector2Int> path =
-                pathfinding.FindPath(
-                    character.GridPosition,
-                    candidate,
-                    character,
-                    avoidUnsafeCells: true
-                );
-
-            if (path != null && path.Count > 1)
-                return path;
+            destination = previous;
+            path.Add(destination);
         }
-
-        // PASO 3:
-        // Si no existe una posición de ataque alcanzable,
-        // buscamos las posiciones más cercanas al jugador.
-        approachCandidates.Sort(
-            (a, b) =>
-            {
-                int distanceA =
-                    GetDistanceToTarget(
-                        character,
-                        a,
-                        player
-                    );
-
-                int distanceB =
-                    GetDistanceToTarget(
-                        character,
-                        b,
-                        player
-                    );
-
-                return distanceA.CompareTo(distanceB);
-            }
-        );
-
-        foreach (Vector2Int candidate in approachCandidates)
-        {
-            List<Vector2Int> path =
-                pathfinding.FindPath(
-                    character.GridPosition,
-                    candidate,
-                    character,
-                    avoidUnsafeCells: true
-                );
-
-            if (path != null && path.Count > 1)
-                return path;
-        }
-
-        return null;
+        path.Reverse();
+        return path;
     }
 
     private int GetDistanceToTarget(

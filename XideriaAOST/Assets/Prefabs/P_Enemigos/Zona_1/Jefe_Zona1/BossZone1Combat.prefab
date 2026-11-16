@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 800724852}
   - component: {fileID: 800724853}
   - component: {fileID: 800724854}
+  - component: {fileID: 900724865}
   m_Layer: 0
   m_Name: BossZone1Combat
   m_TagString: Untagged
@@ -63,7 +64,7 @@ Transform:
   m_GameObject: {fileID: 158597648}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.6}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -95,7 +96,7 @@ Transform:
   m_GameObject: {fileID: 682380724}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.67}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -114,9 +115,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd24360b68ebcee4d906b26a1a0353de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArmoredLarvaSetup
-  hornDamage: 5
+  hornDamage: 3
   hornPushDistance: 1
-  chargeDamage: 7
+  chargeDamage: 5
   chargeMinPushDistance: 2
   chargeMaxPushDistance: 3
   chargeSpeed: 12
@@ -149,7 +150,7 @@ MonoBehaviour:
   baseStats:
     attack: 6
     defense: 2
-    maxHP: 40
+    maxHP: 72
     maxEnergy: 8
     energyRegen: 8
   visualRoot: {fileID: 158597649}
@@ -157,7 +158,7 @@ MonoBehaviour:
   gridHeight: 2
   rotateModelOnly: 1
   modelTransform: {fileID: 682380725}
-  visualSpawnOffset: {x: -0.2, y: 0.5, z: -0.8}
+  visualSpawnOffset: {x: 0, y: 0.5, z: 0}
   isPlayer: 0
   helmetSocket: {fileID: 0}
   enableVitalImpulse: 1
@@ -226,7 +227,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5745050641571418385, guid: 52d51ab283f8637449c6d5a24f8e467b, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -0.003
       objectReference: {fileID: 0}
     - target: {fileID: 5745050641571418385, guid: 52d51ab283f8637449c6d5a24f8e467b, type: 3}
       propertyPath: m_LocalPosition.y
@@ -234,7 +235,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5745050641571418385, guid: 52d51ab283f8637449c6d5a24f8e467b, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.45
+      value: -0.3627
       objectReference: {fileID: 0}
     - target: {fileID: 5745050641571418385, guid: 52d51ab283f8637449c6d5a24f8e467b, type: 3}
       propertyPath: m_LocalRotation.w
@@ -264,13 +265,61 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2058344349287853393, guid: 52d51ab283f8637449c6d5a24f8e467b, type: 3}
+      propertyPath: m_Controller
+      value:
+      objectReference: {fileID: 9100000, guid: 2d08dff1d5ae1f946bf16ed28a9c9427, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4967846087660325803, guid: 52d51ab283f8637449c6d5a24f8e467b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 900724861}
   m_SourcePrefab: {fileID: 100100000, guid: 52d51ab283f8637449c6d5a24f8e467b, type: 3}
 --- !u!4 &1413957968 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5745050641571418385, guid: 52d51ab283f8637449c6d5a24f8e467b, type: 3}
   m_PrefabInstance: {fileID: 1413957966}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &900724860 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4967846087660325803, guid: 52d51ab283f8637449c6d5a24f8e467b, type: 3}
+  m_PrefabInstance: {fileID: 1413957966}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &900724862 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 2058344349287853393, guid: 52d51ab283f8637449c6d5a24f8e467b, type: 3}
+  m_PrefabInstance: {fileID: 1413957966}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &900724861
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 900724860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95d0e97151bb6e41b770439f3468cba, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterAnimationController
+  animator: {fileID: 900724862}
+  referenceWalkSpeed: 3
+  minWalkAnimationSpeed: 0.5
+  maxWalkAnimationSpeed: 2
+--- !u!114 &900724865
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800724847}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43ba32fdbe5b42788e5e260c40c4d13d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterVisualCentering
+  visualModel: {fileID: 1413957968}
+  center: {fileID: 682380725}
+  bodyRendererName: Body

@@ -16,13 +16,19 @@ public sealed class RockSkillVFX : MonoBehaviour
     [SerializeField] private VisualEffect excavate;
     [SerializeField, Min(0.01f)] private float rockRiseDuration = 0.15f;
     [SerializeField, Min(0.01f)] private float rockSinkDuration = 0.2f;
-    [Tooltip("Delay from the excavation VFX start to the third pillar, when the caster emerges.")]
+    [Tooltip("Time from the excavation VFX start to emergence. Scales the graph and both animation phases together.")]
     [SerializeField, Min(0.01f)] private float excavateTravelDelay = 1.1f;
+    // Vfx_RockAtack_E emits the entry at 0.2s and the exit at 0.7s.
+    private const float excavateGraphEnterTime = 0.2f;
+    private const float excavateGraphExitTime = 0.7f;
     private GameObject activeShield;
     private Character owner;
 
     public float RockRiseDuration => rockRiseDuration;
     public float RockSinkDuration => rockSinkDuration;
+    public bool CanPlayExcavate => excavate != null;
+    private float ExcavatePlaybackRate => excavateGraphExitTime / Mathf.Max(0.01f, excavateTravelDelay);
+    public float ExcavateEnterDuration => excavateGraphEnterTime / ExcavatePlaybackRate;
 
     private void Awake()
     {
@@ -98,7 +104,8 @@ public sealed class RockSkillVFX : MonoBehaviour
         effect.position -= effect.TransformVector(eruptionRockBaseOffset);
     }
 
-    public IEnumerator PlayExcavate(Character user, GridSystem grid, Vector2Int origin, Vector2Int direction)
+    public IEnumerator PlayExcavate(Character user, GridSystem grid, Vector2Int origin, Vector2Int direction,
+        IEnumerator enterAnimation = null)
     {
         if (excavate == null) yield break;
         float cellSize = Vector3.Distance(grid.GridToWorld(origin), grid.GridToWorld(origin + Vector2Int.right));
@@ -107,7 +114,8 @@ public sealed class RockSkillVFX : MonoBehaviour
         Vector3 firstCenter = grid.GridToWorld(first);
         if (direction.x != 0) firstCenter.z += (user.GridHeight - 1) * cellSize * 0.5f;
         else firstCenter.x += (user.GridWidth - 1) * cellSize * 0.5f;
-        // The graph advances along -Z, at 0, -1, -2.1, and is authored 1.9 units high.
+        // The entry/exit bursts lie on either side of the barrier, at Z +1/-1.
+        // The graph is authored 1.9 units high.
         float scale = cellSize / 1.05f;
         Vector3 position = firstCenter + Vector3.up * (0.3f - 1.9f * scale);
         VisualEffect effect = Instantiate(excavate, position,
@@ -120,11 +128,15 @@ public sealed class RockSkillVFX : MonoBehaviour
             SetFloat(effect, "Rock-" + index + " B", visible ? 10f : 0f);
         }
         effect.gameObject.SetActive(true);
+        effect.playRate = ExcavatePlaybackRate;
         effect.Reinit();
+        float startedAt = Time.time;
         // Own the timeout even if the skill coroutine is interrupted.
-        // The final debris burst starts at 1.1s and lives for 3.2s.
-        Destroy(effect.gameObject, 4.5f);
-        yield return new WaitForSeconds(excavateTravelDelay);
+        Destroy(effect.gameObject, 4.5f / effect.playRate);
+        // Start the VFX before burial, then wait only the remaining time to emergence.
+        if (enterAnimation != null) yield return enterAnimation;
+        float remaining = Mathf.Max(0.01f, excavateTravelDelay) - (Time.time - startedAt);
+        if (remaining > 0f) yield return new WaitForSeconds(remaining);
     }
 
     public static bool CanShowExcavateRock(Character user, GridSystem grid, Vector2Int origin, Vector2Int direction, int index)

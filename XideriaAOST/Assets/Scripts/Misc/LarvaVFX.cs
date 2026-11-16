@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-// Effects stay in world space: turning, moving or disabling the larva must not drag them.
+// Death bursts and projectiles stay in world space. The earth slash follows its caster.
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Character))]
 public sealed class LarvaVFX : MonoBehaviour
@@ -34,15 +34,17 @@ public sealed class LarvaVFX : MonoBehaviour
         Destroy(effect, Mathf.Max(1f, lifetime) + 0.1f);
     }
 
-    public void PlaySpecial(Character target, GridSystem grid, bool cardinal = false)
+    public void PlaySpecial(Character target, GridSystem grid, bool cardinal = false, bool followOwner = false)
     {
         if (specialEffectPrefab == null || target == null || grid == null) return;
         Character owner = GetComponent<Character>();
         Vector3 direction = Direction(owner, target, grid, cardinal);
         if (direction.sqrMagnitude < 0.001f) return;
         float size = CellSize(grid, owner.GridPosition);
-        Vector3 position = FrontPosition(owner, grid, direction) + Vector3.up * specialHeight;
+        Vector3 position = (followOwner ? owner.transform.position : FrontPosition(owner, grid, direction))
+            + Vector3.up * specialHeight;
         GameObject effect = CreateEffect(specialEffectPrefab, position, Quaternion.LookRotation(direction), size);
+        if (followOwner) effect.transform.SetParent(owner.transform, true);
         Destroy(effect, specialEffectDuration);
     }
 

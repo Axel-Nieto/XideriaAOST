@@ -12,7 +12,7 @@ public class PoisonSpitSkill : SkillBase
     int minRange = 2,
     int maxRange = 4,
     int poisonDuration = 3,
-    int poisonDamage = 2)
+    int poisonDamage = 1)
     : base(
         name: "Escupitajo Venenoso",
         description: "Ataque a distancia que inflige veneno.",

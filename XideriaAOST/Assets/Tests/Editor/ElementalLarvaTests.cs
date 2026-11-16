@@ -130,7 +130,7 @@ public class ElementalLarvaSkillTests : UpgradeIntegrationFixture
     {
         Character neighbor = CreateCharacter(true, new Vector2Int(6, 3));
         Execute(new LarvaFireSpitSkill(), player.GridPosition);
-        Assert.That(player.Stats.CurrentHP, Is.EqualTo(95));
+        Assert.That(player.Stats.CurrentHP, Is.EqualTo(96));
         Assert.That(neighbor.Stats.CurrentHP, Is.EqualTo(100));
         Assert.That(player.GetStatusEffects(), Has.Count.EqualTo(1));
         var burn = player.GetStatusEffects()[0] as BurnEffect;
@@ -138,7 +138,7 @@ public class ElementalLarvaSkillTests : UpgradeIntegrationFixture
         Assert.That(burn.RemainingTurns, Is.EqualTo(3));
         for (int turn = 0; turn < 3; turn++) burn.OnTurnStart(player);
         Assert.That(burn.IsFinished, Is.True);
-        Assert.That(player.Stats.CurrentHP, Is.EqualTo(89));
+        Assert.That(player.Stats.CurrentHP, Is.EqualTo(93));
     }
 
     [TestCase(LarvaElement.Air)]

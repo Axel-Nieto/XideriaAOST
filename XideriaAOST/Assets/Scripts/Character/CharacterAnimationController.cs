@@ -13,13 +13,16 @@ public class CharacterAnimationController : MonoBehaviour
 
     private static readonly int excavateState = Animator.StringToHash("Base Layer.Ground_Excavar");
     private static readonly int excavateSpeed = Animator.StringToHash("ExcavateSpeed");
+    private static readonly int chargeState = Animator.StringToHash("Base Layer.Charge");
+    private static readonly int chargeSpeed = Animator.StringToHash("ChargeSpeed");
+    private bool charging;
     private bool excavating;
     private Vector3 excavateLocalPosition;
 
     public bool CanPlayExcavate => animator != null && animator.isActiveAndEnabled &&
         animator.runtimeAnimatorController != null && animator.HasState(0, excavateState);
 
-    public IEnumerator PlayExcavateEnter()
+    public IEnumerator PlayExcavateEnter(float duration = 0f)
     {
         if (!CanPlayExcavate) yield break;
         excavateLocalPosition = animator.transform.localPosition;
@@ -28,6 +31,7 @@ public class CharacterAnimationController : MonoBehaviour
         animator.SetFloat(excavateSpeed, 1f);
         animator.Play(excavateState, 0, 0f);
         animator.Update(0f);
+        MatchExcavateDuration(duration);
         while (CanPlayExcavate && animator.GetCurrentAnimatorStateInfo(0).fullPathHash == excavateState &&
             animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.5f)
             yield return null;
@@ -39,15 +43,25 @@ public class CharacterAnimationController : MonoBehaviour
         animator.Update(0f);
     }
 
-    public IEnumerator PlayExcavateExit()
+    public IEnumerator PlayExcavateExit(float duration = 0f)
     {
         if (!excavating || !CanPlayExcavate) yield break;
         animator.SetFloat(excavateSpeed, 1f);
         animator.Play(excavateState, 0, 0.5f);
         animator.Update(0f);
+        MatchExcavateDuration(duration);
         while (CanPlayExcavate && animator.GetCurrentAnimatorStateInfo(0).fullPathHash == excavateState &&
             animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1f)
             yield return null;
+    }
+
+    private void MatchExcavateDuration(float duration)
+    {
+        if (duration <= 0f) return;
+        AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(0);
+        // State length already includes the Animator and state playback speeds.
+        if (state.length > 0f)
+            animator.SetFloat(excavateSpeed, state.length * 0.5f / duration);
     }
 
     public void FinishExcavate()
@@ -67,7 +81,11 @@ public class CharacterAnimationController : MonoBehaviour
         animator.transform.localPosition = excavateLocalPosition;
     }
 
-    private void OnDisable() => FinishExcavate();
+    private void OnDisable()
+    {
+        FinishExcavate();
+        FinishCharge();
+    }
 
     [SerializeField] private float referenceWalkSpeed = 3f;
     [SerializeField] private float minWalkAnimationSpeed = 0.5f;
@@ -111,10 +129,38 @@ public class CharacterAnimationController : MonoBehaviour
 
     public void SetWalking(bool walking)
     {
-        if (animator == null)
+        if (animator == null || charging)
             return;
 
         animator.SetBool("IsWalk", walking);
+    }
+
+    public void BeginCharge(float duration)
+    {
+        if (animator == null || !animator.isActiveAndEnabled ||
+            animator.runtimeAnimatorController == null || !animator.HasState(0, chargeState))
+            return;
+        charging = true;
+        animator.SetBool("IsWalk", false);
+        animator.SetFloat(chargeSpeed, 1f);
+        animator.Play(chargeState, 0, 0f);
+        animator.Update(0f);
+        float length = animator.GetCurrentAnimatorStateInfo(0).length;
+        if (length > 0f && duration > 0f)
+            animator.SetFloat(chargeSpeed, length / duration);
+    }
+
+    public void FinishCharge()
+    {
+        if (!charging) return;
+        charging = false;
+        if (animator == null || animator.runtimeAnimatorController == null) return;
+        animator.SetFloat(chargeSpeed, 1f);
+        if (animator.isActiveAndEnabled && animator.GetCurrentAnimatorStateInfo(0).fullPathHash == chargeState)
+        {
+            animator.Play("Base Layer.Idle", 0, 0f);
+            animator.Update(0f);
+        }
     }
 
     public IEnumerator PlayCastUntilHitFrame()

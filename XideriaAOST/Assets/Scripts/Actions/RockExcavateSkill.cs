@@ -60,26 +60,35 @@ public sealed class RockExcavateSkill : RockSkillBase
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
-        if (!CanUse(user, targetCell, grid)) yield break;
+        if (!CanUse(user, targetCell, grid) ||
+            !TryGetDestination(user, user.GridPosition, targetCell, grid, out Vector2Int destination)) yield break;
         user.FaceCell(targetCell);
         var animation = user.GetComponentInChildren<CharacterAnimationController>();
         bool excavating = animation != null && animation.CanPlayExcavate;
+        var vfx = user.GetComponent<RockSkillVFX>();
+        bool synchronized = excavating && vfx != null && vfx.CanPlayExcavate;
         try
         {
-            if (excavating) yield return animation.PlayExcavateEnter();
+            if (synchronized)
+            {
+                Vector2Int delta = destination - user.GridPosition;
+                Vector2Int direction = new Vector2Int(System.Math.Sign(delta.x), System.Math.Sign(delta.y));
+                yield return vfx.PlayExcavate(user, grid, user.GridPosition, direction,
+                    animation.PlayExcavateEnter(vfx.ExcavateEnterDuration));
+            }
+            else if (excavating) yield return animation.PlayExcavateEnter();
             else yield return Cast(user);
             // Revalidate after presentation; invalid attempts never spend energy.
-            if (!CanUse(user, targetCell, grid) || !TryGetDestination(user, user.GridPosition, targetCell, grid, out Vector2Int destination))
+            if (!CanUse(user, targetCell, grid) || !TryGetDestination(user, user.GridPosition, targetCell, grid, out destination))
             {
                 if (!excavating) yield return FinishCast(user);
                 yield break;
             }
-            var vfx = user.GetComponent<RockSkillVFX>();
-            if (vfx != null)
+            if (!synchronized && vfx != null)
             {
                 Vector2Int delta = destination - user.GridPosition;
                 Vector2Int direction = new Vector2Int(System.Math.Sign(delta.x), System.Math.Sign(delta.y));
-                // Returns when the third pillar starts, while the model is still underground.
+                // Without the excavation animation, retain the normal cast before the VFX.
                 yield return vfx.PlayExcavate(user, grid, user.GridPosition, direction);
             }
             // The presentation can span several frames; validate the full landing area again.
@@ -94,7 +103,8 @@ public sealed class RockExcavateSkill : RockSkillBase
             user.transform.position = grid.GridToWorld(destination, user) + user.VisualOffset;
             grid.RegisterCharacter(user);
             user.ProcessCurrentTerrain();
-            if (excavating && user.Stats.IsAlive && !user.IsDying) yield return animation.PlayExcavateExit();
+            if (excavating && user.Stats.IsAlive && !user.IsDying)
+                yield return animation.PlayExcavateExit(synchronized ? vfx.ExcavateEnterDuration : 0f);
             else if (!excavating) yield return FinishCast(user);
         }
         finally

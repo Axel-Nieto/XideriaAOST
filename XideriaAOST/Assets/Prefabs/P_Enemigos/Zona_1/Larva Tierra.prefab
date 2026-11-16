@@ -75,8 +75,8 @@ MonoBehaviour:
   modelForwardYOffset: 90
   baseStats:
     attack: 4
-    defense: 2
-    maxHP: 12
+    defense: 1
+    maxHP: 16
     maxEnergy: 10
     energyRegen: 6
   visualSpawnOffset: {x: -0.3, y: 0.1, z: -0.3}
