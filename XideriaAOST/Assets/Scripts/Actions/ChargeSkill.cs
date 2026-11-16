@@ -10,7 +10,7 @@ public class ChargeSkill : SkillBase
     private readonly float chargeSpeed;
 
     public ChargeSkill(
-        int damage = 3,
+        int damage = 5,
         int minPushDistance = 2,
         int maxPushDistance = 3,
         float chargeSpeed = 12f)
@@ -37,7 +37,7 @@ public class ChargeSkill : SkillBase
         Vector2Int targetCell,
         GridSystem grid)
     {
-        if (user == null || grid == null)
+        if (user == null || grid == null || user.HasStatusEffect<RootEffect>())
             return false;
 
         if (!user.Stats.HasEnergy(EnergyCost))
@@ -92,6 +92,9 @@ public class ChargeSkill : SkillBase
         Vector2Int targetCell,
         GridSystem grid)
     {
+        if (!CanUse(user, targetCell, grid))
+            yield break;
+
         Character target =
             grid.GetCharacterAt(targetCell);
 
@@ -124,19 +127,24 @@ public class ChargeSkill : SkillBase
         if (path.Count == 0)
             yield break;
 
-        user.Stats.ConsumeEnergy(EnergyCost);
-        user.StartCooldown(this);
-
-        CharacterMovement movement =
-            user.GetComponent<CharacterMovement>();
-
+        CharacterMovement movement = user.GetComponent<CharacterMovement>();
         if (movement == null)
             yield break;
 
-        yield return movement.MoveAlongRoutine(
-            path,
-            chargeSpeed
-        );
+        user.Stats.ConsumeEnergy(EnergyCost);
+        user.StartCooldown(this);
+        user.FaceDirection(direction);
+        CharacterAnimationController animation = user.GetComponentInChildren<CharacterAnimationController>();
+        float cellSize = Vector3.Distance(grid.GridToWorld(user.GridPosition), grid.GridToWorld(user.GridPosition + direction));
+        animation?.BeginCharge(path.Count * cellSize / Mathf.Max(0.01f, chargeSpeed));
+        try
+        {
+            yield return movement.MoveAlongRoutine(path, chargeSpeed);
+        }
+        finally
+        {
+            animation?.FinishCharge();
+        }
 
         // Comprobamos nuevamente que el objetivo siga
         // siendo alcanzable despu�s de la carga.
@@ -376,7 +384,7 @@ public class ChargeSkill : SkillBase
     {
         if (user == null ||
             target == null ||
-            grid == null)
+            grid == null || user.HasStatusEffect<RootEffect>())
         {
             return false;
         }

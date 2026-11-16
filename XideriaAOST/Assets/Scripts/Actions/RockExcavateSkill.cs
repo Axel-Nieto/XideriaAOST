@@ -60,31 +60,57 @@ public sealed class RockExcavateSkill : RockSkillBase
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
-        if (!CanUse(user, targetCell, grid)) yield break;
+        if (!CanUse(user, targetCell, grid) ||
+            !TryGetDestination(user, user.GridPosition, targetCell, grid, out Vector2Int destination)) yield break;
         user.FaceCell(targetCell);
-        yield return Cast(user);
-        // Revalidate after presentation; invalid attempts never spend energy.
-        if (!CanUse(user, targetCell, grid) || !TryGetDestination(user, user.GridPosition, targetCell, grid, out Vector2Int destination)) yield break;
+        var animation = user.GetComponentInChildren<CharacterAnimationController>();
+        bool excavating = animation != null && animation.CanPlayExcavate;
         var vfx = user.GetComponent<RockSkillVFX>();
-        if (vfx != null)
+        bool synchronized = excavating && vfx != null && vfx.CanPlayExcavate;
+        try
         {
-            Vector2Int delta = destination - user.GridPosition;
-            Vector2Int direction = new Vector2Int(System.Math.Sign(delta.x), System.Math.Sign(delta.y));
-            yield return vfx.PlayExcavate(user, grid, user.GridPosition, direction);
+            if (synchronized)
+            {
+                Vector2Int delta = destination - user.GridPosition;
+                Vector2Int direction = new Vector2Int(System.Math.Sign(delta.x), System.Math.Sign(delta.y));
+                yield return vfx.PlayExcavate(user, grid, user.GridPosition, direction,
+                    animation.PlayExcavateEnter(vfx.ExcavateEnterDuration));
+            }
+            else if (excavating) yield return animation.PlayExcavateEnter();
+            else yield return Cast(user);
+            // Revalidate after presentation; invalid attempts never spend energy.
+            if (!CanUse(user, targetCell, grid) || !TryGetDestination(user, user.GridPosition, targetCell, grid, out destination))
+            {
+                if (!excavating) yield return FinishCast(user);
+                yield break;
+            }
+            if (!synchronized && vfx != null)
+            {
+                Vector2Int delta = destination - user.GridPosition;
+                Vector2Int direction = new Vector2Int(System.Math.Sign(delta.x), System.Math.Sign(delta.y));
+                // Without the excavation animation, retain the normal cast before the VFX.
+                yield return vfx.PlayExcavate(user, grid, user.GridPosition, direction);
+            }
+            // The presentation can span several frames; validate the full landing area again.
+            if (!CanUse(user, targetCell, grid) || !TryGetDestination(user, user.GridPosition, targetCell, grid, out destination))
+            {
+                if (!excavating) yield return FinishCast(user);
+                yield break;
+            }
+            Spend(user);
+            grid.UnregisterCharacter(user);
+            user.SetGridPosition(destination);
+            user.transform.position = grid.GridToWorld(destination, user) + user.VisualOffset;
+            grid.RegisterCharacter(user);
+            user.ProcessCurrentTerrain();
+            if (excavating && user.Stats.IsAlive && !user.IsDying)
+                yield return animation.PlayExcavateExit(synchronized ? vfx.ExcavateEnterDuration : 0f);
+            else if (!excavating) yield return FinishCast(user);
         }
-        // The presentation can span several frames; validate the full landing area again.
-        if (!CanUse(user, targetCell, grid) || !TryGetDestination(user, user.GridPosition, targetCell, grid, out destination))
+        finally
         {
-            yield return FinishCast(user);
-            yield break;
+            if (excavating && animation != null) animation.FinishExcavate();
         }
-        Spend(user);
-        grid.UnregisterCharacter(user);
-        user.SetGridPosition(destination);
-        user.transform.position = grid.GridToWorld(destination, user) + user.VisualOffset;
-        grid.RegisterCharacter(user);
-        user.ProcessCurrentTerrain();
-        yield return FinishCast(user);
     }
 
     public override IEnumerable<Vector2Int> GetPreviewCells(Character user, Vector2Int origin, Vector2Int targetCell, GridSystem grid)

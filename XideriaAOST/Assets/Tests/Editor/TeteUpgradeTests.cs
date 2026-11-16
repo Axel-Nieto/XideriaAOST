@@ -225,7 +225,7 @@ public class TeteUpgradeTests : UpgradeIntegrationFixture
     {
         var actor = Child("Actor").AddComponent<Character>(); actor.enabled = false;
         Set(actor, "isPlayer", isPlayer); Set(actor, "_grid", grid); Set(actor, "startGridPosition", cell);
-        Set(actor, "baseStats", new CharacterStatsData()); Set(actor, "gridWidth", size); Set(actor, "gridHeight", size);
+        Set(actor, "baseStats", new CharacterStatsData { attack = 5, maxHP = 20 }); Set(actor, "gridWidth", size); Set(actor, "gridHeight", size);
         Call(actor, "Awake"); actor.Stats.SetCurrentEnergy(7); Call(actor, "OnEnable");
         actors.Add(actor); return actor;
     }

@@ -114,8 +114,8 @@ public class FireUpgradeCombatTests : UpgradeIntegrationFixture
         Assert.That(user.GetSkillCooldown(skill), Is.EqualTo(expected));
         Assert.That(skill.Cooldown, Is.EqualTo(2));
         Assert.That(user.Stats.CurrentEnergy, Is.EqualTo(96));
-        Assert.That(first.Stats.CurrentHP, Is.EqualTo(86));
-        if (second != null) Assert.That(second.Stats.CurrentHP, Is.EqualTo(86));
+        Assert.That(first.Stats.CurrentHP, Is.EqualTo(90));
+        if (second != null) Assert.That(second.Stats.CurrentHP, Is.EqualTo(90));
         Assert.That(ally.Stats.CurrentHP, Is.EqualTo(100));
     }
 
@@ -151,7 +151,7 @@ public class FireUpgradeCombatTests : UpgradeIntegrationFixture
         Assert.That(user.GetSkillCooldown(skill), Is.EqualTo(expected));
         Assert.That(skill.Cooldown, Is.EqualTo(2));
         Assert.That(user.Stats.CurrentEnergy, Is.EqualTo(97));
-        if (target != null) Assert.That(target.Stats.CurrentHP, Is.EqualTo(88));
+        if (target != null) Assert.That(target.Stats.CurrentHP, Is.EqualTo(92));
         foreach (Vector2Int cell in user.GetOccupiedCells()) Assert.That(grid.GetCharacterAt(cell), Is.SameAs(user));
     }
 

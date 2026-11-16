@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class WaterPrisonSkill : SkillBase
 {
-    private readonly int damage = 4;
+    private readonly int damage = 1;
     private readonly int rootDuration = 3;
 
     public WaterPrisonSkill()
@@ -71,7 +71,7 @@ public class WaterPrisonSkill : SkillBase
         if (anim != null)
             yield return anim.PlayCastUntilHitFrame();
 
-        int finalDamage = Mathf.Max(1, damage - target.Stats.Defense);
+        int finalDamage = Mathf.Max(1, damage + user.Stats.Attack - target.Stats.Defense);
 
         target.TakeDamage(finalDamage, DamageType.Water, user);
         target.ApplyStatusEffect(new RootEffect(rootDuration));
@@ -82,6 +82,7 @@ public class WaterPrisonSkill : SkillBase
 
     public override string GetTooltipDetails(Character user)
     {
-        return $"Daño: {damage}";
+        int estimatedDamage = damage + (user?.Stats?.Attack ?? 0);
+        return $"Daño: {estimatedDamage}\nInmoviliza durante {rootDuration - 1} turnos del objetivo.";
     }
 }

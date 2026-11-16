@@ -46,8 +46,8 @@ public sealed class UpgradeShopUI : MonoBehaviour
 
     public bool IsOpen { get; private set; }
     public UpgradeShopSection CurrentSection { get; private set; } = UpgradeShopSection.SirTete;
-    public RunCurrency CurrentCurrency => CurrentSection == UpgradeShopSection.Fire
-        ? RunCurrency.Gold : RunCurrency.XideriaFragments;
+    public RunCurrency CurrentCurrency => CurrentSection == UpgradeShopSection.SirTete
+        ? RunCurrency.XideriaFragments : RunCurrency.Gold;
     public string CurrentSectionName => CurrentSection switch
     {
         UpgradeShopSection.Fire => "Fuego",

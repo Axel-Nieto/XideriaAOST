@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class WaterWaveSkill : SkillBase
 {
-    private readonly int damage = 4;
+    private readonly int damage = 2;
     private readonly int slowDuration = 3;
 
     public override int AreaRadius => 0;
@@ -233,7 +233,7 @@ public class WaterWaveSkill : SkillBase
             : damage + user.Stats.Attack;
 
         return
-            $"Daño: {estimatedDamage}";
+            $"Daño: {estimatedDamage}\nRalentiza durante {slowDuration - 1} turnos del objetivo.";
     }
 
     private Quaternion GetRotationFromDirection(Vector2Int direction)

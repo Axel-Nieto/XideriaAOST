@@ -4,6 +4,7 @@ using UnityEngine;
 
 public sealed class RockEruptionSkill : RockSkillBase
 {
+    private const int damageBonus = 3;
     private readonly GameObject rockPrefab;
     private readonly int rockCount;
     private readonly int pushDistance;
@@ -30,7 +31,7 @@ public sealed class RockEruptionSkill : RockSkillBase
         foreach (Character target in targets)
         {
             if (target == null || !target.Stats.IsAlive || target.IsDying) continue;
-            Damage(user, target);
+            Damage(user, target, damageBonus);
             if (target.Stats.IsAlive && !target.IsDying)
                 yield return PushSystem.Push(user, target, grid, pushDistance);
         }
@@ -51,5 +52,5 @@ public sealed class RockEruptionSkill : RockSkillBase
     public override IEnumerable<Vector2Int> GetPreviewCells(Vector2Int origin, Vector2Int targetCell) => Area(origin, 1, 1, AreaRadius);
     public override IEnumerable<Vector2Int> GetPreviewCells(Character user, Vector2Int origin, Vector2Int targetCell, GridSystem grid) =>
         Area(origin, user.GridWidth, user.GridHeight, AreaRadius);
-    public override string GetTooltipDetails(Character user) => $"Daño físico: {user?.Stats?.Attack ?? 0}. Empuje: {pushDistance}. Rocas: hasta {rockCount}, 2 turnos.";
+    public override string GetTooltipDetails(Character user) => $"Daño físico: {Mathf.Max(1, (user?.Stats?.Attack ?? 0) + damageBonus)}. Empuje: {pushDistance}. Rocas: hasta {rockCount}, 2 turnos.";
 }

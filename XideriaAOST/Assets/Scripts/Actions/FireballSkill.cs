@@ -24,7 +24,7 @@ public class FireballSkill : SkillBase
             ? SkillIconLibrary.Instance.fireball
             : null)
     {
-        damage = 9;
+        damage = 5;
         aoeRadius =3;
     }
 

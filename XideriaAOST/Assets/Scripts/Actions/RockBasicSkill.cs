@@ -4,6 +4,7 @@ using UnityEngine;
 
 public sealed class RockBasicSkill : RockSkillBase
 {
+    private const int damageBonus = -1;
     public override int AreaRadius => 2;
     public RockBasicSkill() : base("Giro de Tierra", "Gira sin moverte, golpea a los enemigos a hasta dos casillas y los empuja una casilla. Ganas 10% de reducción de daño por enemigo golpeado durante dos turnos propios.",
         2, 0, icon: SkillIconLibrary.Instance != null ? SkillIconLibrary.Instance.basicAttack : null) { }
@@ -22,7 +23,7 @@ public sealed class RockBasicSkill : RockSkillBase
         if (animation != null) yield return animation.PlayAttackUntilHitFrame();
         user.GetComponent<RockSkillVFX>()?.PlaySlash();
         List<Character> targets = Enemies(user, grid, user.GridPosition, AreaRadius);
-        foreach (Character target in targets) Damage(user, target);
+        foreach (Character target in targets) Damage(user, target, damageBonus);
         RockGuardPassive.For(user).AddArmor(targets.Count);
         foreach (Character target in targets)
             if (target != null && target.Stats.IsAlive && !target.IsDying)
@@ -47,5 +48,5 @@ public sealed class RockBasicSkill : RockSkillBase
     public override IEnumerable<Vector2Int> GetPreviewCells(Vector2Int origin, Vector2Int targetCell) => Area(origin, 1, 1, AreaRadius);
     public override IEnumerable<Vector2Int> GetPreviewCells(Character user, Vector2Int origin, Vector2Int targetCell, GridSystem grid) =>
         Area(origin, user.GridWidth, user.GridHeight, AreaRadius);
-    public override string GetTooltipDetails(Character user) => $"Daño físico: {user?.Stats?.Attack ?? 0}. Empuje: 1 casilla.\nDefensa: +10% por enemigo, 2 turnos.";
+    public override string GetTooltipDetails(Character user) => $"Daño físico: {Mathf.Max(1, (user?.Stats?.Attack ?? 0) + damageBonus)}. Empuje: 1 casilla.\nDefensa: +10% por enemigo, 2 turnos.";
 }

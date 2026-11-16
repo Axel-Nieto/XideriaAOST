@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class FlameDashSkill : SkillBase
 {
-    private readonly int damage = 7;
+    private readonly int damage = 3;
     private readonly int aoeRadius = 1;
     private readonly float dashSpeed = 14f;
     public override int AreaRadius => aoeRadius;

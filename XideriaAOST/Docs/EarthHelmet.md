@@ -16,10 +16,10 @@ Rock figura en las tablas de drops de Tutorial, Lobby y Level01–Level10/LevelB
 
 | Tecla | Habilidad | Energía | CD | Comportamiento |
 | --- | --- | --- | --- | --- |
-| Q | Giro de Tierra | 2 | 0 | Área de distancia Manhattan 2 alrededor de toda la superficie ocupada. Daño físico default `max(1, Attack − Defense)` una vez por enemigo y empuje de una casilla para los supervivientes. Respeta inmunidades y activa Imparable al chocar. Gira visualmente sin cambiar de casilla. |
+| Q | Giro de Tierra | 2 | 0 | Área de distancia Manhattan 2 alrededor de toda la superficie ocupada. Daño físico `max(1, Attack − 1 − Defense)` una vez por enemigo y empuje de una casilla para los supervivientes. Respeta inmunidades y activa Imparable al chocar. Gira visualmente sin cambiar de casilla. |
 | W | Escudo de Roca | 5 | 3 | Tres cargas. Cada impacto positivo consume una y aporta 10% de reducción; no es un escudo inicial del 30%. Las restantes vencen al inicio del siguiente turno propio. |
 | E | Excavar | 1 | 0 | Seleccionar una casilla Blocked cardinal adyacente. Cruza una barrera de una casilla de grosor si cabe el cuerpo completo justo del otro lado. No cruza personajes, cascos, vacío ni barreras gruesas; Root impide usarla. |
-| R | Erupción de Tierra | 6 | 4 | Área Manhattan 5 alrededor del cuerpo: daño físico default y empuje 1. Después aparecen hasta 3 rocas aleatorias en casillas libres de esa área; duran hasta el segundo inicio de turno propio. |
+| R | Erupción de Tierra | 6 | 4 | Área Manhattan 5 alrededor del cuerpo: daño físico `max(1, Attack + 3 − Defense)` y empuje 1. Después aparecen hasta 3 rocas aleatorias en casillas libres de esa área; duran hasta el segundo inicio de turno propio. |
 
 Cada enemigo alcanzado por Q añade una acumulación independiente de **Coraza de Tierra**, con 10% de reducción y duración de dos turnos propios. Una Q posterior no renueva acumulaciones anteriores. Se suma la reducción de las acumulaciones y la carga de W consumida por ese impacto, hasta un máximo de 100%; el daño final se redondea hacia arriba como en la armadura existente. Coraza e Imparable se retiran al cambiar de casco.
 
