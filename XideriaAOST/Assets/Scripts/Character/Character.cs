@@ -44,18 +44,23 @@ public class Character : MonoBehaviour
     private GameObject currentHelmetVisual;
 
     private readonly VitalImpulsePassive vitalImpulse = new();
+    private readonly RockExcavationStrikePassive excavationStrike = new();
+    private readonly WaterUpgradePassive waterWaveUpgrade = new(false);
+    private readonly WaterUpgradePassive waterPrisonUpgrade = new(true);
     private PlayerSessionData upgradeSession;
     // Read ownership directly: purchases and AbandonRun affect even an existing
     // character immediately, independently of Awake/Start/session load ordering.
     public bool VitalImpulseEnabled => IsPlayer && PlayerSessionData.Instance != null &&
         PlayerSessionData.Instance.HasUpgrade(UpgradeDefinition.VitalImpulseId);
 
+    public string DisplayName => CharacterDisplayName.For(this);
     public bool IsPlayer => isPlayer;
     public bool CanEquipHelmet => !IsPlayer ||
         !string.Equals(gameObject.scene.name, "Lobby", System.StringComparison.OrdinalIgnoreCase);
     private bool isDying;
     private bool deathCompletedNotified;
     public bool IsDying => isDying;
+    public event System.Action<Character> Damaged;
 
     public SkillBase BasicSkill { get; private set; }
 
@@ -302,9 +307,9 @@ public class Character : MonoBehaviour
             return;
         }
 
-        GetComponentInChildren<CharacterAnimationController>()?.PlayHit();
-
         Stats.TakeDamage(amount);
+        Damaged?.Invoke(this);
+        GetComponentInChildren<CharacterAnimationController>()?.PlayHit();
 
         floatingText?.ShowDamage(amount, damageType);
 
@@ -340,6 +345,12 @@ public class Character : MonoBehaviour
         var floatingText = GetComponent<FloatingDamageSpawner>();
 
         floatingText?.ShowHeal(amount);
+    }
+
+    public void ReplaceSkills(IEnumerable<SkillBase> skills)
+    {
+        characterSkills.Clear();
+        if (skills != null) characterSkills.AddRange(skills);
     }
 
     public void AddSkill(SkillBase skill)
@@ -436,6 +447,14 @@ public class Character : MonoBehaviour
         all.RemoveAll(passive => passive is VitalImpulsePassive);
         if (VitalImpulseEnabled)
             all.Add(vitalImpulse);
+
+        all.RemoveAll(passive => passive is RockExcavationStrikePassive);
+        if (RockExcavationStrikePassive.IsEnabled(this))
+            all.Add(excavationStrike);
+
+        all.RemoveAll(passive => passive is WaterUpgradePassive);
+        if (waterWaveUpgrade.IsEnabled(this)) all.Add(waterWaveUpgrade);
+        if (waterPrisonUpgrade.IsEnabled(this)) all.Add(waterPrisonUpgrade);
 
         return all;
     }

@@ -94,8 +94,8 @@ public class CombatBalanceTests : UpgradeIntegrationFixture
         var armor = new LarvaArmorPassive();
         int playerHit = armor.ModifyIncomingDamage(null, 6 - defense, DamageType.Physical);
         Assert.That(Mathf.CeilToInt((float)health / playerHit), Is.InRange(16, 20));
-        Assert.That(Field(source, "hornDamage") + attack - 2, Is.EqualTo(7));
-        Assert.That(Field(source, "chargeDamage") + attack - 2, Is.EqualTo(9));
+        Assert.That(Field(source, "hornDamage") + attack - 2, Is.EqualTo(6));
+        Assert.That(Field(source, "chargeDamage") + attack - 2, Is.EqualTo(8));
         Assert.That(36 - 2 * (Field(source, "chargeDamage") + attack - 2), Is.GreaterThan(0));
     }
 

@@ -33,6 +33,9 @@ public class GridInputHandler : MonoBehaviour
     private HashSet<Vector2Int> reachableCells = new();
     private List<GameObject> rangeTiles = new();
     private bool isMoving = false;
+    private InterruptibleRoutine ownedAction;
+    private Character actionOwner;
+    private int actionVersion;
     private bool isCharacterSelected = false;
     private bool isPlayerTurn = false;
     private bool isHelmetInventoryOpen = false;
@@ -118,12 +121,15 @@ public class GridInputHandler : MonoBehaviour
         skillRangeDirty = true;
         movementRangeDirty = true;
         GameEvents.OnTurnStarted += OnTurnStarted;
+        GameEvents.OnTurnInterrupted += OnTurnInterrupted;
         GameEvents.OnEnergyRecovered += OnEnergyRecovered;
     }
 
     private void OnDisable()
     {
         GameEvents.OnTurnStarted -= OnTurnStarted;
+        GameEvents.OnTurnInterrupted -= OnTurnInterrupted;
+        ownedAction?.Cancel();
         GameEvents.OnEnergyRecovered -= OnEnergyRecovered;
     }
 
@@ -284,6 +290,32 @@ public class GridInputHandler : MonoBehaviour
 
             var skill = selectedCharacter.GetSkill(selectedSkillIndex);
             DrawSelfSkillPreview(skill);
+        }
+    }
+
+    private void OnTurnInterrupted(Character character)
+    {
+        if (actionOwner != character && selectedCharacter != character) return;
+        actionVersion++;
+        ownedAction?.Cancel();
+        actionOwner = null;
+        isMoving = false;
+        isPlayerTurn = false;
+        currentMode = ActionMode.Move;
+        selectedSkillIndex = -1;
+        ClearTiles(); ClearRangeTiles(); ClearAoeTiles();
+    }
+
+    private IEnumerator RunOwnedAction(IEnumerator action, int version)
+    {
+        if (version != actionVersion) yield break;
+        var routine = new InterruptibleRoutine(action);
+        ownedAction = routine;
+        try { yield return routine; }
+        finally
+        {
+            routine.Dispose();
+            if (ReferenceEquals(ownedAction, routine)) ownedAction = null;
         }
     }
 
@@ -608,17 +640,24 @@ public class GridInputHandler : MonoBehaviour
 
         isMoving = true;
         Vector2Int origin = selectedCharacter.GridPosition;
+        int version = ++actionVersion;
+        actionOwner = selectedCharacter;
         try
         {
-            yield return skill.Execute(selectedCharacter, targetCell, gridSystem);
+            yield return RunOwnedAction(skill.Execute(selectedCharacter, targetCell, gridSystem), version);
+            if (version != actionVersion) yield break;
             if (selectedCharacter != null && selectedCharacter.GridPosition != origin)
                 yield return TryPickupAdjacentHelmet();
         }
         finally
         {
-            isMoving = false;
-            currentMode = ActionMode.Move;
-            movementRangeDirty = true;
+            if (version == actionVersion)
+            {
+                isMoving = false;
+                currentMode = ActionMode.Move;
+                movementRangeDirty = true;
+                actionOwner = null;
+            }
         }
         battleHUD.SetSelectedSkill(-1);
         battleHUD.Refresh();
@@ -653,7 +692,7 @@ public class GridInputHandler : MonoBehaviour
         skillRangeDirty = true;
         movementRangeDirty = true;
 
-        if (skill.TargetType == SkillTargetType.Self)
+        if (skill.GetTargetType(selectedCharacter) == SkillTargetType.Self)
         {
             battleHUD.SetSelectedSkill(index);
 
@@ -681,17 +720,23 @@ public class GridInputHandler : MonoBehaviour
     {
         if (IsUpgradeShopInputBlocked) yield break;
         isMoving = true;
-
+        int version = ++actionVersion;
+        actionOwner = selectedCharacter;
         try
         {
-            yield return selectedCharacter.ExecuteAction(action);
+            yield return RunOwnedAction(selectedCharacter.ExecuteAction(action), version);
+            if (version != actionVersion) yield break;
 
             yield return TryPickupAdjacentHelmet();
         }
         finally
         {
-            isMoving = false;
-            movementRangeDirty = true;
+            if (version == actionVersion)
+            {
+                isMoving = false;
+                movementRangeDirty = true;
+                actionOwner = null;
+            }
         }
 
         battleHUD.Refresh();

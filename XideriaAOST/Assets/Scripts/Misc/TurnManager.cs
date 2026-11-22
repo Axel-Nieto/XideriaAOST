@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TurnManager : MonoBehaviour
+public partial class TurnManager : MonoBehaviour
 {
     [SerializeField] private List<Character> turnOrder = new();
     private int currentIndex = 0;
@@ -29,26 +29,51 @@ public class TurnManager : MonoBehaviour
 
     private IEnumerator TurnLoop()
     {
-        while (!GameSession.IsGameOver)
+        bool resumeSameTurn = false;
+        while (!GameSession.IsGameOver && turnOrder.Count > 0)
         {
+            currentIndex %= turnOrder.Count;
             Character current = turnOrder[currentIndex];
-
-            GameEvents.OnTurnStarted?.Invoke(current);
-
+            if (!CanTakeTurn(current))
+            {
+                currentIndex = (currentIndex + 1) % turnOrder.Count;
+                yield return null;
+                continue;
+            }
+            CurrentCharacter = current;
+            if (!resumeSameTurn) GameEvents.OnTurnStarted?.Invoke(current);
+            resumeSameTurn = false;
             var ai = current.GetComponent<IEnemyAI>();
-
-            if (ai != null)
+            aiFinished = ai == null;
+            if (ai != null && immediateTurn == null && CanTakeTurn(current))
             {
-                yield return ai.TakeTurn();
+                aiRoutine = new InterruptibleRoutine(ai.TakeTurn());
+                aiCoroutine = StartCoroutine(ExecuteAI(aiRoutine));
             }
-            else
-            {
-                yield return new WaitUntil(() => current.IsTurnFinished);
-            }
+            while (!GameSession.IsGameOver && immediateTurn == null && CanTakeTurn(current) &&
+                (ai != null ? !aiFinished : !current.IsTurnFinished))
+                yield return null;
 
+            CancelAI();
+            if (immediateTurn != null && CanTakeTurn(immediateTurn))
+            {
+                Character next = immediateTurn;
+                immediateTurn = null;
+                GameEvents.OnTurnInterrupted?.Invoke(current);
+                if (next != current)
+                {
+                    current.FinishTurn();
+                    GameEvents.OnTurnEnded?.Invoke(current);
+                }
+                else resumeSameTurn = true; // Do not tick statuses/energy twice.
+                currentIndex = turnOrder.IndexOf(next);
+                continue;
+            }
+            immediateTurn = null;
             GameEvents.OnTurnEnded?.Invoke(current);
-
             currentIndex = (currentIndex + 1) % turnOrder.Count;
+            yield return null;
         }
+        CurrentCharacter = null;
     }
 }

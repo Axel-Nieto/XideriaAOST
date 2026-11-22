@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WaterWaveSkill : SkillBase
+public partial class WaterWaveSkill : SkillBase
 {
     private readonly int damage = 2;
     private readonly int slowDuration = 3;
@@ -53,6 +53,8 @@ public class WaterWaveSkill : SkillBase
         if (direction == Vector2Int.zero)
             return false;
 
+        if (HasPushUpgrade(user)) return CanUsePushWave(user, origin, direction, grid);
+
         List<Vector2Int> movementPath =
             BuildMovementPath(
                 user,
@@ -66,6 +68,11 @@ public class WaterWaveSkill : SkillBase
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
+        if (HasPushUpgrade(user))
+        {
+            yield return ExecutePushWave(user, targetCell, grid);
+            yield break;
+        }
         Vector2Int originalPosition = user.GridPosition;
 
         Vector2Int direction = GetDirection(originalPosition, targetCell);

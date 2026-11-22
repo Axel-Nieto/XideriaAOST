@@ -63,6 +63,9 @@ public class BattleHUD : MonoBehaviour
 
     private bool themeInitialized = false;
     private bool displayedVitalImpulseEnabled;
+    private bool displayedExcavationStrikeEnabled;
+    private bool displayedWaterWaveUpgrade;
+    private bool displayedWaterPrisonUpgrade;
     private int displayedMaxHP = -1;
 
     private readonly string[] keys = { "Q", "W", "E", "R" };
@@ -89,7 +92,10 @@ public class BattleHUD : MonoBehaviour
             RefreshCharacterPanel();
 
         if (currentCharacter != null &&
-            displayedVitalImpulseEnabled != currentCharacter.VitalImpulseEnabled)
+            (displayedVitalImpulseEnabled != currentCharacter.VitalImpulseEnabled ||
+             displayedExcavationStrikeEnabled != RockExcavationStrikePassive.IsEnabled(currentCharacter) ||
+             displayedWaterWaveUpgrade != WaterUpgradePassive.HasUpgrade(currentCharacter, UpgradeDefinition.WaterWavePushId) ||
+             displayedWaterPrisonUpgrade != WaterUpgradePassive.HasUpgrade(currentCharacter, UpgradeDefinition.WaterPrisonGlobalId)))
         {
             RefreshStatusIcons();
         }
@@ -290,9 +296,7 @@ public class BattleHUD : MonoBehaviour
 
 
         // STATS
-        string rangeText = skill.TargetType == SkillTargetType.Self
-            ? "Personal"
-            : $"{skill.MinRange}-{skill.MaxRange}";
+        string rangeText = skill.GetRangeDescription(currentCharacter);
 
         string areaText = skill.AreaRadius > 0
             ? $"   Área: {skill.AreaRadius}"
@@ -408,6 +412,9 @@ public class BattleHUD : MonoBehaviour
             return;
 
         displayedVitalImpulseEnabled = currentCharacter.VitalImpulseEnabled;
+        displayedExcavationStrikeEnabled = RockExcavationStrikePassive.IsEnabled(currentCharacter);
+        displayedWaterWaveUpgrade = WaterUpgradePassive.HasUpgrade(currentCharacter, UpgradeDefinition.WaterWavePushId);
+        displayedWaterPrisonUpgrade = WaterUpgradePassive.HasUpgrade(currentCharacter, UpgradeDefinition.WaterPrisonGlobalId);
 
         foreach (var effect in currentCharacter.GetStatusEffects())
         {

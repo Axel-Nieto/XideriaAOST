@@ -111,7 +111,16 @@ public sealed class RockExcavateSkill : RockSkillBase
         {
             if (excavating && animation != null) animation.FinishExcavate();
         }
+        // Arrival is committed and the emerge animation has finished. Invalid or
+        // interrupted excavations exit before this single notification.
+        foreach (PassiveEffect passive in user.GetPassiveEffects())
+            if (passive is RockExcavationStrikePassive strike)
+                yield return strike.OnExcavationArrived(user, grid);
     }
+
+    public override string GetTooltipDetails(Character user) => RockExcavationStrikePassive.IsEnabled(user)
+        ? "Emboscada de Tierra: al salir junto a un enemigo, realizas un Giro de Tierra gratuito una vez por excavaci\u00f3n."
+        : "";
 
     public override IEnumerable<Vector2Int> GetPreviewCells(Character user, Vector2Int origin, Vector2Int targetCell, GridSystem grid)
     {

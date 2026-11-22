@@ -15,34 +15,38 @@ public sealed class RockBasicSkill : RockSkillBase
     public override bool CanUseFromPosition(Character user, Vector2Int origin, Character target, GridSystem grid, int energy) =>
         Ready(user, grid, energy) && Enemies(user, grid, origin, AreaRadius).Contains(target);
 
-    public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
+    public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid) =>
+        ExecuteSpin(user, targetCell, grid, false);
+
+    // Only the excavation arrival proc uses this path. It keeps the normal Q's
+    // animation, damage, armor and push, without spending energy or starting a cooldown.
+    internal IEnumerator ExecuteFree(Character user, GridSystem grid) =>
+        ExecuteSpin(user, user.GridPosition, grid, true);
+
+    private IEnumerator ExecuteSpin(Character user, Vector2Int targetCell, GridSystem grid, bool free)
     {
-        if (!CanUse(user, targetCell, grid)) yield break;
-        Spend(user);
+        if (free ? !Ready(user, grid, EnergyCost) : !CanUse(user, targetCell, grid)) yield break;
+        if (!free) Spend(user);
         var animation = user.GetComponentInChildren<CharacterAnimationController>();
-        if (animation != null) yield return animation.PlayAttackUntilHitFrame();
-        user.GetComponent<RockSkillVFX>()?.PlaySlash();
-        List<Character> targets = Enemies(user, grid, user.GridPosition, AreaRadius);
-        foreach (Character target in targets) Damage(user, target, damageBonus);
-        RockGuardPassive.For(user).AddArmor(targets.Count);
-        foreach (Character target in targets)
-            if (target != null && target.Stats.IsAlive && !target.IsDying)
-                yield return PushSystem.Push(user, target, grid, 1);
-        Transform visual = animation != null ? animation.transform : null;
-        if (visual != null && visual != user.transform)
+        var vfx = user.GetComponent<RockSkillVFX>();
+        try
         {
-            Quaternion original = visual.localRotation;
-            try
+            if (animation != null)
             {
-                for (float elapsed = 0f; elapsed < 0.3f; elapsed += Time.deltaTime)
-                {
-                    visual.localRotation = original * Quaternion.Euler(0f, elapsed / 0.3f * 360f, 0f);
-                    yield return null;
-                }
+                yield return animation.PlayTwirlUntilHitFrame(rate => vfx?.PlaySlash(rate));
+                if (!animation.TwirlHitFrameReached) yield break;
             }
-            finally { if (visual != null) visual.localRotation = original; }
+            else vfx?.PlaySlash();
+
+            List<Character> targets = Enemies(user, grid, user.GridPosition, AreaRadius);
+            foreach (Character target in targets) Damage(user, target, damageBonus);
+            RockGuardPassive.For(user).AddArmor(targets.Count);
+            foreach (Character target in targets)
+                if (target != null && target.Stats.IsAlive && !target.IsDying)
+                    yield return PushSystem.Push(user, target, grid, 1);
+            if (animation != null) yield return animation.WaitTwirlFinished();
         }
-        if (animation != null) yield return animation.WaitAttackFinished();
+        finally { if (animation != null) animation.FinishTwirl(); }
     }
 
     public override IEnumerable<Vector2Int> GetPreviewCells(Vector2Int origin, Vector2Int targetCell) => Area(origin, 1, 1, AreaRadius);

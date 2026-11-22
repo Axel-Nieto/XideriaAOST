@@ -169,6 +169,108 @@ public class UpgradeShopUITests : UpgradeIntegrationFixture
     }
 
     [Test]
+    public void EarthSectionSellsBothEarthUpgradesForTheirOwnGoldPrices()
+    {
+        var strike = ScriptableObject.CreateInstance<UpgradeDefinition>();
+        var shield = ScriptableObject.CreateInstance<UpgradeDefinition>();
+        try
+        {
+            Set(strike, "upgradeType", UpgradeType.RockExcavationStrike);
+            Set(strike, "upgradeId", UpgradeDefinition.RockExcavationStrikeId);
+            Set(strike, "goldCost", 30);
+            Set(shield, "upgradeType", UpgradeType.RockShieldDuration);
+            Set(shield, "upgradeId", UpgradeDefinition.RockShieldDurationId);
+            Set(shield, "goldCost", 20);
+            Set(shop, "upgrades", new List<UpgradeDefinition> { definition, strike, shield });
+            session.TryAddCurrency(RunCurrency.XideriaFragments, 50);
+            session.TryAddCurrency(RunCurrency.Gold, 29);
+            shop.Open();
+            Assert.That(Items().Where(item => item.gameObject.activeSelf).Single().Definition, Is.SameAs(definition));
+            var strikeItem = Items().Single(item => item.Definition == strike);
+            Get<Action<UpgradeDefinition>>(strikeItem, "purchaseRequested").Invoke(strike);
+            Assert.That(session.HasUpgrade(strike.Id), Is.False);
+            nextSectionButton.onClick.Invoke();
+            Assert.That(Items().Any(item => item.gameObject.activeSelf), Is.False);
+            nextSectionButton.onClick.Invoke();
+            Assert.That(Items().Any(item => item.gameObject.activeSelf), Is.False);
+            nextSectionButton.onClick.Invoke();
+            Assert.That(sectionTitleText.text, Is.EqualTo("Tierra"));
+            Assert.That(shop.CurrentCurrency, Is.EqualTo(RunCurrency.Gold));
+            Assert.That(emptySectionText.gameObject.activeSelf, Is.False);
+            CollectionAssert.AreEquivalent(new[] { strike, shield },
+                Items().Where(item => item.gameObject.activeSelf).Select(item => item.Definition));
+            Assert.That(Get<TMP_Text>(strikeItem, "costText").text, Is.EqualTo("30"));
+            Assert.That(Get<Button>(strikeItem, "purchaseButton").interactable, Is.False);
+            var shieldItem = Items().Single(item => item.Definition == shield);
+            var shieldButton = Get<Button>(shieldItem, "purchaseButton");
+            shieldButton.onClick.Invoke();
+            shieldButton.onClick.Invoke();
+            Assert.That(session.Gold, Is.EqualTo(9));
+            Assert.That(session.HasUpgrade(shield.Id), Is.True);
+            Assert.That(Get<TMP_Text>(shieldItem, "purchaseButtonText").text, Is.EqualTo("Adquirida"));
+            session.TryAddCurrency(RunCurrency.Gold, 21);
+            Assert.That(Get<Button>(strikeItem, "purchaseButton").interactable, Is.True);
+            Get<Button>(strikeItem, "purchaseButton").onClick.Invoke();
+            Assert.That(session.HasUpgrade(strike.Id), Is.True);
+            Assert.That(balanceText.text, Is.EqualTo("0"));
+            Assert.That(session.XideriaFragments, Is.EqualTo(50));
+            Assert.That(Get<TMP_Text>(strikeItem, "purchaseButtonText").text, Is.EqualTo("Adquirida"));
+        }
+        finally
+        {
+            shop.Close();
+            UnityEngine.Object.DestroyImmediate(strike);
+            UnityEngine.Object.DestroyImmediate(shield);
+        }
+    }
+
+    [Test]
+    public void WaterSectionSellsOnlyItsTwoUpgradesForTwentyAndThirtyGold()
+    {
+        var wave = ScriptableObject.CreateInstance<UpgradeDefinition>();
+        var prison = ScriptableObject.CreateInstance<UpgradeDefinition>();
+        try
+        {
+            Set(wave, "upgradeType", UpgradeType.WaterWavePush); Set(wave, "upgradeId", UpgradeDefinition.WaterWavePushId);
+            Set(wave, "goldCost", 20);
+            Set(prison, "upgradeType", UpgradeType.WaterPrisonGlobal); Set(prison, "upgradeId", UpgradeDefinition.WaterPrisonGlobalId);
+            Set(prison, "goldCost", 30);
+            Set(shop, "upgrades", new List<UpgradeDefinition> { definition, wave, prison });
+            session.TryAddCurrency(RunCurrency.XideriaFragments, 50); session.TryAddCurrency(RunCurrency.Gold, 29);
+            shop.Open();
+            UpgradeShopItemUI waveItem = Items().Single(item => item.Definition == wave);
+            Get<Action<UpgradeDefinition>>(waveItem, "purchaseRequested").Invoke(wave);
+            Assert.That(session.HasUpgrade(wave.Id), Is.False);
+            nextSectionButton.onClick.Invoke();
+            Assert.That(Items().Any(item => item.gameObject.activeSelf), Is.False);
+            nextSectionButton.onClick.Invoke();
+            Assert.That(sectionTitleText.text, Is.EqualTo("Agua"));
+            Assert.That(emptySectionText.gameObject.activeSelf, Is.False);
+            Assert.That(shop.CurrentCurrency, Is.EqualTo(RunCurrency.Gold));
+            CollectionAssert.AreEquivalent(new[] { wave, prison }, Items().Where(item => item.gameObject.activeSelf).Select(item => item.Definition));
+            UpgradeShopItemUI prisonItem = Items().Single(item => item.Definition == prison);
+            Assert.That(Get<TMP_Text>(waveItem, "costText").text, Is.EqualTo("20"));
+            Assert.That(Get<TMP_Text>(prisonItem, "costText").text, Is.EqualTo("30"));
+            Assert.That(Get<Button>(prisonItem, "purchaseButton").interactable, Is.False);
+            Get<Button>(waveItem, "purchaseButton").onClick.Invoke();
+            Get<Button>(waveItem, "purchaseButton").onClick.Invoke();
+            Assert.That(session.Gold, Is.EqualTo(9));
+            Assert.That(session.HasUpgrade(wave.Id), Is.True);
+            session.TryAddCurrency(RunCurrency.Gold, 21);
+            Get<Button>(prisonItem, "purchaseButton").onClick.Invoke();
+            Assert.That(session.Gold, Is.Zero);
+            Assert.That(session.XideriaFragments, Is.EqualTo(50));
+            Assert.That(session.HasUpgrade(prison.Id), Is.True);
+            Assert.That(Get<TMP_Text>(prisonItem, "purchaseButtonText").text, Is.EqualTo("Adquirida"));
+        }
+        finally
+        {
+            shop.Close();
+            UnityEngine.Object.DestroyImmediate(wave); UnityEngine.Object.DestroyImmediate(prison);
+        }
+    }
+
+    [Test]
     public void RepeatedOpenKeepsSectionAndSingleArrowListenerButReopeningStartsAtSirTete()
     {
         shop.Open();

@@ -112,33 +112,33 @@ public static class PushSystem
         }
 
         grid.UnregisterCharacter(target);
-
-        Vector3 endPosition =
-            grid.GridToWorld(destination, target)
-            + target.VisualOffset;
-
-        while (Vector3.Distance(
-                   target.transform.position,
-                   endPosition) > 0.05f)
+        bool committed = false;
+        try
         {
-            target.transform.position =
-                Vector3.MoveTowards(
-                    target.transform.position,
-                    endPosition,
-                    pushSpeed * Time.deltaTime
-                );
-
-            yield return null;
+            Vector3 endPosition = grid.GridToWorld(destination, target) + target.VisualOffset;
+            while (Vector3.Distance(target.transform.position, endPosition) > 0.05f)
+            {
+                target.transform.position = Vector3.MoveTowards(
+                    target.transform.position, endPosition, pushSpeed * Time.deltaTime);
+                yield return null;
+            }
+            target.transform.position = endPosition;
+            target.SetGridPosition(destination);
+            grid.RegisterCharacter(target);
+            committed = true;
+            target.ProcessCurrentTerrain();
+            ApplyCollisionDamage(source, target, collided);
         }
-
-        target.transform.position = endPosition;
-
-        target.SetGridPosition(destination);
-
-        grid.RegisterCharacter(target);
-
-        target.ProcessCurrentTerrain();
-        ApplyCollisionDamage(source, target, collided);
+        finally
+        {
+            // Restore the last committed footprint if a phase change cuts a push short.
+            if (!committed && target != null && grid != null && target.Stats != null &&
+                target.Stats.IsAlive && !target.IsDying && target.gameObject.activeInHierarchy)
+            {
+                target.transform.position = grid.GridToWorld(origin, target) + target.VisualOffset;
+                grid.RegisterCharacter(target);
+            }
+        }
     }
 
     private static void ApplyCollisionDamage(Character source, Character target, bool collided)

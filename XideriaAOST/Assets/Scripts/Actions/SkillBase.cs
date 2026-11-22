@@ -16,6 +16,12 @@ public abstract class SkillBase
     public virtual bool ShowOnlyUsableTargets => false;
     public Sprite Icon { get; }
 
+    // Upgrades can change selection on an already equipped skill. Consumers
+    // must ask for the current user's targeting instead of caching the base type.
+    public virtual SkillTargetType GetTargetType(Character user) => TargetType;
+    public virtual string GetRangeDescription(Character user) => GetTargetType(user) == SkillTargetType.Self
+        ? "Personal" : $"{MinRange}-{MaxRange}";
+
     protected SkillBase(
     string name,
     string description,
@@ -53,8 +59,6 @@ public abstract class SkillBase
         if (user == null || target == null)
             return false;
 
-        int minDistance = int.MaxValue;
-
         foreach (Vector2Int userCell
                  in user.GetOccupiedCells(userPosition))
         {
@@ -65,13 +69,12 @@ public abstract class SkillBase
                     Mathf.Abs(userCell.x - targetCell.x) +
                     Mathf.Abs(userCell.y - targetCell.y);
 
-                if (distance < minDistance)
-                    minDistance = distance;
+                if (distance >= MinRange && distance <= MaxRange)
+                    return true;
             }
         }
 
-        return minDistance >= MinRange &&
-               minDistance <= MaxRange;
+        return false;
     }
 
     public bool IsInRange(

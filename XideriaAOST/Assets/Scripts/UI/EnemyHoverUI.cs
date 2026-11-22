@@ -32,7 +32,7 @@ public class EnemyHoverUI : MonoBehaviour
             panel.SetActive(true);
 
         if (enemyNameText != null)
-            enemyNameText.text = enemy.name;
+            enemyNameText.text = enemy.DisplayName;
 
         if (hpText != null)
             hpText.text = enemy.Stats.CurrentHP.ToString();

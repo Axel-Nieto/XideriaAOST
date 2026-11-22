@@ -35,7 +35,7 @@ public class CharacterInfoHUD : MonoBehaviour
         List<SkillBase> skills = currentCharacter.GetActiveSkills();
 
         string text =
-            $"{currentCharacter.name}\n" +
+            $"{currentCharacter.DisplayName}\n" +
             $"HP: {stats.CurrentHP} / {stats.MaxHP}\n" +
             $"Energía: {stats.CurrentEnergy} / {stats.MaxEnergy}\n" +
             $"Ataque: {stats.Attack}\n" +
@@ -75,9 +75,10 @@ public class CharacterInfoHUD : MonoBehaviour
                     _ => "-"
                 };
 
-                string rangeText = skill.TargetType == SkillTargetType.Self
-                    ? "No requiere objetivo"
-                    : $"Rango: {skill.MinRange}-{skill.MaxRange}";
+                string rangeDescription = skill.GetRangeDescription(currentCharacter);
+                string rangeText = skill.GetTargetType(currentCharacter) == SkillTargetType.Self
+                    ? (rangeDescription == "Personal" ? "No requiere objetivo" : rangeDescription)
+                    : $"Rango: {rangeDescription}";
                 
                 string areaText = skill.AreaRadius > 0
                     ? $" | Área: radio {skill.AreaRadius}"

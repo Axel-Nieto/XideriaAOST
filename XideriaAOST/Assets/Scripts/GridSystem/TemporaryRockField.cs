@@ -57,7 +57,8 @@ public sealed class TemporaryRockField : MonoBehaviour
         return terrain != null && (terrain.Type == CellType.Ground || terrain.Type == CellType.Water || terrain.Type == CellType.Lava) &&
             terrain.Walkable && !grid.IsOccupied(cell) && !grid.HasHelmetAt(cell);
     }
-    public bool TryPlace(Character owner, Vector2Int cell, GameObject prefab, int duration = 2)
+    public bool TryPlace(Character owner, Vector2Int cell, GameObject prefab, int duration = 2,
+        RockSkillVFX presentation = null)
     {
         if (owner == null || prefab == null || duration <= 0 || !CanPlace(cell)) return false;
         Vector3 surface = grid.GridToWorld(cell) +
@@ -82,7 +83,9 @@ public sealed class TemporaryRockField : MonoBehaviour
             visual.transform.position += new Vector3(surface.x - bounds.center.x, surface.y - bounds.min.y, surface.z - bounds.center.z);
         }
         var rock = new Rock { Owner = owner, Cell = cell, PreviousType = grid.GetCell(cell).Type, Turns = duration, Visual = visual };
-        var presentation = owner.GetComponent<RockSkillVFX>();
+        // Presentation may come from the player's shared R template while the
+        // rock still belongs to the boss for duration/death cleanup.
+        if (presentation == null) presentation = owner.GetComponent<RockSkillVFX>();
         if (presentation != null)
         {
             float cellSize = Vector3.Distance(grid.GridToWorld(cell), grid.GridToWorld(cell + Vector2Int.right));

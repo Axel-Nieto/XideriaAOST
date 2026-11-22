@@ -118,9 +118,9 @@ MonoBehaviour:
   startGridPosition: {x: 6, y: 11}
   modelForwardYOffset: 180
   baseStats:
-    attack: 6
+    attack: 5
     defense: 2
-    maxHP: 72
+    maxHP: 64
     maxEnergy: 8
     energyRegen: 8
   visualRoot: {fileID: 158597649}
@@ -140,9 +140,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 800724847}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5537837ee409a1d40a7b62fd6d1894ff, type: 3}
+  m_Script: {fileID: 11500000, guid: b3315b9bd1532afcc023f4d987535926, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::LarvaAI
+  m_EditorClassIdentifier: Assembly-CSharp::BossAI
+  phaseTwoImpactPrefab: {fileID: 7924684500404640184, guid: 42a3f2e4a729a5e40a31bb3d712d32e7, type: 3}
+  temporaryRockPrefab: {fileID: 919132149155446097, guid: e9b206b617fca4c4a8b3d2d250ac83d5, type: 3}
+  phaseTwoMeleeDamage: 3
+  phaseTwoRangedDamage: 2
 --- !u!114 &800724848
 MonoBehaviour:
   m_ObjectHideFlags: 0

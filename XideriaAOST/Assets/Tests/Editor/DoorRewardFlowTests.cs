@@ -96,6 +96,61 @@ public class DoorRewardFlowTests : UpgradeIntegrationFixture
         Call(hud, "OnDestroy");
     }
 
+    [TestCase(RunCurrency.Gold, 1)] [TestCase(RunCurrency.Gold, 2)]
+    [TestCase(RunCurrency.XideriaFragments, 1)] [TestCase(RunCurrency.XideriaFragments, 2)]
+    public void LobbyDoorAndVictoryPayAgainOnTheNextCompletedVisit(RunCurrency currency, int size)
+    {
+        string destinationName = "RewardReplay" + Guid.NewGuid().ToString("N");
+        Sprite gold = Sprite("24c4ff6cc5e7f704c84be412cf0d8a67");
+        Sprite fragments = Sprite("5b70c211105e9224fbeb7dee5791bb7b");
+        RunRewardRecord first = null;
+        for (int visit = 1; visit <= 2; visit++)
+        {
+            Scene lobby = NewRoom("Lobby");
+            GridSystem lobbyGrid = Grid(lobby, destinationName, gold, fragments);
+            Character actor = Actor(lobby, lobbyGrid, true, new Vector2Int(size == 1 ? 10 : 9, 5), size);
+            RunRoomRecord source = session.RunState.EnterScene("Lobby");
+            LogicalDoor door = LogicalDoor.Build(Get<List<TerrainCellData>>(lobbyGrid, "terrainCells"))[0];
+            int draws = 0;
+            Assert.That(session.RunState.TryPrepareDoorOffer(source.RoomId, door.Id, new[] { destinationName }, new[] { destinationName },
+                new DoorRewardSettings { GoldWeight = 1, XideriaFragmentsWeight = 1, GoldAmount = 10, XideriaFragmentsAmount = 10 },
+                () => ++draws == 1 ? 0 : currency == RunCurrency.Gold ? 0 : 0.75, out _, out string error), Is.True, error);
+            lobbyGrid.PrepareDoorOffers();
+            Assert.That(lobbyGrid.TryGetDoorOffer(actor, out RunRewardRecord offer), Is.True);
+            Assert.That(offer.IsDelivered, Is.False);
+            Assert.That(offer.Currency, Is.EqualTo(currency));
+            if (first != null)
+            {
+                Assert.That(offer.RoomId, Is.Not.EqualTo(first.RoomId));
+                Assert.That(first.IsDelivered, Is.True);
+            }
+            first ??= offer;
+            Assert.That(session.RunState.TrySelectDoor(offer), Is.True);
+            EditorSceneManager.CloseScene(lobby, true);
+
+            Scene destination = NewRoom(destinationName);
+            GridSystem grid = Grid(destination, "Lobby", gold, fragments);
+            LogicalDoor backDoor = LogicalDoor.Build(Get<List<TerrainCellData>>(grid, "terrainCells"))[0];
+            Assert.That(session.RunState.TryPrepareDoorOffer(offer.RoomId, backDoor.Id, new[] { "Lobby" }, null, null,
+                () => 0, out RunRewardRecord back, out _), Is.True);
+            Actor(destination, grid, true, new Vector2Int(2, 2), size);
+            Character enemy = Actor(destination, grid, false, new Vector2Int(6, 6), 2);
+            var manager = ObjectInScene("State manager", destination).AddComponent<GameStateManager>();
+            Set(manager, "gridSystem", grid);
+            Call(manager, "Start");
+            Assert.That(Get<string>(manager, "rewardRoomId"), Is.EqualTo(offer.RoomId));
+            enemy.Stats.SetCurrentHP(0);
+            Call(manager, "CheckVictory");
+            Call(manager, "CheckVictory");
+            Assert.That(offer.IsDelivered, Is.True);
+            Assert.That(session.GetBalance(currency), Is.EqualTo(visit * 10));
+            Assert.That(session.GetBalance(currency == RunCurrency.Gold ? RunCurrency.XideriaFragments : RunCurrency.Gold), Is.Zero);
+            Assert.That(session.RunState.TrySelectDoor(back), Is.True);
+            session.ResetSession();
+            EditorSceneManager.CloseScene(destination, true);
+        }
+    }
+
     private Scene NewRoom(string prefix)
     {
         for (int i = 0; i < SceneManager.sceneCount; i++)
@@ -113,6 +168,7 @@ public class DoorRewardFlowTests : UpgradeIntegrationFixture
     {
         var go = ObjectInScene("Grid", scene);
         var grid = go.AddComponent<GridSystem>();
+        Set(grid, "width", 16); Set(grid, "height", 16); Set(grid, "cellSize", 1f);
         var cells = new List<TerrainCellData>();
         foreach (int y in new[] { 5, 6 })
         {
