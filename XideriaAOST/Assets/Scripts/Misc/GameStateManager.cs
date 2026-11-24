@@ -44,6 +44,7 @@ public class GameStateManager : MonoBehaviour
 
     private void Update()
     {
+        if (PauseMenuUI.BlocksGameplayInput) return;
         if (Keyboard.current.lKey.wasPressedThisFrame)
         {
             SkipLevel();

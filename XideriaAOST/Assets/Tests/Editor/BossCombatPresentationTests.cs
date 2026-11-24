@@ -34,7 +34,7 @@ public class BossCombatPresentationTests : UpgradeIntegrationFixture
         Set(movement, "_grid", grid); Set(movement, "_character", boss);
         typeof(Character).GetProperty(nameof(Character.Movement)).SetValue(boss, movement);
         instance.transform.SetParent(root.transform, false);
-        typeof(Character).GetProperty(nameof(Character.Stats)).SetValue(boss, new CharacterStats(6, 2, 72, 8, 8));
+        typeof(Character).GetProperty(nameof(Character.Stats)).SetValue(boss, new CharacterStats(5, 2, 64, 8, 8));
         boss.Stats.SetCurrentEnergy(8);
         boss.SetGridPosition(new Vector2Int(6, 6));
         instance.transform.position = grid.GridToWorld(boss.GridPosition, boss) + boss.VisualOffset;
@@ -51,6 +51,8 @@ public class BossCombatPresentationTests : UpgradeIntegrationFixture
 
     [TestCase("Idle")] [TestCase("Walk")] [TestCase("Attack")]
     [TestCase("Charge")] [TestCase("Hit")] [TestCase("Death")]
+    [TestCase("Boss_Fase2")] [TestCase("Boss_IdleF2")] [TestCase("Boss_Walkf2")]
+    [TestCase("Boss_AttackF2")] [TestCase("Boss_SkillF2")] [TestCase("Boss_HitReactionF2")]
     public void EveryPoseAndHeadingKeepsTheBodyOverTheFourOccupiedCells(string state)
     {
         Vector2Int origin = boss.GridPosition;
@@ -95,6 +97,77 @@ public class BossCombatPresentationTests : UpgradeIntegrationFixture
     }
 
     [Test]
+    public void CombatPrefabHasThePhaseTwoAIAndBothEffectReferences()
+    {
+        BossAI ai = boss.GetComponent<BossAI>();
+        Assert.That(ai, Is.Not.Null);
+        var serialized = new SerializedObject(ai);
+        Assert.That(serialized.FindProperty("phaseTwoImpactPrefab").objectReferenceValue, Is.Not.Null);
+        Assert.That(serialized.FindProperty("temporaryRockPrefab").objectReferenceValue, Is.Not.Null);
+        Assert.That(boss.GetComponents<IEnemyAI>(), Has.Length.EqualTo(1));
+        var stats = new SerializedObject(boss).FindProperty("baseStats");
+        Assert.That(stats.FindPropertyRelative("maxHP").intValue, Is.EqualTo(64));
+        Assert.That(stats.FindPropertyRelative("attack").intValue, Is.EqualTo(5));
+        Assert.That(stats.FindPropertyRelative("defense").intValue, Is.EqualTo(2));
+    }
+
+    [TestCase(false)] [TestCase(true)]
+    public void PhaseTwoAttacksWaitForImpactThenReturnToTheirOwnIdle(bool ranged)
+    {
+        animation.PrepareBossPhaseTwo();
+        float elapsed = 0f, effectAt = -1f;
+        IEnumerator impact = animation.PlayBossAttackUntilImpact(ranged, () => effectAt = elapsed);
+        while (impact.MoveNext())
+        {
+            Assert.That(elapsed, Is.LessThan(1.1f));
+            Assert.That(animation.BossImpactReached, Is.False);
+            animator.Update(0.01f); elapsed += 0.01f;
+        }
+        Assert.That(animation.BossImpactReached, Is.True);
+        Assert.That(elapsed, Is.InRange(0.54f, 0.57f));
+        Assert.That(effectAt, Is.InRange(ranged ? 0.34f : 0.54f, ranged ? 0.37f : 0.57f));
+        IEnumerator finish = animation.WaitBossActionFinished();
+        while (finish.MoveNext())
+        {
+            Assert.That(elapsed, Is.LessThan(1.2f));
+            animator.Update(0.01f); elapsed += 0.01f;
+        }
+        Assert.That(elapsed, Is.GreaterThanOrEqualTo(0.99f));
+        animation.FinishBossAction();
+        Assert.That(animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.Boss_IdleF2"), Is.True);
+        animation.SetWalking(true);
+        animator.Update(0.1f);
+        Assert.That(animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.Boss_IdleF2"), Is.True);
+        animation.PlayHit(); animator.Update(0.01f); animator.Update(0.05f);
+        Assert.That(animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.Boss_HitReactionF2"), Is.True);
+        for (int i = 0; i < 40; i++) animator.Update(0.01f);
+        Assert.That(animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.Boss_IdleF2"), Is.True);
+    }
+
+    [Test]
+    public void TransformationInterruptsChargeAndCompletesBeforeCenterMovement()
+    {
+        animator.Play("Base Layer.Charge", 0, 0.4f); animator.Update(0f);
+        var routine = new InterruptibleRoutine(animation.PlayBossTransformation());
+        float elapsed = 0f;
+        while (routine.MoveNext())
+        {
+            Assert.That(elapsed, Is.LessThan(3.1f));
+            animation.PlayHit(); // Damage must not replace the transformation pose.
+            animator.Update(0.01f); elapsed += 0.01f;
+            if (elapsed < 2.8f)
+                Assert.That(animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.Boss_Fase2"), Is.True);
+        }
+        Assert.That(elapsed, Is.GreaterThan(2.8f));
+        animation.FinishBossAction();
+        animation.SetBossCenterMovement(true); animation.SetWalking(true);
+        animator.Update(0.5f);
+        Assert.That(animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.Boss_Walkf2"), Is.True);
+        animation.SetWalking(false); animation.SetBossCenterMovement(false);
+        Assert.That(animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.Boss_IdleF2"), Is.True);
+    }
+
+    [Test]
     public void BlendingBetweenPosesKeepsTheBodyCentered()
     {
         var mesh = new Mesh();
@@ -133,7 +206,7 @@ public class BossCombatPresentationTests : UpgradeIntegrationFixture
         AdvanceAnimation((IEnumerator)attack.Current);
         Assert.That(target.Stats.CurrentHP, Is.EqualTo(36));
         Assert.That(attack.MoveNext(), Is.True);
-        Assert.That(target.Stats.CurrentHP, Is.EqualTo(29));
+        Assert.That(target.Stats.CurrentHP, Is.EqualTo(30));
         Drain(attack, false);
         Assert.That(boss.Stats.CurrentEnergy, Is.EqualTo(5));
         animator.Update(0.1f); animator.Update(0.1f);
@@ -157,7 +230,7 @@ public class BossCombatPresentationTests : UpgradeIntegrationFixture
             Drain((IEnumerator)action.Current, true);
             Drain(action, false);
             Assert.That(boss.GridPosition, Is.EqualTo(new Vector2Int(10, 6)));
-            Assert.That(target.Stats.CurrentHP, Is.EqualTo(27));
+            Assert.That(target.Stats.CurrentHP, Is.EqualTo(28));
         }
         Assert.That(animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.Idle"), Is.True);
         Assert.That(animator.GetFloat("ChargeSpeed"), Is.EqualTo(1f));

@@ -33,6 +33,9 @@ public class GridInputHandler : MonoBehaviour
     private HashSet<Vector2Int> reachableCells = new();
     private List<GameObject> rangeTiles = new();
     private bool isMoving = false;
+    private InterruptibleRoutine ownedAction;
+    private Character actionOwner;
+    private int actionVersion;
     private bool isCharacterSelected = false;
     private bool isPlayerTurn = false;
     private bool isHelmetInventoryOpen = false;
@@ -40,9 +43,10 @@ public class GridInputHandler : MonoBehaviour
     private int upgradeShopClosedFrame = -1;
     public bool IsExecutingAction => isMoving;
     public bool IsUpgradeShopInputBlocked => isUpgradeShopOpen || upgradeShopClosedFrame == Time.frameCount;
+    private bool IsGameplayInputBlocked => PauseMenuUI.BlocksGameplayInput || IsUpgradeShopInputBlocked;
     public bool CanEndTurn =>
         !GameSession.IsGameOver &&
-        !IsUpgradeShopInputBlocked &&
+        !IsGameplayInputBlocked &&
         isPlayerTurn && !isMoving && playerCharacter != null &&
         (gameStateManager == null || !gameStateManager.IsExplorationMode);
     private ActionMode currentMode = ActionMode.Move;
@@ -81,6 +85,8 @@ public class GridInputHandler : MonoBehaviour
 
     private void Awake()
     {
+        if (Application.isPlaying && GetComponent<PauseMenuUI>() == null)
+            gameObject.AddComponent<PauseMenuUI>();
         gameStateManager = FindFirstObjectByType<GameStateManager>();
 
         // Older maps may not have serialized the preview pool reference.
@@ -118,12 +124,15 @@ public class GridInputHandler : MonoBehaviour
         skillRangeDirty = true;
         movementRangeDirty = true;
         GameEvents.OnTurnStarted += OnTurnStarted;
+        GameEvents.OnTurnInterrupted += OnTurnInterrupted;
         GameEvents.OnEnergyRecovered += OnEnergyRecovered;
     }
 
     private void OnDisable()
     {
         GameEvents.OnTurnStarted -= OnTurnStarted;
+        GameEvents.OnTurnInterrupted -= OnTurnInterrupted;
+        ownedAction?.Cancel();
         GameEvents.OnEnergyRecovered -= OnEnergyRecovered;
     }
 
@@ -150,7 +159,7 @@ public class GridInputHandler : MonoBehaviour
 
     private void Update()
     {
-        if (GameSession.IsGameOver || IsUpgradeShopInputBlocked)
+        if (GameSession.IsGameOver || IsGameplayInputBlocked)
             return;
 
         UpdateEnemyHover();
@@ -225,15 +234,6 @@ public class GridInputHandler : MonoBehaviour
             SceneManager.LoadScene(currentScene.buildIndex);
         }
 
-        if (Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            if (PlayerSessionData.Instance != null)
-                PlayerSessionData.Instance.ResetSession();
-
-            if (SceneTransitionManager.Instance != null)
-                SceneTransitionManager.Instance.LoadScene("Inicio");
-        }
-
         if (!isCharacterSelected || selectedCharacter == null)
         {
             ClearTiles();
@@ -284,6 +284,32 @@ public class GridInputHandler : MonoBehaviour
 
             var skill = selectedCharacter.GetSkill(selectedSkillIndex);
             DrawSelfSkillPreview(skill);
+        }
+    }
+
+    private void OnTurnInterrupted(Character character)
+    {
+        if (actionOwner != character && selectedCharacter != character) return;
+        actionVersion++;
+        ownedAction?.Cancel();
+        actionOwner = null;
+        isMoving = false;
+        isPlayerTurn = false;
+        currentMode = ActionMode.Move;
+        selectedSkillIndex = -1;
+        ClearTiles(); ClearRangeTiles(); ClearAoeTiles();
+    }
+
+    private IEnumerator RunOwnedAction(IEnumerator action, int version)
+    {
+        if (version != actionVersion) yield break;
+        var routine = new InterruptibleRoutine(action);
+        ownedAction = routine;
+        try { yield return routine; }
+        finally
+        {
+            routine.Dispose();
+            if (ReferenceEquals(ownedAction, routine)) ownedAction = null;
         }
     }
 
@@ -518,7 +544,7 @@ public class GridInputHandler : MonoBehaviour
 
     private void HandleClick()
     {
-        if (IsUpgradeShopInputBlocked) return;
+        if (IsGameplayInputBlocked) return;
         if (isMoving) return;
 
         Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
@@ -596,7 +622,7 @@ public class GridInputHandler : MonoBehaviour
 
     private IEnumerator ExecuteSkill(SkillBase skill, Vector2Int targetCell)
     {
-        if (IsUpgradeShopInputBlocked) yield break;
+        if (IsGameplayInputBlocked) yield break;
         if (isMoving)
             yield break;
 
@@ -608,17 +634,24 @@ public class GridInputHandler : MonoBehaviour
 
         isMoving = true;
         Vector2Int origin = selectedCharacter.GridPosition;
+        int version = ++actionVersion;
+        actionOwner = selectedCharacter;
         try
         {
-            yield return skill.Execute(selectedCharacter, targetCell, gridSystem);
+            yield return RunOwnedAction(skill.Execute(selectedCharacter, targetCell, gridSystem), version);
+            if (version != actionVersion) yield break;
             if (selectedCharacter != null && selectedCharacter.GridPosition != origin)
                 yield return TryPickupAdjacentHelmet();
         }
         finally
         {
-            isMoving = false;
-            currentMode = ActionMode.Move;
-            movementRangeDirty = true;
+            if (version == actionVersion)
+            {
+                isMoving = false;
+                currentMode = ActionMode.Move;
+                movementRangeDirty = true;
+                actionOwner = null;
+            }
         }
         battleHUD.SetSelectedSkill(-1);
         battleHUD.Refresh();
@@ -626,7 +659,7 @@ public class GridInputHandler : MonoBehaviour
 
     private void SelectSkill(int index)
     {
-        if (IsUpgradeShopInputBlocked) return;
+        if (IsGameplayInputBlocked) return;
         if (isMoving) return;
         if (selectedCharacter == null) return;
 
@@ -653,7 +686,7 @@ public class GridInputHandler : MonoBehaviour
         skillRangeDirty = true;
         movementRangeDirty = true;
 
-        if (skill.TargetType == SkillTargetType.Self)
+        if (skill.GetTargetType(selectedCharacter) == SkillTargetType.Self)
         {
             battleHUD.SetSelectedSkill(index);
 
@@ -679,19 +712,25 @@ public class GridInputHandler : MonoBehaviour
 
     private IEnumerator ExecuteSelectedAction(IAction action)
     {
-        if (IsUpgradeShopInputBlocked) yield break;
+        if (IsGameplayInputBlocked) yield break;
         isMoving = true;
-
+        int version = ++actionVersion;
+        actionOwner = selectedCharacter;
         try
         {
-            yield return selectedCharacter.ExecuteAction(action);
+            yield return RunOwnedAction(selectedCharacter.ExecuteAction(action), version);
+            if (version != actionVersion) yield break;
 
             yield return TryPickupAdjacentHelmet();
         }
         finally
         {
-            isMoving = false;
-            movementRangeDirty = true;
+            if (version == actionVersion)
+            {
+                isMoving = false;
+                movementRangeDirty = true;
+                actionOwner = null;
+            }
         }
 
         battleHUD.Refresh();
@@ -747,7 +786,7 @@ public class GridInputHandler : MonoBehaviour
     {
         return isPlayerTurn &&
                !isMoving &&
-               !IsUpgradeShopInputBlocked &&
+               !IsGameplayInputBlocked &&
                !GameSession.IsGameOver;
     }
 
@@ -756,7 +795,7 @@ public class GridInputHandler : MonoBehaviour
         return actor != null && actor == playerCharacter && actor.IsPlayer &&
                actor.Stats != null && actor.Stats.IsAlive && !actor.IsDying &&
                actor.gameObject.activeInHierarchy && isPlayerTurn && !isMoving &&
-               !isHelmetInventoryOpen && !IsUpgradeShopInputBlocked && !GameSession.IsGameOver;
+               !isHelmetInventoryOpen && !IsGameplayInputBlocked && !GameSession.IsGameOver;
     }
 
     public void SetUpgradeShopOpen(bool open)
@@ -908,7 +947,7 @@ public class GridInputHandler : MonoBehaviour
 
     public void SelectSkillFromUI(int index)
     {
-        if (IsUpgradeShopInputBlocked) return;
+        if (IsGameplayInputBlocked) return;
         if (!isPlayerTurn) return;
         if (!isCharacterSelected) return;
         if (selectedCharacter == null) return;

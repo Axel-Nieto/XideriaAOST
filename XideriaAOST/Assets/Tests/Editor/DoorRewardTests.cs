@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
@@ -406,6 +407,101 @@ public class RoomRewardDeliveryTests
         Assert.That(session.TryCompleteRoom(room.RoomId), Is.False);
         Assert.That(session.Gold, Is.Zero);
         Assert.That(session.XideriaFragments, Is.Zero);
+    }
+
+    [TestCase(0.0, RunCurrency.Gold)]
+    [TestCase(0.75, RunCurrency.XideriaFragments)]
+    public void ClearingARoomThenReturningToLobbyAllowsANewRewardedVisit(double sample, RunCurrency currency)
+    {
+        RunRewardRecord first = DoorRewardTests.Prepare(session.RunState, rewardRoll: sample);
+        string lobby = session.RunState.CurrentRoomId;
+        Assert.That(session.RunState.TrySelectDoor(first), Is.True);
+        session.RunState.EnterScene(first.DestinationScene);
+        Assert.That(session.TryCompleteRoom(first.RoomId), Is.True);
+        int paid = session.GetBalance(currency);
+        session.ResetSession();
+        Assert.That(session.RunState.EnterScene("Lobby").RoomId, Is.EqualTo(lobby));
+
+        RunRewardRecord second = DoorRewardTests.Prepare(session.RunState, rewardRoll: sample);
+        Assert.That(second.IsDelivered, Is.False, "The next visit must not reuse an already delivered reward");
+        Assert.That(second.RoomId, Is.Not.EqualTo(first.RoomId));
+        Assert.That(second.RewardId, Is.Not.EqualTo(first.RewardId));
+        Assert.That(second.Currency, Is.EqualTo(first.Currency));
+        Assert.That(second.Amount, Is.EqualTo(first.Amount));
+        Assert.That(first.IsDelivered, Is.True);
+        Assert.That(session.GetBalance(currency), Is.EqualTo(paid), "Showing the next offer must not credit it");
+        Assert.That(DoorRewardTests.Prepare(session.RunState), Is.SameAs(second), "Repeated preparation must keep the same pending offer");
+        RunState restored = JsonUtility.FromJson<RunState>(JsonUtility.ToJson(session.RunState));
+        Assert.That(restored.FindDoorOffer(lobby, second.DoorId).RewardId, Is.EqualTo(second.RewardId));
+        Assert.That(restored.Rewards.Single(reward => reward.RewardId == first.RewardId).IsDelivered, Is.True);
+        Assert.That(session.RunState.TrySelectDoor(first), Is.False, "A retained reference must not enter an old delivered room");
+        Assert.That(session.RunState.TrySelectDoor(second), Is.True);
+        Assert.That(session.RunState.EnterScene(second.DestinationScene).RoomId, Is.EqualTo(second.RoomId));
+        Assert.That(session.TryCompleteRoom(second.RoomId), Is.True);
+        Assert.That(session.TryCompleteRoom(second.RoomId), Is.False);
+        Assert.That(session.GetBalance(currency), Is.EqualTo(paid * 2));
+        Assert.That(first.IsDelivered, Is.True);
+        Assert.That(second.IsDelivered, Is.True);
+    }
+
+    [Test]
+    public void CompletedRoomWithAnUnpaidRewardKeepsItsOriginalOfferOnReturn()
+    {
+        RunRewardRecord pending = EnterCombat();
+        session.TryAddCurrency(RunCurrency.Gold, int.MaxValue);
+        Assert.That(session.TryCompleteRoom(pending.RoomId), Is.False);
+        Assert.That(session.RunState.FindRoom(pending.RoomId).IsCompleted, Is.True);
+        session.ResetSession();
+        session.RunState.EnterScene("Lobby");
+        Assert.That(DoorRewardTests.Prepare(session.RunState), Is.SameAs(pending));
+        Assert.That(pending.IsDelivered, Is.False);
+        Assert.That(session.RunState.Rewards.Count, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void RepeatedCompletedRunsReceiveFreshRoomsWithoutLosingPurchasesOrEarlierReceipts()
+    {
+        var upgrade = ScriptableObject.CreateInstance<UpgradeDefinition>();
+        try
+        {
+            typeof(UpgradeDefinition).GetField("upgradeId", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(upgrade, UpgradeDefinition.VitalImpulseId);
+            typeof(UpgradeDefinition).GetField("upgradeType", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(upgrade, UpgradeType.VitalImpulse);
+            typeof(UpgradeDefinition).GetField("fragmentCost", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(upgrade, 3);
+            session.TryAddCurrency(RunCurrency.XideriaFragments, 10);
+            Assert.That(session.TryPurchaseUpgrade(upgrade, out _), Is.True);
+            string runId = session.RunState.RunId;
+            var previous = new List<RunRewardRecord>();
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                session.RunState.EnterScene("Lobby");
+                RunRewardRecord entry = DoorRewardTests.Prepare(session.RunState);
+                Assert.That(entry.IsDelivered, Is.False);
+                Assert.That(session.RunState.TrySelectDoor(entry), Is.True);
+                session.RunState.EnterScene(entry.DestinationScene);
+                Assert.That(session.TryCompleteRoom(entry.RoomId), Is.True);
+                string source = session.RunState.CurrentRoomId;
+                Assert.That(session.RunState.TryPrepareDoorOffer(source, "boss", new[] { "LevelBossZ1" }, new[] { "LevelBossZ1" },
+                    DoorRewardTests.Settings(), () => 0.0, out RunRewardRecord boss, out _), Is.True);
+                Assert.That(session.RunState.TrySelectDoor(boss), Is.True);
+                session.RunState.EnterScene(boss.DestinationScene);
+                Assert.That(session.TryCompleteRoom(boss.RoomId), Is.True);
+                previous.Add(entry); previous.Add(boss);
+                session.ResetSession();
+                Assert.That(session.Gold, Is.EqualTo((attempt + 1) * 14));
+                Assert.That(session.XideriaFragments, Is.EqualTo(7));
+                Assert.That(session.HasUpgrade(UpgradeDefinition.VitalImpulseId), Is.True);
+                Assert.That(session.RunState.RunId, Is.EqualTo(runId));
+                foreach (RunRewardRecord old in previous)
+                {
+                    Assert.That(old.IsDelivered, Is.True);
+                    Assert.That(session.RunState.FindRoom(old.RoomId).IsCompleted, Is.True);
+                }
+            }
+            Assert.That(previous.Select(reward => reward.RoomId).Distinct().Count(), Is.EqualTo(6));
+        }
+        finally { UnityEngine.Object.DestroyImmediate(upgrade); }
     }
 
     [Test]

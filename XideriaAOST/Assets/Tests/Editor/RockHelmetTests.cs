@@ -674,6 +674,278 @@ public class RockCombatTests : UpgradeIntegrationFixture
         }
     }
 
+    [TestCase(0.5f)] [TestCase(1f)] [TestCase(2f)]
+    public void TwirlSynchronizesSlashAndImpactAtDifferentSpeedsAndDoesNotRepeatFromIdle(float speed)
+    {
+        Animator animator = ExcavationModel(out CharacterAnimationController animation);
+        animator.speed = speed;
+        animator.Update(0.2f);
+        Assert.That(animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.metarig|IDL"), Is.True);
+        float slashTime = -1f;
+        float slashRate = 0f;
+        float impactTime = AdvanceTimedAnimation(animation.PlayTwirlUntilHitFrame(rate =>
+        {
+            slashTime = animator.GetCurrentAnimatorStateInfo(0).normalizedTime * (61f / 60f) / speed;
+            slashRate = rate;
+        }), animator);
+        Assert.That(slashTime, Is.EqualTo(0.25f / speed).Within(0.02f));
+        Assert.That(slashRate, Is.EqualTo(speed).Within(0.001f));
+        Assert.That(impactTime, Is.EqualTo(0.4f / speed).Within(0.03f));
+        Assert.That(animation.TwirlHitFrameReached, Is.True);
+        Assert.That(animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.Twirl_Tete"), Is.True);
+        float recoveryTime = AdvanceTimedAnimation(animation.WaitTwirlFinished(), animator);
+        Assert.That(impactTime + recoveryTime, Is.GreaterThanOrEqualTo((61f / 60f) / speed));
+        animation.FinishTwirl();
+        animator.Update(3f);
+        Assert.That(animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.metarig|IDL"), Is.True);
+        Assert.That(animator.IsInTransition(0), Is.False);
+        // A second Q must restart the same timeline without waiting for attack events.
+        Assert.That(AdvanceTimedAnimation(animation.PlayTwirlUntilHitFrame(null), animator),
+            Is.EqualTo(impactTime).Within(0.02f));
+        animation.FinishTwirl();
+    }
+
+    [TestCase(1, 1)] [TestCase(1, 2)] [TestCase(2, 1)] [TestCase(2, 2)]
+    public void AnimatedSpinWaitsForImpactAndPreservesTheCastersWholeFootprint(int casterSize, int targetSize)
+    {
+        Resize(player, casterSize);
+        Animator animator = ExcavationModel(out CharacterAnimationController animation);
+        Character target = Actor(false, player.GridPosition + Vector2Int.right * (casterSize + 1), targetSize);
+        target.AddPassive(new ColossusPassive());
+        Vector2Int origin = player.GridPosition;
+        Quaternion rotation = animator.transform.localRotation;
+        var routine = new RockBasicSkill().Execute(player, origin, grid);
+        try
+        {
+            Assert.That(routine.MoveNext(), Is.True);
+            var windup = (IEnumerator)routine.Current;
+            Assert.That(windup.MoveNext(), Is.True);
+            animator.Update(0.2f);
+            Assert.That(windup.MoveNext(), Is.True);
+            Assert.That(target.Stats.CurrentHP, Is.EqualTo(100));
+            Assert.That(Guard.ArmorStacks, Is.Zero);
+            AdvanceTimedAnimation(windup, animator);
+            Assert.That(target.Stats.CurrentHP, Is.EqualTo(100));
+            Assert.That(routine.MoveNext(), Is.True); // Damage, then the push coroutine.
+            Drain((IEnumerator)routine.Current);
+            Assert.That(target.Stats.CurrentHP, Is.EqualTo(81));
+            Assert.That(Guard.ArmorStacks, Is.EqualTo(1));
+            Assert.That(player.Stats.CurrentEnergy, Is.EqualTo(98));
+            Assert.That(routine.MoveNext(), Is.True);
+            AdvanceTimedAnimation((IEnumerator)routine.Current, animator);
+            Assert.That(routine.MoveNext(), Is.False);
+            Assert.That(player.GridPosition, Is.EqualTo(origin));
+            Assert.That(animator.transform.localRotation, Is.EqualTo(rotation));
+            foreach (Vector2Int cell in player.GetOccupiedCells())
+                Assert.That(grid.GetCharacterAt(cell), Is.SameAs(player));
+        }
+        finally { ((IDisposable)routine).Dispose(); }
+    }
+
+    [Test]
+    public void InterruptedSpinBeforeImpactDoesNotDamageAndClearsItsTrigger()
+    {
+        Animator animator = ExcavationModel(out CharacterAnimationController animation);
+        Character target = Actor(false, new Vector2Int(7, 5));
+        var routine = new RockBasicSkill().Execute(player, player.GridPosition, grid);
+        Assert.That(routine.MoveNext(), Is.True);
+        var windup = (IEnumerator)routine.Current;
+        Assert.That(windup.MoveNext(), Is.True);
+        animator.Update(0.2f);
+        Assert.That(windup.MoveNext(), Is.True);
+        ((IDisposable)routine).Dispose();
+        Assert.That(windup.MoveNext(), Is.False);
+        Assert.That(animation.TwirlHitFrameReached, Is.False);
+        Assert.That(target.Stats.CurrentHP, Is.EqualTo(100));
+        Assert.That(Guard.ArmorStacks, Is.Zero);
+        animator.Update(3f);
+        Assert.That(animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.metarig|IDL"), Is.True);
+        Assert.That(animator.IsInTransition(0), Is.False);
+    }
+
+    [TestCase(UpgradeType.RockExcavationStrike, UpgradeDefinition.RockExcavationStrikeId, 30)]
+    [TestCase(UpgradeType.RockShieldDuration, UpgradeDefinition.RockShieldDurationId, 20)]
+    public void EarthUpgradePurchasesUseGoldPersistAndRejectDuplicates(UpgradeType type, string id, int cost)
+    {
+        Set(definition, "upgradeType", type); Set(definition, "upgradeId", id); Set(definition, "goldCost", cost);
+        session.TryAddCurrency(RunCurrency.XideriaFragments, 50);
+        session.TryAddCurrency(RunCurrency.Gold, cost - 1);
+        Assert.That(session.TryPurchaseUpgrade(definition, out var result), Is.False);
+        Assert.That(result, Is.EqualTo(UpgradePurchaseResult.InsufficientGold));
+        Assert.That(session.HasUpgrade(id), Is.False);
+        session.TryAddCurrency(RunCurrency.Gold, 1);
+        Assert.That(session.TryPurchaseUpgrade(definition, out result), Is.True);
+        Assert.That(result, Is.EqualTo(UpgradePurchaseResult.Success));
+        Assert.That(session.Gold, Is.Zero);
+        Assert.That(session.XideriaFragments, Is.EqualTo(50));
+        Assert.That(session.TryPurchaseUpgrade(definition, out result), Is.False);
+        Assert.That(result, Is.EqualTo(UpgradePurchaseResult.AlreadyPurchased));
+        session.ResetSession();
+        var restored = JsonUtility.FromJson<RunState>(JsonUtility.ToJson(session.RunState));
+        Assert.That(restored.HasUpgrade(id), Is.True);
+        session.AbandonRun();
+        Assert.That(session.HasUpgrade(id), Is.False);
+        Assert.That(player.GetPassiveEffects().OfType<RockExcavationStrikePassive>(), Is.Empty);
+        Assert.That(RockGuardPassive.ShieldDuration(player), Is.EqualTo(1));
+    }
+
+    [Test]
+    public void ExcavationPassiveAppearsOnceOnlyForThePlayersEquippedEarthHelmet()
+    {
+        Assert.That(player.GetPassiveEffects().OfType<RockExcavationStrikePassive>(), Is.Empty);
+        BuyEarth(UpgradeType.RockExcavationStrike);
+        player.AddPassive(new RockExcavationStrikePassive());
+        Assert.That(player.GetPassiveEffects().OfType<RockExcavationStrikePassive>().Count(), Is.EqualTo(1));
+        Character enemy = Actor(false, new Vector2Int(10, 10));
+        enemy.EquipHelmet(HelmetFactory.CreateRockHelmet());
+        Assert.That(enemy.GetPassiveEffects().OfType<RockExcavationStrikePassive>(), Is.Empty);
+        player.UnequipHelmet();
+        Assert.That(player.GetPassiveEffects().OfType<RockExcavationStrikePassive>(), Is.Empty);
+        player.EquipHelmet(HelmetFactory.CreateRockHelmet());
+        Assert.That(player.GetPassiveEffects().OfType<RockExcavationStrikePassive>().Count(), Is.EqualTo(1));
+        session.AbandonRun();
+        Assert.That(player.GetPassiveEffects().OfType<RockExcavationStrikePassive>(), Is.Empty);
+    }
+
+    [TestCase(1, 1)] [TestCase(1, 2)] [TestCase(2, 1)] [TestCase(2, 2)]
+    public void ExcavationArrivalPerformsExactlyOneFullFreeSpinEvenAtZeroEnergy(int casterSize, int enemySize)
+    {
+        BuyEarth(UpgradeType.RockExcavationStrike);
+        Resize(player, casterSize);
+        Vector2Int obstacle = player.GridPosition + Vector2Int.right * casterSize;
+        Vector2Int destination = player.GridPosition + Vector2Int.right * (casterSize + 1);
+        grid.SetCellType(obstacle, CellType.Blocked);
+        Character first = Actor(false, destination + Vector2Int.right * casterSize, enemySize);
+        Character second = Actor(false, destination + Vector2Int.up * casterSize);
+        Character inBasicArea = Actor(false, destination + Vector2Int.down * 2);
+        foreach (Character enemy in new[] { first, second, inBasicArea }) enemy.AddPassive(new ColossusPassive());
+        player.Stats.SetCurrentEnergy(1);
+        var skill = new RockExcavateSkill();
+        Drain(skill.Execute(player, obstacle, grid));
+        Assert.That(player.GridPosition, Is.EqualTo(destination));
+        Assert.That(player.Stats.CurrentEnergy, Is.Zero);
+        Assert.That(Guard.ArmorStacks, Is.EqualTo(3));
+        foreach (Character enemy in new[] { first, second, inBasicArea })
+            Assert.That(enemy.Stats.CurrentHP, Is.EqualTo(81));
+        Assert.That(new RockBasicSkill().CanUse(player, destination, grid), Is.False);
+        Assert.That(player.GetSkillCooldown(new RockBasicSkill()), Is.Zero);
+        foreach (Vector2Int cell in player.GetOccupiedCells()) Assert.That(grid.GetCharacterAt(cell), Is.SameAs(player));
+    }
+
+    [TestCase(false, 0)] [TestCase(true, 1)] [TestCase(true, 2)] [TestCase(true, 3)] [TestCase(true, 4)]
+    public void ExcavationDoesNotSpinWithoutPurchaseOrWithoutALivingAdjacentEnemy(bool purchased, int targetKind)
+    {
+        if (purchased) BuyEarth(UpgradeType.RockExcavationStrike);
+        Vector2Int obstacle = player.GridPosition + Vector2Int.right;
+        Vector2Int destination = player.GridPosition + Vector2Int.right * 2;
+        grid.SetCellType(obstacle, CellType.Blocked);
+        Vector2Int offset = targetKind == 2 ? Vector2Int.one : Vector2Int.right * (targetKind == 3 ? 2 : 1);
+        Character target = Actor(targetKind == 1, destination + offset);
+        if (targetKind == 4) Set(target, "isDying", true);
+        player.Stats.SetCurrentEnergy(1);
+        Drain(new RockExcavateSkill().Execute(player, obstacle, grid));
+        Assert.That(player.GridPosition, Is.EqualTo(destination));
+        Assert.That(target.Stats.CurrentHP, Is.EqualTo(100));
+        Assert.That(Guard.ArmorStacks, Is.Zero);
+        Assert.That(player.Stats.CurrentEnergy, Is.Zero);
+    }
+
+    [Test]
+    public void EachExcavationGrantsOneNewSpinWithoutRecursingOrChargingForTheBasic()
+    {
+        BuyEarth(UpgradeType.RockExcavationStrike);
+        Vector2Int origin = player.GridPosition;
+        Vector2Int obstacle = origin + Vector2Int.right;
+        Vector2Int destination = origin + Vector2Int.right * 2;
+        grid.SetCellType(obstacle, CellType.Blocked);
+        Character atOrigin = Actor(false, origin + Vector2Int.up);
+        Character atDestination = Actor(false, destination + Vector2Int.up);
+        atOrigin.AddPassive(new ColossusPassive()); atDestination.AddPassive(new ColossusPassive());
+        player.Stats.SetCurrentEnergy(2);
+        var skill = new RockExcavateSkill();
+        Drain(skill.Execute(player, obstacle, grid));
+        Assert.That(atDestination.Stats.CurrentHP, Is.EqualTo(81));
+        Assert.That(atOrigin.Stats.CurrentHP, Is.EqualTo(100));
+        Drain(skill.Execute(player, obstacle, grid));
+        Assert.That(player.GridPosition, Is.EqualTo(origin));
+        Assert.That(atDestination.Stats.CurrentHP, Is.EqualTo(81));
+        Assert.That(atOrigin.Stats.CurrentHP, Is.EqualTo(81));
+        Assert.That(Guard.ArmorStacks, Is.EqualTo(2));
+        Assert.That(player.Stats.CurrentEnergy, Is.Zero);
+    }
+
+    [Test]
+    public void FailedExcavationLandingDoesNotGrantAnArrivalAttackOrSpendEnergy()
+    {
+        BuyEarth(UpgradeType.RockExcavationStrike);
+        Vector2Int origin = player.GridPosition;
+        Vector2Int obstacle = origin + Vector2Int.right;
+        Vector2Int destination = origin + Vector2Int.right * 2;
+        grid.SetCellType(obstacle, CellType.Blocked);
+        Character enemy = Actor(false, destination + Vector2Int.up);
+        player.Stats.SetCurrentEnergy(1);
+        var routine = new RockExcavateSkill().Execute(player, obstacle, grid);
+        Assert.That(routine.MoveNext(), Is.True);
+        grid.SetCellType(destination, CellType.Blocked);
+        Drain(routine);
+        Assert.That(player.GridPosition, Is.EqualTo(origin));
+        Assert.That(player.Stats.CurrentEnergy, Is.EqualTo(1));
+        Assert.That(enemy.Stats.CurrentHP, Is.EqualTo(100));
+        Assert.That(Guard.ArmorStacks, Is.Zero);
+    }
+
+    [TestCase(false)] [TestCase(true)]
+    public void ShieldDurationUpgradeKeepsOnlyUnspentChargesForExactlyOneExtraOwnTurn(bool purchased)
+    {
+        if (purchased) BuyEarth(UpgradeType.RockShieldDuration);
+        Guard.AddArmor(2);
+        var shield = new RockShieldSkill();
+        Drain(shield.Execute(player, player.GridPosition, grid));
+        Assert.That(player.Stats.CurrentEnergy, Is.EqualTo(95));
+        Assert.That(player.GetSkillCooldown(shield), Is.EqualTo(3));
+        Assert.That(Guard.ShieldCharges, Is.EqualTo(3));
+        Assert.That(Guard.ShieldTurnsRemaining, Is.EqualTo(purchased ? 2 : 1));
+        Assert.That(Guard.ModifyIncomingDamage(player, 100, DamageType.Physical), Is.EqualTo(70));
+        Assert.That(Guard.ShieldCharges, Is.EqualTo(2));
+        player.StartTurn();
+        Assert.That(Guard.ShieldCharges, Is.EqualTo(purchased ? 2 : 0));
+        Assert.That(Guard.ArmorStacks, Is.EqualTo(2));
+        Assert.That(Guard.ShieldTurnsRemaining, Is.EqualTo(purchased ? 1 : 0));
+        player.StartTurn();
+        Assert.That(Guard.ShieldCharges, Is.Zero);
+        Assert.That(Guard.ArmorStacks, Is.Zero);
+        Assert.That(Guard.ShieldTurnsRemaining, Is.Zero);
+    }
+
+    [Test]
+    public void ShieldUpgradeDoesNotAddChargesOrAffectEnemiesAndIsLostWithTheHelmet()
+    {
+        BuyEarth(UpgradeType.RockShieldDuration);
+        Guard.ActivateShield(2);
+        for (int i = 0; i < 3; i++) Guard.ModifyIncomingDamage(player, 10, DamageType.Physical);
+        Assert.That(Guard.ShieldCharges, Is.Zero);
+        player.StartTurn();
+        Assert.That(Guard.ShieldCharges, Is.Zero);
+        Character enemy = Actor(false, new Vector2Int(10, 10));
+        enemy.EquipHelmet(HelmetFactory.CreateRockHelmet());
+        Assert.That(RockGuardPassive.ShieldDuration(enemy), Is.EqualTo(1));
+        player.UnequipHelmet();
+        Assert.That(RockGuardPassive.ShieldDuration(player), Is.EqualTo(1));
+        player.EquipHelmet(HelmetFactory.CreateRockHelmet());
+        Assert.That(RockGuardPassive.ShieldDuration(player), Is.EqualTo(2));
+    }
+
+    private void BuyEarth(UpgradeType type)
+    {
+        bool strike = type == UpgradeType.RockExcavationStrike;
+        int cost = strike ? 30 : 20;
+        Set(definition, "upgradeType", type);
+        Set(definition, "upgradeId", strike ? UpgradeDefinition.RockExcavationStrikeId : UpgradeDefinition.RockShieldDurationId);
+        Set(definition, "goldCost", cost);
+        session.TryAddCurrency(RunCurrency.Gold, cost);
+        Assert.That(session.TryPurchaseUpgrade(definition, out _), Is.True);
+    }
+
     private static float AdvanceTimedAnimation(IEnumerator routine, Animator animator)
     {
         int frames = 0;

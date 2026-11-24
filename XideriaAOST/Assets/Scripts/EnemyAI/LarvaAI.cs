@@ -4,21 +4,21 @@ using UnityEngine;
 
 public class LarvaAI : MonoBehaviour, IEnemyAI
 {
-    private Character character;
-    private GridSystem grid;
+    protected Character character;
+    protected GridSystem grid;
     private static readonly Vector2Int[] directions =
     {
         Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right
     };
 
-    private void Awake()
+    protected virtual void Awake()
     {
         character = GetComponent<Character>();
 
         grid = FindObjectOfType<GridSystem>();
     }
 
-    public IEnumerator TakeTurn()
+    public virtual IEnumerator TakeTurn()
     {
         if (!character.Stats.IsAlive || character.IsDying)
             yield break;

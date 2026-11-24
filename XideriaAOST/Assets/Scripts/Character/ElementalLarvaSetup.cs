@@ -7,6 +7,7 @@ public enum LarvaElement { Air, Earth, Fire }
 public sealed class ElementalLarvaSetup : MonoBehaviour
 {
     [SerializeField] private LarvaElement element;
+    public LarvaElement Element => element;
     [SerializeField, Min(0)] private int specialEnergyCost = 3;
     [SerializeField, Min(0)] private int specialCooldown = 3;
     [Header("Fire")]

@@ -58,7 +58,7 @@ public sealed class RockSkillVFX : MonoBehaviour
         activeShield = null;
     }
 
-    public void PlaySlash() => PlayBurst(slash, 1.3f);
+    public void PlaySlash(float playbackRate = 1f) => PlayBurst(slash, 1.3f, playbackRate);
     public void PlayEarthquake() => PlayBurst(earthquake, 2.5f);
 
     public void PlayShield()
@@ -71,14 +71,16 @@ public sealed class RockSkillVFX : MonoBehaviour
             particles.Play();
     }
 
-    private static void PlayBurst(VisualEffect template, float duration)
+    private static void PlayBurst(VisualEffect template, float duration, float playbackRate = 1f)
     {
         if (template == null) return;
         VisualEffect effect = Instantiate(template, template.transform.position, template.transform.rotation);
         effect.transform.localScale = template.transform.lossyScale;
+        playbackRate = Mathf.Max(0.01f, playbackRate);
+        effect.playRate *= playbackRate;
         effect.gameObject.SetActive(true);
         effect.Reinit();
-        Destroy(effect.gameObject, duration);
+        Destroy(effect.gameObject, duration / playbackRate);
     }
 
     public VisualEffect CreateEruptionRock(Vector3 surface, float cellSize, Transform parent)

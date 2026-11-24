@@ -10,7 +10,11 @@ public enum UpgradeType
     MaxHealth = 4,
     BaseDefense = 5,
     BaseDamage = 6,
-    HelmetDurability = 7
+    HelmetDurability = 7,
+    RockExcavationStrike = 8,
+    RockShieldDuration = 9,
+    WaterWavePush = 10,
+    WaterPrisonGlobal = 11
 }
 
 public enum UpgradePurchaseResult
@@ -35,6 +39,10 @@ public sealed class UpgradeDefinition : ScriptableObject
     public const string BaseDefenseId = "sir_tete.base_defense";
     public const string BaseDamageId = "sir_tete.base_damage";
     public const string HelmetDurabilityId = "sir_tete.helmet_durability";
+    public const string RockExcavationStrikeId = "earth.excavation_strike";
+    public const string RockShieldDurationId = "earth.shield_duration";
+    public const string WaterWavePushId = "water.wave_push";
+    public const string WaterPrisonGlobalId = "water.global_prison";
 
     [Tooltip("Stable save identity. Impulso Vital uses sir_tete.vital_impulse. Do not rename purchased IDs.")]
     [SerializeField] private string upgradeId;
@@ -51,7 +59,9 @@ public sealed class UpgradeDefinition : ScriptableObject
     public string Description => description;
     public Sprite Icon => icon;
     public int FragmentCost => fragmentCost;
-    public RunCurrency Currency => Type == UpgradeType.FireballCooldown || Type == UpgradeType.FlameDashCooldown
+    public RunCurrency Currency => Type == UpgradeType.FireballCooldown || Type == UpgradeType.FlameDashCooldown ||
+        Type == UpgradeType.RockExcavationStrike || Type == UpgradeType.RockShieldDuration ||
+        Type == UpgradeType.WaterWavePush || Type == UpgradeType.WaterPrisonGlobal
         ? RunCurrency.Gold : RunCurrency.XideriaFragments;
     public int Cost => Currency == RunCurrency.Gold ? goldCost : fragmentCost;
     public bool IsSupported => Type switch
@@ -63,6 +73,10 @@ public sealed class UpgradeDefinition : ScriptableObject
         UpgradeType.BaseDefense => Id == BaseDefenseId,
         UpgradeType.BaseDamage => Id == BaseDamageId,
         UpgradeType.HelmetDurability => Id == HelmetDurabilityId,
+        UpgradeType.RockExcavationStrike => Id == RockExcavationStrikeId,
+        UpgradeType.RockShieldDuration => Id == RockShieldDurationId,
+        UpgradeType.WaterWavePush => Id == WaterWavePushId,
+        UpgradeType.WaterPrisonGlobal => Id == WaterPrisonGlobalId,
         _ => false
     };
     public UpgradeType Type => upgradeType;

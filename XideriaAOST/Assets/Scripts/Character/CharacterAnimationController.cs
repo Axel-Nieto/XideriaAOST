@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-public class CharacterAnimationController : MonoBehaviour
+public partial class CharacterAnimationController : MonoBehaviour
 {
     [SerializeField] private Animator animator;
 
@@ -10,6 +10,81 @@ public class CharacterAnimationController : MonoBehaviour
 
     private bool castHitFrameReached;
     private bool castAnimationFinished;
+
+    private static readonly int twirlState = Animator.StringToHash("Base Layer.Twirl_Tete");
+    private static readonly int twirlTrigger = Animator.StringToHash("IsTwirl");
+    // Twirl_Tete is 61 frames at 60 FPS. Prepare the slash at frame 15;
+    // its graph emits 0.15 seconds later, together with the impact at frame 24.
+    private const float twirlSlashFrame = 15f / 61f;
+    private const float twirlHitFrame = 24f / 61f;
+    private bool twirling;
+    public bool TwirlHitFrameReached { get; private set; }
+    public bool CanPlayTwirl => animator != null && animator.isActiveAndEnabled &&
+        animator.runtimeAnimatorController != null && animator.HasState(0, twirlState);
+
+    public IEnumerator PlayTwirlUntilHitFrame(System.Action<float> playSlash)
+    {
+        TwirlHitFrameReached = false;
+        if (!CanPlayTwirl)
+        {
+            playSlash?.Invoke(1f);
+            TwirlHitFrameReached = true;
+            yield break;
+        }
+
+        twirling = true;
+        animator.SetBool("IsWalk", false);
+        animator.ResetTrigger(twirlTrigger);
+        animator.SetTrigger(twirlTrigger);
+        animator.Update(0f);
+
+        // The trigger may need to wait for the previous walk/hit to return to Idle.
+        float entryTimeout = 2f;
+        while (CanPlayTwirl && !TryGetTwirlState(out _) && entryTimeout > 0f)
+        {
+            entryTimeout -= Time.deltaTime;
+            yield return null;
+        }
+        while (TryGetTwirlState(out AnimatorStateInfo state) && state.normalizedTime < twirlSlashFrame)
+            yield return null;
+        if (!TryGetTwirlState(out AnimatorStateInfo slashState)) yield break;
+        playSlash?.Invoke(Mathf.Max(0.01f, animator.speed * slashState.speed * slashState.speedMultiplier));
+        while (TryGetTwirlState(out AnimatorStateInfo state) && state.normalizedTime < twirlHitFrame)
+            yield return null;
+        TwirlHitFrameReached = TryGetTwirlState(out _);
+    }
+
+    public IEnumerator WaitTwirlFinished()
+    {
+        while (TryGetTwirlState(out _))
+            yield return null;
+    }
+
+    private bool TryGetTwirlState(out AnimatorStateInfo state)
+    {
+        state = default;
+        if (!twirling || !CanPlayTwirl) return false;
+        state = animator.GetCurrentAnimatorStateInfo(0);
+        if (state.fullPathHash == twirlState) return true;
+        if (!animator.IsInTransition(0)) return false;
+        state = animator.GetNextAnimatorStateInfo(0);
+        return state.fullPathHash == twirlState;
+    }
+
+    public void FinishTwirl()
+    {
+        if (!twirling) return;
+        bool inTwirl = TryGetTwirlState(out _);
+        twirling = false;
+        if (animator == null || animator.runtimeAnimatorController == null) return;
+        animator.ResetTrigger(twirlTrigger);
+        if (inTwirl)
+        {
+            animator.Play("Base Layer.metarig|IDL", 0, 0f);
+            animator.Update(0f);
+        }
+    }
+
 
     private static readonly int excavateState = Animator.StringToHash("Base Layer.Ground_Excavar");
     private static readonly int excavateSpeed = Animator.StringToHash("ExcavateSpeed");
@@ -83,6 +158,7 @@ public class CharacterAnimationController : MonoBehaviour
 
     private void OnDisable()
     {
+        FinishTwirl();
         FinishExcavate();
         FinishCharge();
     }
@@ -129,6 +205,7 @@ public class CharacterAnimationController : MonoBehaviour
 
     public void SetWalking(bool walking)
     {
+        if (TrySetBossPhaseTwoWalking(walking)) return;
         if (animator == null || charging)
             return;
 
@@ -200,6 +277,7 @@ public class CharacterAnimationController : MonoBehaviour
 
     public void PlayHit()
     {
+        if (TryPlayBossPhaseTwoHit()) return;
         if (animator == null)
             return;
 

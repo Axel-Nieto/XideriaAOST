@@ -42,11 +42,13 @@ public sealed class RunState : ISerializationCallbackReceiver
 
     public RunRoomRecord FindRoom(string roomId) => rooms.Find(room => room.RoomId == roomId);
 
+    // Earlier records remain receipts; the latest one is the active door offer.
     public RunRewardRecord FindDoorOffer(string sourceRoomId, string doorId) =>
-        rewards.Find(offer => offer.SourceRoomId == sourceRoomId && offer.DoorId == doorId);
+        rewards.FindLast(offer => offer.SourceRoomId == sourceRoomId && offer.DoorId == doorId);
 
     // A reload retains the current instance. Unannounced scene loads use a stable
-    // entry room, so returning to the Lobby cannot recreate its door offers.
+    // entry room, so returning to the Lobby retains its announced choices.
+    // Already paid visits receive fresh identities in TryPrepareDoorOffer.
     public RunRoomRecord EnterScene(string sceneId)
     {
         if (string.IsNullOrWhiteSpace(sceneId))
@@ -89,7 +91,14 @@ public sealed class RunState : ISerializationCallbackReceiver
 
         offer = FindDoorOffer(sourceRoomId, doorId);
         if (offer != null)
+        {
+            // A Lobby/door survives scene loads, but a new visit must not point
+            // to a combat room whose reward was already collected. Preserve
+            // the announced destination/currency/amount and the old receipt.
+            if (offer.HasReward && offer.IsDelivered)
+                offer = RenewDeliveredDoorOffer(offer);
             return true;
+        }
 
         if (targetScenes == null || targetScenes.Count == 0 || nextRandom == null)
         {
@@ -151,10 +160,29 @@ public sealed class RunState : ISerializationCallbackReceiver
         return true;
     }
 
+    private RunRewardRecord RenewDeliveredDoorOffer(RunRewardRecord previous)
+    {
+        var room = new RunRoomRecord
+        {
+            RoomId = Guid.NewGuid().ToString("N"), SceneId = previous.DestinationScene
+        };
+        var next = new RunRewardRecord
+        {
+            RewardId = Guid.NewGuid().ToString("N"), RoomId = room.RoomId,
+            SourceRoomId = previous.SourceRoomId, DoorId = previous.DoorId,
+            DestinationScene = previous.DestinationScene, HasReward = true,
+            Currency = previous.Currency, Amount = previous.Amount,
+            RewardDefinitionId = previous.RewardDefinitionId
+        };
+        rooms.Add(room);
+        rewards.Add(next);
+        return next;
+    }
+
     public bool TrySelectDoor(RunRewardRecord offer)
     {
         if (offer == null || !rewards.Contains(offer) || offer.SourceRoomId != currentRoomId ||
-            !string.IsNullOrEmpty(pendingRoomId))
+            !string.IsNullOrEmpty(pendingRoomId) || (offer.HasReward && offer.IsDelivered))
             return false;
 
         RunRoomRecord destination = FindRoom(offer.RoomId);

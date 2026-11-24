@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-public class WaterPrisonSkill : SkillBase
+public partial class WaterPrisonSkill : SkillBase
 {
     private readonly int damage = 1;
     private readonly int rootDuration = 3;
@@ -9,7 +9,7 @@ public class WaterPrisonSkill : SkillBase
     public WaterPrisonSkill()
         : base(
             name: "Prisión Marina",
-            description: "Daña y evita que el objetivo se mueva durante sus próximos dos turnos.",
+            description: "Inflige da\u00f1o e impide moverse durante los pr\u00f3ximos dos turnos.",
             energyCost: 5,
             cooldown: 4,
             minRange: 2,
@@ -27,6 +27,9 @@ public class WaterPrisonSkill : SkillBase
     Vector2Int targetCell,
     GridSystem grid)
     {
+        if (HasGlobalUpgrade(user))
+            return CanUseGlobalPrison(user, grid, user?.Stats?.CurrentEnergy ?? 0);
+
         if (user == null || grid == null)
             return false;
 
@@ -55,6 +58,11 @@ public class WaterPrisonSkill : SkillBase
 
     public override IEnumerator Execute(Character user, Vector2Int targetCell, GridSystem grid)
     {
+        if (HasGlobalUpgrade(user))
+        {
+            yield return ExecuteGlobalPrison(user, grid);
+            yield break;
+        }
         user.FaceCell(targetCell);
 
         user.Stats.ConsumeEnergy(EnergyCost);
@@ -83,6 +91,6 @@ public class WaterPrisonSkill : SkillBase
     public override string GetTooltipDetails(Character user)
     {
         int estimatedDamage = damage + (user?.Stats?.Attack ?? 0);
-        return $"Daño: {estimatedDamage}\nInmoviliza durante {rootDuration - 1} turnos del objetivo.";
+        return $"Daño: {estimatedDamage}\nInmoviliza durante {rootDuration - 1} turnos del objetivo." + (HasGlobalUpgrade(user) ? "\nAfecta a todos los enemigos del campo. Pulsa R para seleccionar y otra vez para confirmar." : "");
     }
 }

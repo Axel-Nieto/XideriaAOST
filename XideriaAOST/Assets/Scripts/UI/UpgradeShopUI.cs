@@ -183,9 +183,18 @@ public sealed class UpgradeShopUI : MonoBehaviour
         itemsScrollRect.verticalNormalizedPosition = 1f;
     }
 
-    private bool BelongsToCurrentSection(UpgradeDefinition definition) =>
-        UpgradeShopItemUI.CanDisplay(definition) && (definition.Currency == RunCurrency.Gold
-            ? CurrentSection == UpgradeShopSection.Fire : CurrentSection == UpgradeShopSection.SirTete);
+    private bool BelongsToCurrentSection(UpgradeDefinition definition)
+    {
+        if (!UpgradeShopItemUI.CanDisplay(definition)) return false;
+        UpgradeShopSection section = definition.Type switch
+        {
+            UpgradeType.FireballCooldown or UpgradeType.FlameDashCooldown => UpgradeShopSection.Fire,
+            UpgradeType.RockExcavationStrike or UpgradeType.RockShieldDuration => UpgradeShopSection.Earth,
+            UpgradeType.WaterWavePush or UpgradeType.WaterPrisonGlobal => UpgradeShopSection.Water,
+            _ => UpgradeShopSection.SirTete
+        };
+        return CurrentSection == section;
+    }
 
     private bool HasSeparatePanel() => panelRoot != null && panelRoot != gameObject &&
         !transform.IsChildOf(panelRoot.transform);

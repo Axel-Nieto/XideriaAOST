@@ -36,4 +36,5 @@ public class StatusIconDatabase : ScriptableObject
     public Sprite poisonResistanceIcon;
     public Sprite vitalImpulseIcon;
     public Sprite rockPassiveIcon;
+    public Sprite waterPassiveIcon;
 }
