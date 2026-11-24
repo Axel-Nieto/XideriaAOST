@@ -6,16 +6,21 @@ using UnityEngine.VFX;
 [DisallowMultipleComponent]
 public sealed class TemporaryRockField : MonoBehaviour
 {
+    internal sealed class RockVisual
+    {
+        internal Vector2Int Cell;
+        internal GameObject Visual;
+        internal VisualEffect Effect;
+        internal Coroutine Rise;
+        internal float SinkDuration;
+    }
     private sealed class Rock
     {
         public Character Owner;
         public Vector2Int Cell;
         public CellType PreviousType;
         public int Turns;
-        public GameObject Visual;
-        public VisualEffect Effect;
-        public Coroutine Rise;
-        public float SinkDuration;
+        public RockVisual Presentation;
     }
     private readonly List<Rock> rocks = new();
     private readonly List<VisualEffect> retiringEffects = new();
@@ -61,6 +66,16 @@ public sealed class TemporaryRockField : MonoBehaviour
         RockSkillVFX presentation = null)
     {
         if (owner == null || prefab == null || duration <= 0 || !CanPlace(cell)) return false;
+        if (presentation == null) presentation = owner.GetComponent<RockSkillVFX>();
+        return TryPlace(owner, CreateVisual(cell, prefab, presentation), duration);
+    }
+
+    // A boss cast starts the presentation before damage/push, then adopts that
+    // same instance once the cell is free. Previewing never changes the board.
+    internal RockVisual CreateVisual(Vector2Int cell, GameObject prefab, RockSkillVFX presentation)
+    {
+        if (grid == null) grid = GetComponent<GridSystem>();
+        if (prefab == null || grid == null) return null;
         Vector3 surface = grid.GridToWorld(cell) +
             new Vector3(visualHorizontalOffset.x, visualSurfaceOffset, visualHorizontalOffset.y);
         GameObject visual = Instantiate(prefab, grid.GridToWorld(cell), Quaternion.identity, transform);
@@ -82,10 +97,7 @@ public sealed class TemporaryRockField : MonoBehaviour
             }
             visual.transform.position += new Vector3(surface.x - bounds.center.x, surface.y - bounds.min.y, surface.z - bounds.center.z);
         }
-        var rock = new Rock { Owner = owner, Cell = cell, PreviousType = grid.GetCell(cell).Type, Turns = duration, Visual = visual };
-        // Presentation may come from the player's shared R template while the
-        // rock still belongs to the boss for duration/death cleanup.
-        if (presentation == null) presentation = owner.GetComponent<RockSkillVFX>();
+        var rock = new RockVisual { Cell = cell, Visual = visual };
         if (presentation != null)
         {
             float cellSize = Vector3.Distance(grid.GridToWorld(cell), grid.GridToWorld(cell + Vector2Int.right));
@@ -99,8 +111,15 @@ public sealed class TemporaryRockField : MonoBehaviour
                 else rock.Effect.SetFloat("RockProgress", 1.5f);
             }
         }
-        rocks.Add(rock);
-        grid.SetCellType(cell, CellType.Blocked);
+        return rock;
+    }
+
+    internal bool TryPlace(Character owner, RockVisual presentation, int duration = 2)
+    {
+        if (owner == null || presentation == null || duration <= 0 || !CanPlace(presentation.Cell)) return false;
+        rocks.Add(new Rock { Owner = owner, Cell = presentation.Cell, PreviousType = grid.GetCell(presentation.Cell).Type,
+            Turns = duration, Presentation = presentation });
+        grid.SetCellType(presentation.Cell, CellType.Blocked);
         return true;
     }
     private void Tick(Character current)
@@ -124,6 +143,15 @@ public sealed class TemporaryRockField : MonoBehaviour
     private void Remove(int index)
     {
         Rock rock = rocks[index];
+        ReleaseVisual(rock.Presentation);
+        if (grid != null && grid.GetCell(rock.Cell)?.Type == CellType.Blocked)
+            grid.SetCellType(rock.Cell, rock.PreviousType);
+        rocks.RemoveAt(index);
+    }
+
+    internal void ReleaseVisual(RockVisual rock)
+    {
+        if (rock == null) return;
         if (rock.Rise != null) StopCoroutine(rock.Rise);
         if (rock.Effect != null)
         {
@@ -139,14 +167,11 @@ public sealed class TemporaryRockField : MonoBehaviour
                 else DestroyImmediate(rock.Effect.gameObject);
             }
         }
-        if (grid != null && grid.GetCell(rock.Cell)?.Type == CellType.Blocked)
-            grid.SetCellType(rock.Cell, rock.PreviousType);
         if (rock.Visual != null)
         {
             if (Application.isPlaying) Destroy(rock.Visual);
             else DestroyImmediate(rock.Visual);
         }
-        rocks.RemoveAt(index);
     }
 
     private static IEnumerator AnimateProgress(VisualEffect effect, float from, float to, float duration)

@@ -6394,6 +6394,11 @@ MonoBehaviour:
     targetScenes: []
     logicalDoorId: 
     rewardIconAnchor: {fileID: 0}
+  - position: {x: 3, y: 12}
+    type: 3
+    targetScenes: []
+    logicalDoorId: 
+    rewardIconAnchor: {fileID: 0}
   yOffset: 0
   exitRunTilePrefab: {fileID: 794436471247037025, guid: a8c4faba2faf72b4d9af8f391fd4298a, type: 3}
   exitTutorialTilePrefab: {fileID: 794436471247037025, guid: 32527a5b912e5cb4388d60c4c0173fc0, type: 3}

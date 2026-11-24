@@ -5,6 +5,8 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class BossAI : LarvaAI
 {
+    // Retain the serialized reference for existing prefabs. Its independently
+    // rising rock is replaced by the persistent rock's own presentation.
     [SerializeField] private GameObject phaseTwoImpactPrefab;
     [SerializeField] private GameObject temporaryRockPrefab;
     [SerializeField] private int phaseTwoMeleeDamage = 3;
@@ -136,39 +138,61 @@ public sealed class BossAI : LarvaAI
         character.FaceCell(target.GridPosition);
         Vector2Int impactOrigin = target.GridPosition;
         List<Vector2Int> impactCells = target.GetOccupiedCells();
+        TemporaryRockField field = ranged ? TemporaryRockField.For(grid) : null;
+        TemporaryRockField.RockVisual pendingRock = null;
+        Vector2Int pushDirection = Vector2Int.zero;
+        System.Action startRock = ranged ? (System.Action)(() =>
+        {
+            if (!Alive(character) || !Alive(target)) return;
+            var directions = new List<Vector2Int>();
+            if (Alive(target) && !target.BlocksPush())
+                foreach (Vector2Int direction in adjacent)
+                    if (grid.CanCharacterOccupy(target, target.GridPosition + direction, true)) directions.Add(direction);
+            if (directions.Count > 0) pushDirection = directions[Random.Range(0, directions.Count)];
+            List<Vector2Int> remaining = target.GetOccupiedCells(impactOrigin + pushDirection);
+            Vector2Int rockCell = impactOrigin;
+            foreach (Vector2Int cell in impactCells)
+                if (!remaining.Contains(cell)) { rockCell = cell; break; }
+            pendingRock = field.CreateVisual(rockCell, temporaryRockPrefab, target.GetComponent<RockSkillVFX>());
+        }) : null;
         try
         {
             if (animation != null)
             {
-                yield return animation.PlayBossAttackUntilImpact(ranged, ranged ? (System.Action)(() =>
-                    SkillVFXSpawner.SpawnAtWorld(phaseTwoImpactPrefab, grid.GridToWorld(impactOrigin, target), Quaternion.identity, 3.5f)) : null);
+                yield return animation.PlayBossAttackUntilImpact(ranged, startRock);
                 if (!animation.BossImpactReached) yield break;
             }
+            else startRock?.Invoke();
             if (!Alive(character) || !Alive(target)) yield break;
             target.TakeDamage(Mathf.Max(1, character.Stats.Attack + (ranged ? phaseTwoRangedDamage : phaseTwoMeleeDamage) - target.Stats.Defense),
                 DamageType.Physical, character);
             if (Alive(target))
             {
                 if (!ranged) yield return PushSystem.Push(character, target, grid, 2);
-                else
-                {
-                    var directions = new List<Vector2Int>();
-                    foreach (Vector2Int direction in adjacent)
-                        if (grid.CanCharacterOccupy(target, target.GridPosition + direction, true)) directions.Add(direction);
-                    if (directions.Count > 0 && !target.BlocksPush())
-                        yield return PushSystem.PushInDirection(target, directions[Random.Range(0, directions.Count)], 1, grid);
-                }
+                else if (pushDirection != Vector2Int.zero && !target.BlocksPush() &&
+                    grid.CanCharacterOccupy(target, target.GridPosition + pushDirection, true))
+                    yield return PushSystem.PushInDirection(target, pushDirection, 1, grid);
             }
             if (ranged && temporaryRockPrefab != null)
             {
-                TemporaryRockField field = TemporaryRockField.For(grid);
-                RockSkillVFX presentation = target.GetComponent<RockSkillVFX>();
-                foreach (Vector2Int cell in impactCells)
-                    if (field.TryPlace(character, cell, temporaryRockPrefab, 2, presentation)) break;
+                if (field.TryPlace(character, pendingRock, 2)) pendingRock = null;
+                else
+                {
+                    // Death or an interrupted/blocked push may change the free
+                    // cells since the cast began. Keep placement validation authoritative.
+                    field.ReleaseVisual(pendingRock);
+                    pendingRock = null;
+                    foreach (Vector2Int cell in impactCells)
+                        if (field.TryPlace(character, cell, temporaryRockPrefab, 2, target.GetComponent<RockSkillVFX>())) break;
+                }
             }
             if (animation != null) yield return animation.WaitBossActionFinished();
         }
-        finally { animation?.FinishBossAction(); }
+        finally
+        {
+            if (field != null) field.ReleaseVisual(pendingRock);
+            animation?.FinishBossAction();
+        }
     }
 
     internal int AttackBonus(bool ranged) => ranged ? phaseTwoRangedDamage : phaseTwoMeleeDamage;

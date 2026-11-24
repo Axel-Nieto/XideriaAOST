@@ -404,6 +404,9 @@ public class Character : MonoBehaviour
                 () => deathSequenceCompleted = true);
         }
 
+        // Pause also holds death completion, loot and occupancy removal.
+        while (PauseMenuUI.IsPaused) yield return null;
+
         if (!isPlayer)
         {
             GetComponent<LarvaVFX>()?.PlayDeathBurst(_grid);

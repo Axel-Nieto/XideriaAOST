@@ -242,6 +242,84 @@ public class BossPhaseTwoTests : UpgradeIntegrationFixture
         AssertOccupancy(boss); AssertOccupancy(player);
     }
 
+    [TestCase(1, 0, true, false)] [TestCase(1, 1, true, false)] [TestCase(1, 2, true, false)] [TestCase(1, 3, true, false)]
+    [TestCase(2, 0, true, false)] [TestCase(2, 1, true, false)] [TestCase(2, 2, true, false)] [TestCase(2, 3, true, false)]
+    [TestCase(1, 0, false, false)] [TestCase(2, 0, false, false)]
+    [TestCase(1, 0, true, true)] [TestCase(2, 0, true, true)]
+    [TestCase(1, 0, false, true)] [TestCase(2, 0, false, true)]
+    public void SummonedRockKeepsItsPlacementOrCleansUpWhenInterrupted(int size, int heading, bool useEffect, bool interrupt)
+    {
+        PhaseTwo();
+        grid.UnregisterCharacter(player); Set(player, "gridWidth", size); Set(player, "gridHeight", size);
+        Vector2Int origin = new Vector2Int(7, 7);
+        Move(player, origin);
+        Vector2Int[] directions = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
+        Vector2Int direction = directions[heading];
+        foreach (Vector2Int other in directions.Where(d => d != direction))
+            foreach (Vector2Int cell in player.GetOccupiedCells(origin + other))
+                if (!player.GetOccupiedCells().Contains(cell)) grid.SetCellType(cell, CellType.Blocked);
+        Set(ai, "temporaryRockPrefab", AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/HelmetModels/Rock.fbx"));
+        if (useEffect)
+        {
+            var template = Child("Rock template").AddComponent<VisualEffect>();
+            template.visualEffectAsset = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>(
+                "Assets/Prefabs/P_Skills/Ground_Helmet_Skill/Vfx_RockAttack_R.vfx");
+            Set(player.gameObject.AddComponent<RockSkillVFX>(), "eruptionRock", template);
+        }
+        GameObject model = Child("Boss animation");
+        Animator animator = model.AddComponent<Animator>();
+        animator.runtimeAnimatorController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(
+            "Assets/Animation/Jefe/Combat/BossCombat.controller");
+        animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        var animation = model.AddComponent<CharacterAnimationController>();
+        Set(animation, "animator", animator); Set(ai, "animation", animation);
+        model.SetActive(true); animator.Rebind(); animator.Update(0f);
+        var field = TemporaryRockField.For(grid);
+        Transform summoned = null;
+        Vector3 position = default, scale = default;
+        using (var routine = new InterruptibleRoutine(new BossPhaseTwoSkill(ai, true).Execute(boss, origin, grid)))
+        {
+            int frames = 0;
+            while (routine.MoveNext())
+            {
+                Assert.That(++frames, Is.LessThan(500));
+                if (summoned == null)
+                {
+                    summoned = useEffect ? grid.GetComponentInChildren<VisualEffect>()?.transform :
+                        grid.transform.Cast<Transform>().FirstOrDefault(t => t.name.StartsWith("Temporary Rock "));
+                    if (summoned != null)
+                    {
+                        Assert.That(player.Stats.CurrentHP, Is.EqualTo(100), "The rock must emerge before the damage/push.");
+                        Assert.That(field.Count, Is.Zero, "The visual alone must not block the target's cell.");
+                        position = summoned.position; scale = summoned.lossyScale;
+                        if (interrupt) { routine.Cancel(); break; }
+                    }
+                }
+                animator.Update(0.01f);
+                if (player.Stats.CurrentHP < 100)
+                    player.transform.position = grid.GridToWorld(origin + direction, player) + player.VisualOffset;
+            }
+        }
+        if (interrupt)
+        {
+            Assert.That(summoned == null, Is.True, "An interrupted cast must remove its uncommitted rock.");
+            Assert.That(field.Count, Is.Zero);
+            Assert.That(player.GridPosition, Is.EqualTo(origin));
+            Assert.That(player.Stats.CurrentHP, Is.EqualTo(100));
+            AssertOccupancy(boss); AssertOccupancy(player);
+            return;
+        }
+        Assert.That(summoned, Is.Not.Null);
+        Assert.That(field.Count, Is.EqualTo(1));
+        Transform retained = useEffect ? grid.GetComponentInChildren<VisualEffect>().transform :
+            grid.transform.Cast<Transform>().Single(t => t.name.StartsWith("Temporary Rock "));
+        Assert.That(retained, Is.SameAs(summoned));
+        Assert.That(Vector3.Distance(retained.position, position), Is.LessThan(0.0001f));
+        Assert.That(Vector3.Distance(retained.lossyScale, scale), Is.LessThan(0.0001f));
+        Assert.That(player.GridPosition, Is.EqualTo(origin + direction));
+        AssertOccupancy(boss); AssertOccupancy(player);
+    }
+
     [TestCase(1)] [TestCase(2)]
     public void InterruptingAPushRestoresTheWholeCommittedFootprint(int size)
     {

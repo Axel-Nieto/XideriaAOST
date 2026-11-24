@@ -31,8 +31,8 @@ public partial class CharacterAnimationController
             BossImpactReached = true;
             yield break;
         }
-        // Both F2 attack clips are one second. The ranged graph's rock bursts
-        // have a 0.2s delay: start it at 35%, then resolve the impact at 55%.
+        // Both F2 attack clips are one second. Start the persistent ranged rock
+        // at 35% so its rise precedes the impact at 55%.
         while (IsBossAction(out AnimatorStateInfo state) && state.normalizedTime < (ranged ? 0.35f : 0.55f))
             yield return null;
         if (!IsBossAction(out _)) yield break;

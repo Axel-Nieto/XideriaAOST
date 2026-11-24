@@ -20,6 +20,8 @@ public sealed class InterruptibleRoutine : IEnumerator, IDisposable
     public bool MoveNext()
     {
         if (cancelled) { DisposeStack(); return false; }
+        // TimeScale does not suspend iterators yielding null or nested actions.
+        if (PauseMenuUI.IsPaused) { Current = null; return true; }
         advancing = true;
         try
         {

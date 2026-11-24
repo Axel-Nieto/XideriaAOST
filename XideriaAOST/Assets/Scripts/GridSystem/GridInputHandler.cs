@@ -43,9 +43,10 @@ public class GridInputHandler : MonoBehaviour
     private int upgradeShopClosedFrame = -1;
     public bool IsExecutingAction => isMoving;
     public bool IsUpgradeShopInputBlocked => isUpgradeShopOpen || upgradeShopClosedFrame == Time.frameCount;
+    private bool IsGameplayInputBlocked => PauseMenuUI.BlocksGameplayInput || IsUpgradeShopInputBlocked;
     public bool CanEndTurn =>
         !GameSession.IsGameOver &&
-        !IsUpgradeShopInputBlocked &&
+        !IsGameplayInputBlocked &&
         isPlayerTurn && !isMoving && playerCharacter != null &&
         (gameStateManager == null || !gameStateManager.IsExplorationMode);
     private ActionMode currentMode = ActionMode.Move;
@@ -84,6 +85,8 @@ public class GridInputHandler : MonoBehaviour
 
     private void Awake()
     {
+        if (Application.isPlaying && GetComponent<PauseMenuUI>() == null)
+            gameObject.AddComponent<PauseMenuUI>();
         gameStateManager = FindFirstObjectByType<GameStateManager>();
 
         // Older maps may not have serialized the preview pool reference.
@@ -156,7 +159,7 @@ public class GridInputHandler : MonoBehaviour
 
     private void Update()
     {
-        if (GameSession.IsGameOver || IsUpgradeShopInputBlocked)
+        if (GameSession.IsGameOver || IsGameplayInputBlocked)
             return;
 
         UpdateEnemyHover();
@@ -229,15 +232,6 @@ public class GridInputHandler : MonoBehaviour
         {
             UnityEngine.SceneManagement.Scene currentScene = SceneManager.GetActiveScene();
             SceneManager.LoadScene(currentScene.buildIndex);
-        }
-
-        if (Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            if (PlayerSessionData.Instance != null)
-                PlayerSessionData.Instance.ResetSession();
-
-            if (SceneTransitionManager.Instance != null)
-                SceneTransitionManager.Instance.LoadScene("Inicio");
         }
 
         if (!isCharacterSelected || selectedCharacter == null)
@@ -550,7 +544,7 @@ public class GridInputHandler : MonoBehaviour
 
     private void HandleClick()
     {
-        if (IsUpgradeShopInputBlocked) return;
+        if (IsGameplayInputBlocked) return;
         if (isMoving) return;
 
         Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
@@ -628,7 +622,7 @@ public class GridInputHandler : MonoBehaviour
 
     private IEnumerator ExecuteSkill(SkillBase skill, Vector2Int targetCell)
     {
-        if (IsUpgradeShopInputBlocked) yield break;
+        if (IsGameplayInputBlocked) yield break;
         if (isMoving)
             yield break;
 
@@ -665,7 +659,7 @@ public class GridInputHandler : MonoBehaviour
 
     private void SelectSkill(int index)
     {
-        if (IsUpgradeShopInputBlocked) return;
+        if (IsGameplayInputBlocked) return;
         if (isMoving) return;
         if (selectedCharacter == null) return;
 
@@ -718,7 +712,7 @@ public class GridInputHandler : MonoBehaviour
 
     private IEnumerator ExecuteSelectedAction(IAction action)
     {
-        if (IsUpgradeShopInputBlocked) yield break;
+        if (IsGameplayInputBlocked) yield break;
         isMoving = true;
         int version = ++actionVersion;
         actionOwner = selectedCharacter;
@@ -792,7 +786,7 @@ public class GridInputHandler : MonoBehaviour
     {
         return isPlayerTurn &&
                !isMoving &&
-               !IsUpgradeShopInputBlocked &&
+               !IsGameplayInputBlocked &&
                !GameSession.IsGameOver;
     }
 
@@ -801,7 +795,7 @@ public class GridInputHandler : MonoBehaviour
         return actor != null && actor == playerCharacter && actor.IsPlayer &&
                actor.Stats != null && actor.Stats.IsAlive && !actor.IsDying &&
                actor.gameObject.activeInHierarchy && isPlayerTurn && !isMoving &&
-               !isHelmetInventoryOpen && !IsUpgradeShopInputBlocked && !GameSession.IsGameOver;
+               !isHelmetInventoryOpen && !IsGameplayInputBlocked && !GameSession.IsGameOver;
     }
 
     public void SetUpgradeShopOpen(bool open)
@@ -953,7 +947,7 @@ public class GridInputHandler : MonoBehaviour
 
     public void SelectSkillFromUI(int index)
     {
-        if (IsUpgradeShopInputBlocked) return;
+        if (IsGameplayInputBlocked) return;
         if (!isPlayerTurn) return;
         if (!isCharacterSelected) return;
         if (selectedCharacter == null) return;

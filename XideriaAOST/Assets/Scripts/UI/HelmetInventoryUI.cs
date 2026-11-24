@@ -60,6 +60,7 @@ public class HelmetInventoryUI : MonoBehaviour
 
     public void Toggle()
     {
+        if (PauseMenuUI.BlocksGameplayInput) return;
         if (IsOpen)
         {
             Close();

@@ -16,6 +16,7 @@ public partial class TurnManager : MonoBehaviour
     {
         // esperar a que spawnee todo
         yield return null;
+        while (PauseMenuUI.IsPaused) yield return null;
 
         var allCharacters = new List<Character>(FindObjectsOfType<Character>());
 
@@ -32,6 +33,7 @@ public partial class TurnManager : MonoBehaviour
         bool resumeSameTurn = false;
         while (!GameSession.IsGameOver && turnOrder.Count > 0)
         {
+            while (PauseMenuUI.IsPaused) yield return null;
             currentIndex %= turnOrder.Count;
             Character current = turnOrder[currentIndex];
             if (!CanTakeTurn(current))
@@ -54,6 +56,7 @@ public partial class TurnManager : MonoBehaviour
                 (ai != null ? !aiFinished : !current.IsTurnFinished))
                 yield return null;
 
+            while (PauseMenuUI.IsPaused) yield return null;
             CancelAI();
             if (immediateTurn != null && CanTakeTurn(immediateTurn))
             {
